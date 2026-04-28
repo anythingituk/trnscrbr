@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -32,6 +33,10 @@ public sealed class KeyboardHookService : IDisposable
     {
         _context = SynchronizationContext.Current;
         _hookId = SetHook(_proc);
+        if (_hookId == IntPtr.Zero)
+        {
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "Global keyboard hook registration failed.");
+        }
     }
 
     public void Dispose()

@@ -63,7 +63,16 @@ public partial class App : System.Windows.Application
         _keyboardHook.PushToTalkReleased += (_, _) => _recording.HandlePushToTalkReleased();
         _keyboardHook.CancelPressed += (_, _) => _recording.Cancel();
         _keyboardHook.PasteLastTranscriptPressed += (_, _) => _recording.PasteLastTranscript();
-        _keyboardHook.Start();
+        try
+        {
+            _keyboardHook.Start();
+        }
+        catch (Exception ex)
+        {
+            _diagnosticLog.Error("Keyboard hook startup failed", ex);
+            appState.RecordingState = RecordingState.Error;
+            appState.StatusMessage = "Hotkeys unavailable. Use tray controls.";
+        }
 
         _trayIcon = new TrayIconService(
             appState,
