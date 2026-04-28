@@ -13,6 +13,7 @@ public sealed class TrayIconService : IDisposable
     private readonly AppStateViewModel _state;
     private readonly Action _onToggleRecording;
     private readonly Action _onToggleFloatingButton;
+    private readonly Action _onPasteLastTranscript;
     private readonly Func<IReadOnlyList<AudioInputDevice>> _getMicrophones;
     private readonly AppSettingsStore _settingsStore;
     private readonly Action _onShowSettings;
@@ -25,6 +26,7 @@ public sealed class TrayIconService : IDisposable
         AppStateViewModel state,
         Action onToggleRecording,
         Action onToggleFloatingButton,
+        Action onPasteLastTranscript,
         Func<IReadOnlyList<AudioInputDevice>> getMicrophones,
         AppSettingsStore settingsStore,
         Action onShowSettings,
@@ -34,6 +36,7 @@ public sealed class TrayIconService : IDisposable
         _state = state;
         _onToggleRecording = onToggleRecording;
         _onToggleFloatingButton = onToggleFloatingButton;
+        _onPasteLastTranscript = onPasteLastTranscript;
         _getMicrophones = getMicrophones;
         _settingsStore = settingsStore;
         _onShowSettings = onShowSettings;
@@ -102,15 +105,18 @@ public sealed class TrayIconService : IDisposable
         var menu = new ContextMenuStrip();
         var recordItem = new ToolStripMenuItem("Start Recording", null, (_, _) => _onToggleRecording());
         var showItem = new ToolStripMenuItem("Show/Hide Floating Button", null, (_, _) => _onToggleFloatingButton());
+        var pasteItem = new ToolStripMenuItem("Paste Last Transcript", null, (_, _) => _onPasteLastTranscript());
         var micMenu = new ToolStripMenuItem("Microphone");
 
         menu.Opening += (_, _) =>
         {
             recordItem.Text = _state.RecordingState == RecordingState.Recording ? "Stop Recording" : "Start Recording";
+            pasteItem.Enabled = HasRecoverableTranscript();
             RebuildMicrophoneMenu(micMenu);
         };
 
         menu.Items.Add(recordItem);
+        menu.Items.Add(pasteItem);
         menu.Items.Add(showItem);
         menu.Items.Add(micMenu);
         menu.Items.Add(new ToolStripSeparator());
@@ -119,6 +125,12 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem("Quit", null, (_, _) => _onQuit()));
         return menu;
+    }
+
+    private bool HasRecoverableTranscript()
+    {
+        return !string.IsNullOrWhiteSpace(_state.LastTranscript)
+            && _state.LastTranscriptExpiresAt > DateTimeOffset.Now;
     }
 
     private void RebuildMicrophoneMenu(ToolStripMenuItem micMenu)

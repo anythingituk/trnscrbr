@@ -39,6 +39,7 @@ public partial class App : System.Windows.Application
         var insertion = new TextInsertionService(appState, _diagnosticLog);
         _recording = new RecordingCoordinator(appState, insertion, _floatingButton, _audioCapture, _credentialStore, _openAiProvider, _diagnosticLog, _usageStats);
         _floatingButton.ToggleRecordingRequested += (_, _) => _recording.ToggleRecording();
+        _floatingButton.PasteLastTranscriptRequested += (_, _) => _recording.PasteLastTranscript();
         _floatingButton.SettingsRequested += (_, _) => ShowTrayPanel();
         _floatingButton.QuitRequested += (_, _) => Shutdown();
 
@@ -53,6 +54,7 @@ public partial class App : System.Windows.Application
             appState,
             onToggleRecording: () => _recording.ToggleRecording(),
             onToggleFloatingButton: ToggleFloatingButton,
+            onPasteLastTranscript: () => _recording.PasteLastTranscript(),
             getMicrophones: () => _audioCapture.GetInputDevices(),
             settingsStore: _settingsStore,
             onShowSettings: ShowTrayPanel,

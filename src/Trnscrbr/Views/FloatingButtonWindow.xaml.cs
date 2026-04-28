@@ -42,6 +42,7 @@ public partial class FloatingButtonWindow : Window
     }
 
     public event EventHandler? ToggleRecordingRequested;
+    public event EventHandler? PasteLastTranscriptRequested;
     public event EventHandler? SettingsRequested;
     public event EventHandler? QuitRequested;
 
@@ -198,16 +199,29 @@ public partial class FloatingButtonWindow : Window
         var menu = new System.Windows.Controls.ContextMenu();
         var recordItem = new System.Windows.Controls.MenuItem { Header = _state.RecordingState == RecordingState.Recording ? "Stop Recording" : "Start Recording" };
         recordItem.Click += (_, _) => ToggleRecordingRequested?.Invoke(this, EventArgs.Empty);
+        var pasteItem = new System.Windows.Controls.MenuItem
+        {
+            Header = "Paste Last Transcript",
+            IsEnabled = HasRecoverableTranscript()
+        };
+        pasteItem.Click += (_, _) => PasteLastTranscriptRequested?.Invoke(this, EventArgs.Empty);
         var settingsItem = new System.Windows.Controls.MenuItem { Header = "Settings" };
         settingsItem.Click += (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty);
         var quitItem = new System.Windows.Controls.MenuItem { Header = "Quit" };
         quitItem.Click += (_, _) => QuitRequested?.Invoke(this, EventArgs.Empty);
         menu.Items.Add(recordItem);
+        menu.Items.Add(pasteItem);
         menu.Items.Add(new System.Windows.Controls.MenuItem { Header = "Show/Hide Floating Button", IsEnabled = false });
         menu.Items.Add(settingsItem);
         menu.Items.Add(new System.Windows.Controls.Separator());
         menu.Items.Add(quitItem);
         menu.IsOpen = true;
+    }
+
+    private bool HasRecoverableTranscript()
+    {
+        return !string.IsNullOrWhiteSpace(_state.LastTranscript)
+            && _state.LastTranscriptExpiresAt > DateTimeOffset.Now;
     }
 
     protected override void OnSourceInitialized(EventArgs e)
