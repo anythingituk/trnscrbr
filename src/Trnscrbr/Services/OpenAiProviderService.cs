@@ -17,6 +17,12 @@ public sealed class OpenAiProviderService
     private const string TranscriptionModel = "gpt-4o-mini-transcribe";
     private const string CleanupModel = "gpt-5.4-mini";
     private readonly HttpClient _httpClient = new();
+    private readonly DiagnosticLogService? _diagnosticLog;
+
+    public OpenAiProviderService(DiagnosticLogService? diagnosticLog = null)
+    {
+        _diagnosticLog = diagnosticLog;
+    }
 
     public async Task<ProviderTestResult> TestApiKeyAsync(string apiKey, CancellationToken cancellationToken = default)
     {
@@ -36,6 +42,7 @@ public sealed class OpenAiProviderService
                 return ProviderTestResult.Success();
             }
 
+            LogProviderFailure("OpenAI API key test failed", response, "models");
             return ProviderTestResult.Fail($"OpenAI test failed: {(int)response.StatusCode} {response.ReasonPhrase}");
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
@@ -96,6 +103,7 @@ public sealed class OpenAiProviderService
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
+            LogProviderFailure("OpenAI transcription failed", response, TranscriptionModel);
             throw new InvalidOperationException($"OpenAI transcription failed: {(int)response.StatusCode} {response.ReasonPhrase}");
         }
 
@@ -129,6 +137,7 @@ public sealed class OpenAiProviderService
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
+            LogProviderFailure("OpenAI cleanup failed", response, CleanupModel);
             throw new InvalidOperationException($"OpenAI cleanup failed: {(int)response.StatusCode} {response.ReasonPhrase}");
         }
 
@@ -245,6 +254,31 @@ public sealed class OpenAiProviderService
     private static int EstimateTokens(string text)
     {
         return Math.Max(1, (int)Math.Ceiling(text.Length / 4d));
+    }
+
+    private void LogProviderFailure(string message, HttpResponseMessage response, string model)
+    {
+        _diagnosticLog?.Error(message, metadata: new Dictionary<string, string>
+        {
+            ["provider"] = "OpenAI",
+            ["model"] = model,
+            ["statusCode"] = ((int)response.StatusCode).ToString(),
+            ["reason"] = response.ReasonPhrase ?? string.Empty,
+            ["requestId"] = GetRequestId(response)
+        });
+    }
+
+    private static string GetRequestId(HttpResponseMessage response)
+    {
+        foreach (var headerName in new[] { "request-id", "x-request-id", "openai-request-id" })
+        {
+            if (response.Headers.TryGetValues(headerName, out var values))
+            {
+                return values.FirstOrDefault() ?? string.Empty;
+            }
+        }
+
+        return string.Empty;
     }
 
     private sealed record CleanupResult(string CleanedTranscript, int InputTokens, int OutputTokens);

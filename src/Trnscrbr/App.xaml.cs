@@ -27,8 +27,8 @@ public partial class App : System.Windows.Application
 
         _settingsStore = new AppSettingsStore();
         _credentialStore = new CredentialStore();
-        _openAiProvider = new OpenAiProviderService();
         _diagnosticLog = new DiagnosticLogService();
+        _openAiProvider = new OpenAiProviderService(_diagnosticLog);
         _usageStats = new UsageStatsService();
         _settingsImportExport = new SettingsImportExportService();
         var settings = _settingsStore.Load();
