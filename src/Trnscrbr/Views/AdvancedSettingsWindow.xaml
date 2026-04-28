@@ -123,6 +123,19 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+            <TabItem Header="Import/Export">
+                <ScrollViewer>
+                    <StackPanel Margin="16">
+                        <TextBlock Text="Import / Export" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock Text="Exports include settings and custom vocabulary only. API keys, transcripts, raw audio, diagnostics, and usage history are never exported." TextWrapping="Wrap" Margin="0,8,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="Export Settings" Width="130" Click="ExportSettings_OnClick" />
+                            <Button Content="Import Settings" Width="130" Margin="8,0,0,0" Click="ImportSettings_OnClick" />
+                        </StackPanel>
+                        <TextBlock x:Name="ImportExportStatusText" Margin="0,14,0,0" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

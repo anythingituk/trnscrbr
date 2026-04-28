@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Navigation;
+using Microsoft.Win32;
 using Trnscrbr.Services;
 using Trnscrbr.ViewModels;
 
@@ -15,6 +16,7 @@ public partial class AdvancedSettingsWindow : Window
     private readonly AudioCaptureService _audioCapture;
     private readonly DiagnosticLogService _diagnosticLog;
     private readonly UsageStatsService _usageStats;
+    private readonly SettingsImportExportService _settingsImportExport;
 
     public AdvancedSettingsWindow(
         AppStateViewModel state,
@@ -23,7 +25,8 @@ public partial class AdvancedSettingsWindow : Window
         OpenAiProviderService openAiProvider,
         AudioCaptureService audioCapture,
         DiagnosticLogService diagnosticLog,
-        UsageStatsService usageStats)
+        UsageStatsService usageStats,
+        SettingsImportExportService settingsImportExport)
     {
         InitializeComponent();
         _state = state;
@@ -33,6 +36,7 @@ public partial class AdvancedSettingsWindow : Window
         _audioCapture = audioCapture;
         _diagnosticLog = diagnosticLog;
         _usageStats = usageStats;
+        _settingsImportExport = settingsImportExport;
         DataContext = state;
         VocabularyBox.Text = string.Join(Environment.NewLine, state.Settings.CustomVocabulary);
         DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
@@ -155,6 +159,68 @@ public partial class AdvancedSettingsWindow : Window
         UsageBox.Text = _usageStats.FormatSummary();
     }
 
+    private void ExportSettings_OnClick(object sender, RoutedEventArgs e)
+    {
+        Persist();
+
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Export Trnscrbr Settings",
+            Filter = "Trnscrbr settings (*.trnscrbr-settings.json)|*.trnscrbr-settings.json|JSON files (*.json)|*.json",
+            FileName = $"trnscrbr-settings-{DateTimeOffset.Now:yyyyMMdd}.trnscrbr-settings.json"
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            _settingsImportExport.Export(dialog.FileName, _state.Settings);
+            ImportExportStatusText.Text = "Settings exported. API keys were not included.";
+        }
+        catch (Exception ex)
+        {
+            ImportExportStatusText.Text = $"Export failed: {ex.Message}";
+            _diagnosticLog.Error("Settings export failed", ex);
+        }
+    }
+
+    private void ImportSettings_OnClick(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Import Trnscrbr Settings",
+            Filter = "Trnscrbr settings (*.trnscrbr-settings.json)|*.trnscrbr-settings.json|JSON files (*.json)|*.json"
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        try
+        {
+            var imported = _settingsImportExport.Import(dialog.FileName);
+            ApplyImportedSettings(imported);
+            if (_state.Settings.ProviderMode == "Bring your own API key" && !_credentialStore.HasOpenAiApiKey())
+            {
+                _state.Settings.ProviderMode = "Not configured";
+                _state.Settings.ActiveEngine = "None";
+            }
+
+            Persist();
+            _audioCapture.ApplyPreBufferSetting();
+            ImportExportStatusText.Text = "Settings imported. API keys were not imported.";
+        }
+        catch (Exception ex)
+        {
+            ImportExportStatusText.Text = $"Import failed: {ex.Message}";
+            _diagnosticLog.Error("Settings import failed", ex);
+        }
+    }
+
     private void Hyperlink_OnRequestNavigate(object sender, RequestNavigateEventArgs e)
     {
         Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
@@ -176,5 +242,28 @@ public partial class AdvancedSettingsWindow : Window
         ApiKeyStatusText.Text = _credentialStore.HasOpenAiApiKey()
             ? "OpenAI API key is stored locally in Windows Credential Manager."
             : "No OpenAI API key is stored.";
+    }
+
+    private void ApplyImportedSettings(Models.AppSettings imported)
+    {
+        _state.Settings.OnboardingCompleted = imported.OnboardingCompleted;
+        _state.Settings.LaunchOnStartup = imported.LaunchOnStartup;
+        _state.Settings.FloatingButtonEnabled = imported.FloatingButtonEnabled;
+        _state.Settings.AddTrailingSpace = imported.AddTrailingSpace;
+        _state.Settings.ContextualCorrectionEnabled = imported.ContextualCorrectionEnabled;
+        _state.Settings.CursorContextEnabled = imported.CursorContextEnabled;
+        _state.Settings.VoiceActionCommandsEnabled = imported.VoiceActionCommandsEnabled;
+        _state.Settings.DiagnosticsEnabled = imported.DiagnosticsEnabled;
+        _state.Settings.ForceCpuOnly = imported.ForceCpuOnly;
+        _state.Settings.CaptureStartupBufferMilliseconds = imported.CaptureStartupBufferMilliseconds;
+        _state.Settings.ProviderMode = imported.ProviderMode;
+        _state.Settings.ProviderName = imported.ProviderName;
+        _state.Settings.CleanupMode = imported.CleanupMode;
+        _state.Settings.LanguageMode = imported.LanguageMode;
+        _state.Settings.MicrophoneName = imported.MicrophoneName;
+        _state.Settings.ActiveEngine = imported.ActiveEngine;
+        _state.Settings.MonthlyCostWarning = imported.MonthlyCostWarning;
+        _state.Settings.CustomVocabulary = imported.CustomVocabulary.ToList();
+        VocabularyBox.Text = string.Join(Environment.NewLine, _state.Settings.CustomVocabulary);
     }
 }

@@ -15,6 +15,7 @@ public partial class App : System.Windows.Application
     private OpenAiProviderService? _openAiProvider;
     private DiagnosticLogService? _diagnosticLog;
     private UsageStatsService? _usageStats;
+    private SettingsImportExportService? _settingsImportExport;
     private RecordingCoordinator? _recording;
     private FloatingButtonWindow? _floatingButton;
     private TrayPanelWindow? _trayPanel;
@@ -29,6 +30,7 @@ public partial class App : System.Windows.Application
         _openAiProvider = new OpenAiProviderService();
         _diagnosticLog = new DiagnosticLogService();
         _usageStats = new UsageStatsService();
+        _settingsImportExport = new SettingsImportExportService();
         var settings = _settingsStore.Load();
         var appState = new AppStateViewModel(settings);
 
@@ -116,12 +118,21 @@ public partial class App : System.Windows.Application
             || _openAiProvider is null
             || _audioCapture is null
             || _diagnosticLog is null
-            || _usageStats is null)
+            || _usageStats is null
+            || _settingsImportExport is null)
         {
             return;
         }
 
-        _advancedSettings ??= new AdvancedSettingsWindow(state, _settingsStore, _credentialStore, _openAiProvider, _audioCapture, _diagnosticLog, _usageStats);
+        _advancedSettings ??= new AdvancedSettingsWindow(
+            state,
+            _settingsStore,
+            _credentialStore,
+            _openAiProvider,
+            _audioCapture,
+            _diagnosticLog,
+            _usageStats,
+            _settingsImportExport);
         _advancedSettings.Show();
         _advancedSettings.Activate();
     }
