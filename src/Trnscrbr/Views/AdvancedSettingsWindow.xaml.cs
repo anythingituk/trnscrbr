@@ -45,6 +45,7 @@ public partial class AdvancedSettingsWindow : Window
         CurrentVersionText.Text = $"Current version: {AppInfo.Version}";
         RefreshLocalModels();
         UpdateApiKeyStatus();
+        UpdateProviderModeStatus();
         Closing += (_, args) =>
         {
             args.Cancel = true;
@@ -134,6 +135,7 @@ public partial class AdvancedSettingsWindow : Window
     private void Settings_OnChanged(object sender, RoutedEventArgs e)
     {
         Persist();
+        UpdateProviderModeStatus();
     }
 
     private void CursorContext_OnClick(object sender, RoutedEventArgs e)
@@ -300,6 +302,19 @@ public partial class AdvancedSettingsWindow : Window
         _settingsStore.Save(_state.Settings);
         StartupService.Apply(_state.Settings);
         _state.RaiseSettingsChanged();
+    }
+
+    private void UpdateProviderModeStatus()
+    {
+        ProviderModeStatusText.Text = _state.Settings.ProviderMode switch
+        {
+            "Bring your own API key" => _credentialStore.HasOpenAiApiKey()
+                ? "OpenAI API key is stored. Trnscrbr can transcribe using your API account."
+                : "Add an OpenAI API key on the Provider tab before dictation will work.",
+            "Local mode" => "Local mode is planned for this MVP track. Detected models are shown on the Local Models tab, but they are not used automatically.",
+            "Cloud managed by app (planned)" => "Cloud managed by app is planned for a later paid/free-tier model and is not available yet.",
+            _ => "Choose a provider now or skip and configure one later."
+        };
     }
 
     private void UpdateApiKeyStatus()

@@ -30,6 +30,7 @@
                             <ComboBoxItem Content="Local mode" />
                             <ComboBoxItem Content="Cloud managed by app (planned)" IsEnabled="False" />
                         </ComboBox>
+                        <TextBlock x:Name="ProviderModeStatusText" TextWrapping="Wrap" Margin="0,0,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
                         <Button Content="Skip for now" Width="130" HorizontalAlignment="Left" Click="OnboardingComplete_OnClick" />
                     </StackPanel>
                 </ScrollViewer>
@@ -57,7 +58,7 @@
                     <StackPanel Margin="16">
                         <TextBlock Text="Local Mode" FontSize="18" FontWeight="SemiBold" />
                         <TextBlock Margin="0,8,0,12" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}"
-                                   Text="Local mode sends no audio or transcript text to cloud services. Downloads should come from official model repositories and be verified before use." />
+                                   Text="Local mode sends no audio or transcript text to cloud services. The MVP can detect local model candidates, but local transcription/cleanup execution is not enabled yet." />
                         <ListView>
                             <ListViewItem Content="Small - fastest, lowest disk/RAM" />
                             <ListViewItem Content="Medium - balanced" />
