@@ -189,6 +189,19 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+            <TabItem Header="Updates">
+                <ScrollViewer>
+                    <StackPanel Margin="16">
+                        <TextBlock Text="Updates" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock x:Name="CurrentVersionText" Margin="0,8,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <TextBlock Text="Manual updates are used for the MVP. Check the releases page for installer updates when published." TextWrapping="Wrap" Margin="0,0,0,12" />
+                        <TextBlock Margin="0,0,0,12">
+                            <Hyperlink NavigateUri="https://github.com/anythingituk/trnscrbr/releases" RequestNavigate="Hyperlink_OnRequestNavigate">Open Trnscrbr releases</Hyperlink>
+                        </TextBlock>
+                        <TextBlock Text="Automatic update checks are planned for a later version." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
             <TabItem Header="Import/Export">
                 <ScrollViewer>
                     <StackPanel Margin="16">

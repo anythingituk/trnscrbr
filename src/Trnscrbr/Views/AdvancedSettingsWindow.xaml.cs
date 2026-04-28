@@ -42,6 +42,7 @@ public partial class AdvancedSettingsWindow : Window
         VocabularyBox.Text = string.Join(Environment.NewLine, state.Settings.CustomVocabulary);
         DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
         UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
+        CurrentVersionText.Text = $"Current version: {AppInfo.Version}";
         RefreshLocalModels();
         UpdateApiKeyStatus();
         Closing += (_, args) =>
@@ -144,7 +145,7 @@ public partial class AdvancedSettingsWindow : Window
     {
         var diagnostics = $"""
             Trnscrbr diagnostics
-            App version: 0.1.0
+            App version: {AppInfo.Version}
             Provider: {_state.Settings.ProviderName}
             Provider mode: {_state.Settings.ProviderMode}
             Active engine: {_state.Settings.ActiveEngine}
