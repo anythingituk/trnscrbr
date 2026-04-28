@@ -58,6 +58,7 @@ public sealed class SettingsImportExportService
             ProviderMode = settings.ProviderMode,
             ProviderName = settings.ProviderName,
             CleanupMode = settings.CleanupMode,
+            RewriteStyle = settings.RewriteStyle,
             LanguageMode = settings.LanguageMode,
             PasteMethod = settings.PasteMethod,
             MicrophoneName = settings.MicrophoneName,

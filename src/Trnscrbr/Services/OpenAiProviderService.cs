@@ -170,7 +170,7 @@ public sealed class OpenAiProviderService
             : $"Language mode: {state.Settings.LanguageMode}. Preserve that language unless the user clearly switches language.";
 
         var mode = rewrite
-            ? "Rewrite the transcript into cleaner, polished prose while preserving the user's meaning."
+            ? $"Rewrite the transcript into cleaner text while preserving the user's meaning. {GetRewriteStyleInstruction(state.Settings.RewriteStyle)}"
             : "Remove filler words, repeated stutters, and pause artifacts while preserving the user's wording as much as possible.";
         var voiceActions = state.Settings.VoiceActionCommandsEnabled
             ? $"""
@@ -254,6 +254,18 @@ public sealed class OpenAiProviderService
     private static int EstimateTokens(string text)
     {
         return Math.Max(1, (int)Math.Ceiling(text.Length / 4d));
+    }
+
+    private static string GetRewriteStyleInstruction(string rewriteStyle)
+    {
+        return rewriteStyle switch
+        {
+            "Professional" => "Use a professional workplace tone suitable for emails, support messages, and business communication.",
+            "Friendly" => "Use a warm, approachable tone while keeping the message clear and natural.",
+            "Concise" => "Make the result brief and direct. Remove unnecessary wording while preserving the core meaning.",
+            "Native-level English" => "Make the English sound natural, fluent, and idiomatic, as a careful native speaker would write it.",
+            _ => "Use plain, clear English. Avoid overly formal wording and avoid adding new ideas."
+        };
     }
 
     private void LogProviderFailure(string message, HttpResponseMessage response, string model)

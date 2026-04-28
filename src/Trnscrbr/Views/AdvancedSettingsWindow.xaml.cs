@@ -181,7 +181,8 @@ public partial class AdvancedSettingsWindow : Window
             Active engine: {_state.Settings.ActiveEngine}
             API key present: {(_credentialStore.HasOpenAiApiKey() ? "yes" : "no")}
             Microphone: {_state.Settings.MicrophoneName}
-            Cleanup mode: {_state.Settings.CleanupMode}
+            Transcription type: {_state.Settings.CleanupMode}
+            Rewrite style: {_state.Settings.RewriteStyle}
             Language mode: {_state.Settings.LanguageMode}
             Paste method: {_state.Settings.PasteMethod}
             Capture startup buffer: {_state.Settings.CaptureStartupBufferMilliseconds} ms
@@ -364,6 +365,7 @@ public partial class AdvancedSettingsWindow : Window
         _state.Settings.ProviderMode = imported.ProviderMode;
         _state.Settings.ProviderName = imported.ProviderName;
         _state.Settings.CleanupMode = imported.CleanupMode;
+        _state.Settings.RewriteStyle = imported.RewriteStyle;
         _state.Settings.LanguageMode = imported.LanguageMode;
         _state.Settings.PasteMethod = imported.PasteMethod;
         _state.Settings.MicrophoneName = imported.MicrophoneName;

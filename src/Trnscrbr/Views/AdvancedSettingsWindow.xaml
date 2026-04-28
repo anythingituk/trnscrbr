@@ -74,6 +74,20 @@
             <TabItem Header="Privacy &amp; Context">
                 <ScrollViewer>
                     <StackPanel Margin="16">
+                        <TextBlock Text="Transcription type" FontWeight="SemiBold" />
+                        <ComboBox SelectedValue="{Binding Settings.CleanupMode}" SelectedValuePath="Content" Margin="0,6,0,14" SelectionChanged="Settings_OnChanged">
+                            <ComboBoxItem Content="Clean only" />
+                            <ComboBoxItem Content="Rewrite" />
+                        </ComboBox>
+                        <TextBlock Text="Rewrite style" FontWeight="SemiBold" />
+                        <ComboBox SelectedValue="{Binding Settings.RewriteStyle}" SelectedValuePath="Content" Margin="0,6,0,14" SelectionChanged="Settings_OnChanged">
+                            <ComboBoxItem Content="Plain English" />
+                            <ComboBoxItem Content="Professional" />
+                            <ComboBoxItem Content="Friendly" />
+                            <ComboBoxItem Content="Concise" />
+                            <ComboBoxItem Content="Native-level English" />
+                        </ComboBox>
+                        <TextBlock Text="Rewrite style is used only when transcription type is set to Rewrite." TextWrapping="Wrap" Margin="0,0,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
                         <CheckBox Content="Contextual correction" IsChecked="{Binding Settings.ContextualCorrectionEnabled}" Margin="0,4" Click="Settings_OnChanged" />
                         <CheckBox Content="Use text around cursor as context" IsChecked="{Binding Settings.CursorContextEnabled}" Margin="0,4" Click="CursorContext_OnClick" />
                         <TextBlock Text="Reading text around the cursor may expose nearby content from another app and may be unreliable depending on the target application." TextWrapping="Wrap" Margin="24,4,0,14" Foreground="{StaticResource MutedForegroundBrush}" />

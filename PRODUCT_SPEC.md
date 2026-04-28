@@ -88,7 +88,7 @@ Slide-up panel:
 
 - Current provider/mode summary.
 - Active engine/model.
-- Cleanup mode.
+- Transcription type.
 - Microphone choice.
 - Start/stop/status.
 - Floating button toggle.
@@ -166,16 +166,24 @@ Elevated Windows:
 - If insertion fails due to elevated/admin target, show an informational message suggesting elevated-window support in settings.
 - Elevated-window support should be designed for later using a separate elevated helper, not by running the full app as admin.
 
-## Transcription And Cleanup
+## Transcription Processing
 
-Cleanup modes:
+Transcription types:
 
 1. Clean only: remove pauses, filler words, and stutters while preserving wording.
 2. Rewrite: produce a cleaner, more polished transcript.
 
+Rewrite style options:
+
+- Plain English
+- Professional
+- Friendly
+- Concise
+- Native-level English
+
 Contextual correction:
 
-- Enabled by default in both cleanup modes.
+- Enabled by default in both transcription types.
 - Correct obvious recognition errors using nearby context.
 - Can be disabled in settings.
 - Example: "Paul's hotkey" should become "pause hotkey" when surrounding context is hotkeys/settings.
@@ -287,7 +295,7 @@ Principles:
 Model presentation:
 
 - Bundle as Small / Medium / Large presets.
-- Hide separate speech and cleanup model choices for MVP.
+- Hide separate speech and cleanup/rewrite model choices for MVP.
 
 Presets:
 

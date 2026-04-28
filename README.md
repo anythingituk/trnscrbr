@@ -13,8 +13,8 @@ See [PRODUCT_SPEC.md](PRODUCT_SPEC.md) for the current MVP specification.
 - Default hotkey: `Ctrl + Win + Space`.
 - Default cancel: `Esc`.
 - Default Paste Last Transcript: `Ctrl + Win + V`.
-- OpenAI bring-your-own-key transcription and cleanup.
-- Local model detection only. Local transcription/cleanup execution is not enabled yet.
+- OpenAI bring-your-own-key transcription processing.
+- Local model detection only. Local transcription processing is not enabled yet.
 
 ## Build Prerequisites
 
@@ -54,6 +54,8 @@ artifacts\installer\Trnscrbr-Setup-0.1.0-win-x64.exe
 Useful settings while testing:
 
 - Paste method: `Ctrl+V` by default, optional `Shift+Insert`.
+- Transcription type: `Clean only` or `Rewrite`.
+- Rewrite style: `Plain English`, `Professional`, `Friendly`, `Concise`, or `Native-level English`.
 - Capture startup buffer: helps avoid clipped first words.
 - Diagnostics: refresh/copy logs or open the diagnostics folder.
 - Local Models: detects candidate local models but does not use them.
@@ -64,7 +66,7 @@ WPF MVP in progress. Current build includes:
 
 - Dynamic tray icon and floating glass button with mic-level waveform states.
 - `Ctrl + Win + Space` push-to-talk/toggle, `Esc` cancel, and `Ctrl + Win + V` paste last transcript.
-- OpenAI bring-your-own-key transcription and cleanup.
+- OpenAI bring-your-own-key transcription processing.
 - Temporary clipboard insertion with clipboard restoration.
 - One-hour last transcript recovery from hotkey, tray menu, and floating-button menu.
 - Optional voice action command for deleting the last Trnscrbr insertion.

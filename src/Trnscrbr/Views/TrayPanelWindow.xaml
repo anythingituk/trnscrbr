@@ -17,6 +17,7 @@
         <Border.Effect>
             <DropShadowEffect Color="#66000000" BlurRadius="24" ShadowDepth="2" Opacity="0.35" />
         </Border.Effect>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel>
             <TextBlock Text="Trnscrbr" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource PanelForegroundBrush}" />
             <TextBlock Text="{Binding StatusMessage}" Margin="0,4,0,18" Foreground="{StaticResource MutedForegroundBrush}" />
@@ -34,10 +35,19 @@
             <TextBlock Text="Paste Method" FontWeight="SemiBold" />
             <TextBlock Text="{Binding Settings.PasteMethod}" Margin="0,3,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
 
-            <TextBlock Text="Cleanup" FontWeight="SemiBold" />
+            <TextBlock Text="Transcription Type" FontWeight="SemiBold" />
             <ComboBox SelectedValue="{Binding Settings.CleanupMode}" SelectedValuePath="Content" Margin="0,6,0,14" SelectionChanged="Settings_OnChanged">
                 <ComboBoxItem Content="Clean only" />
                 <ComboBoxItem Content="Rewrite" />
+            </ComboBox>
+
+            <TextBlock Text="Rewrite Style" FontWeight="SemiBold" />
+            <ComboBox SelectedValue="{Binding Settings.RewriteStyle}" SelectedValuePath="Content" Margin="0,6,0,14" SelectionChanged="Settings_OnChanged">
+                <ComboBoxItem Content="Plain English" />
+                <ComboBoxItem Content="Professional" />
+                <ComboBoxItem Content="Friendly" />
+                <ComboBoxItem Content="Concise" />
+                <ComboBoxItem Content="Native-level English" />
             </ComboBox>
 
             <TextBlock Text="Microphone" FontWeight="SemiBold" />
@@ -53,5 +63,6 @@
 
             <Button Content="Advanced Settings" Margin="0,22,0,0" Height="36" Click="Advanced_OnClick" />
         </StackPanel>
+        </ScrollViewer>
     </Border>
 </Window>

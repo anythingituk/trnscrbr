@@ -15,6 +15,7 @@ public sealed class AppSettings
     public string ProviderMode { get; set; } = "Not configured";
     public string ProviderName { get; set; } = "OpenAI";
     public string CleanupMode { get; set; } = "Clean only";
+    public string RewriteStyle { get; set; } = "Plain English";
     public string LanguageMode { get; set; } = "Auto";
     public string PasteMethod { get; set; } = "Ctrl+V";
     public string MicrophoneName { get; set; } = "Windows default";

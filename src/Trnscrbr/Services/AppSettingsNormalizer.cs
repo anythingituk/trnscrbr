@@ -24,6 +24,15 @@ public static class AppSettingsNormalizer
         "Shift+Insert"
     ];
 
+    private static readonly string[] RewriteStyles =
+    [
+        "Plain English",
+        "Professional",
+        "Friendly",
+        "Concise",
+        "Native-level English"
+    ];
+
     public static AppSettings Normalize(AppSettings? settings)
     {
         settings ??= new AppSettings();
@@ -32,6 +41,7 @@ public static class AppSettingsNormalizer
         settings.ProviderMode = Pick(settings.ProviderMode, ProviderModes, defaults.ProviderMode);
         settings.ProviderName = string.IsNullOrWhiteSpace(settings.ProviderName) ? defaults.ProviderName : settings.ProviderName;
         settings.CleanupMode = Pick(settings.CleanupMode, CleanupModes, defaults.CleanupMode);
+        settings.RewriteStyle = Pick(settings.RewriteStyle, RewriteStyles, defaults.RewriteStyle);
         settings.LanguageMode = string.IsNullOrWhiteSpace(settings.LanguageMode) ? defaults.LanguageMode : settings.LanguageMode;
         settings.PasteMethod = Pick(settings.PasteMethod, PasteMethods, defaults.PasteMethod);
         settings.MicrophoneName = string.IsNullOrWhiteSpace(settings.MicrophoneName) ? defaults.MicrophoneName : settings.MicrophoneName;
