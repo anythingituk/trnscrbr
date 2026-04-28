@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Threading;
 using Trnscrbr.Services;
 using Trnscrbr.ViewModels;
 using Trnscrbr.Views;
@@ -28,6 +29,7 @@ public partial class App : System.Windows.Application
         _settingsStore = new AppSettingsStore();
         _credentialStore = new CredentialStore();
         _diagnosticLog = new DiagnosticLogService();
+        RegisterExceptionHandlers(_diagnosticLog);
         _openAiProvider = new OpenAiProviderService(_diagnosticLog);
         _usageStats = new UsageStatsService();
         _settingsImportExport = new SettingsImportExportService();
@@ -81,6 +83,53 @@ public partial class App : System.Windows.Application
         _trayIcon?.Dispose();
         _settingsStore?.Save(((AppStateViewModel)_floatingButton!.DataContext).Settings);
         base.OnExit(e);
+    }
+
+    private void RegisterExceptionHandlers(DiagnosticLogService diagnosticLog)
+    {
+        DispatcherUnhandledException += (_, args) =>
+        {
+            diagnosticLog.Error("Unhandled UI exception", args.Exception);
+            args.Handled = true;
+            ShowRecoverableError(args.Exception);
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += (_, args) =>
+        {
+            if (args.ExceptionObject is Exception exception)
+            {
+                diagnosticLog.Error("Unhandled process exception", exception, new Dictionary<string, string>
+                {
+                    ["isTerminating"] = args.IsTerminating.ToString()
+                });
+            }
+            else
+            {
+                diagnosticLog.Error("Unhandled process exception", metadata: new Dictionary<string, string>
+                {
+                    ["exceptionObject"] = args.ExceptionObject?.ToString() ?? string.Empty,
+                    ["isTerminating"] = args.IsTerminating.ToString()
+                });
+            }
+        };
+
+        TaskScheduler.UnobservedTaskException += (_, args) =>
+        {
+            diagnosticLog.Error("Unobserved task exception", args.Exception);
+            args.SetObserved();
+        };
+    }
+
+    private void ShowRecoverableError(Exception exception)
+    {
+        if (_floatingButton?.DataContext is not AppStateViewModel state)
+        {
+            return;
+        }
+
+        state.RecordingState = RecordingState.Error;
+        state.StatusMessage = "Trnscrbr recovered from an error. See Diagnostics.";
+        _floatingButton.ShowTransient();
     }
 
     private void ToggleFloatingButton()
