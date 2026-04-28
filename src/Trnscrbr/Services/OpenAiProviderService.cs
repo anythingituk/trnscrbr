@@ -153,6 +153,12 @@ public sealed class OpenAiProviderService
         var previous = state.LastTranscript is { Length: > 0 }
             ? state.LastTranscript
             : "None.";
+        var contextInstruction = state.Settings.ContextualCorrectionEnabled
+            ? "Apply contextual correction for obvious speech recognition mistakes unless doing so would change the likely meaning."
+            : "Do not perform contextual correction beyond basic cleanup; preserve the recognized wording unless it is clearly filler, stutter, or punctuation/layout handling.";
+        var languageInstruction = string.Equals(state.Settings.LanguageMode, "Auto", StringComparison.OrdinalIgnoreCase)
+            ? "Language mode: auto detect. Preserve the language used by the speaker."
+            : $"Language mode: {state.Settings.LanguageMode}. Preserve that language unless the user clearly switches language.";
 
         var mode = rewrite
             ? "Rewrite the transcript into cleaner, polished prose while preserving the user's meaning."
@@ -166,10 +172,11 @@ public sealed class OpenAiProviderService
         return $"""
             You clean dictation transcripts for direct insertion into a focused text field.
             {mode}
+            {languageInstruction}
             Preserve intentional opening words and discourse markers such as "Okay", "So", "Well", "Right", and "Yes" when they introduce the user's sentence.
             Do not remove "Okay" from the start of a sentence unless it is clearly repeated hesitation such as "okay okay um".
             Remove only true hesitation filler, not meaningful conversational framing.
-            Always apply contextual correction for obvious speech recognition mistakes unless doing so would change the likely meaning.
+            {contextInstruction}
             Convert spoken punctuation/layout commands when context indicates they are commands: new line, full stop, question mark, comma.
             {voiceActions}
             Do not add commentary, labels, markdown, or quotes. Return only the final text to insert.

@@ -89,6 +89,55 @@
                             </ComboBoxItem>
                         </ComboBox>
                         <TextBlock Text="Keeps a short in-memory audio buffer while the app is running so the first word is less likely to be clipped. Audio is not saved unless recording starts." TextWrapping="Wrap" Margin="0,6,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <TextBlock Text="Language" FontWeight="SemiBold" Margin="0,14,0,6" />
+                        <ComboBox SelectedValue="{Binding Settings.LanguageMode}" SelectedValuePath="Tag" SelectionChanged="Settings_OnChanged">
+                            <ComboBoxItem Content="Auto detect">
+                                <ComboBoxItem.Tag>
+                                    <sys:String>Auto</sys:String>
+                                </ComboBoxItem.Tag>
+                            </ComboBoxItem>
+                            <ComboBoxItem Content="English">
+                                <ComboBoxItem.Tag>
+                                    <sys:String>en</sys:String>
+                                </ComboBoxItem.Tag>
+                            </ComboBoxItem>
+                            <ComboBoxItem Content="French">
+                                <ComboBoxItem.Tag>
+                                    <sys:String>fr</sys:String>
+                                </ComboBoxItem.Tag>
+                            </ComboBoxItem>
+                            <ComboBoxItem Content="Spanish">
+                                <ComboBoxItem.Tag>
+                                    <sys:String>es</sys:String>
+                                </ComboBoxItem.Tag>
+                            </ComboBoxItem>
+                            <ComboBoxItem Content="German">
+                                <ComboBoxItem.Tag>
+                                    <sys:String>de</sys:String>
+                                </ComboBoxItem.Tag>
+                            </ComboBoxItem>
+                            <ComboBoxItem Content="Italian">
+                                <ComboBoxItem.Tag>
+                                    <sys:String>it</sys:String>
+                                </ComboBoxItem.Tag>
+                            </ComboBoxItem>
+                            <ComboBoxItem Content="Portuguese">
+                                <ComboBoxItem.Tag>
+                                    <sys:String>pt</sys:String>
+                                </ComboBoxItem.Tag>
+                            </ComboBoxItem>
+                            <ComboBoxItem Content="Dutch">
+                                <ComboBoxItem.Tag>
+                                    <sys:String>nl</sys:String>
+                                </ComboBoxItem.Tag>
+                            </ComboBoxItem>
+                            <ComboBoxItem Content="Polish">
+                                <ComboBoxItem.Tag>
+                                    <sys:String>pl</sys:String>
+                                </ComboBoxItem.Tag>
+                            </ComboBoxItem>
+                        </ComboBox>
+                        <TextBlock Text="Auto detect is recommended unless recognition repeatedly chooses the wrong language." TextWrapping="Wrap" Margin="0,6,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
                         <CheckBox Content="Voice action commands" IsChecked="{Binding Settings.VoiceActionCommandsEnabled}" Margin="0,4" Click="Settings_OnChanged" />
                         <CheckBox Content="Anonymous diagnostics" IsChecked="{Binding Settings.DiagnosticsEnabled}" Margin="0,4" Click="Settings_OnChanged" />
                     </StackPanel>
