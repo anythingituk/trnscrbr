@@ -57,6 +57,7 @@ public sealed class SettingsImportExportService
             ProviderName = settings.ProviderName,
             CleanupMode = settings.CleanupMode,
             LanguageMode = settings.LanguageMode,
+            PasteMethod = settings.PasteMethod,
             MicrophoneName = settings.MicrophoneName,
             ActiveEngine = settings.ActiveEngine,
             MonthlyCostWarning = settings.MonthlyCostWarning,

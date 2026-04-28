@@ -16,6 +16,7 @@ public sealed class AppSettings
     public string ProviderName { get; set; } = "OpenAI";
     public string CleanupMode { get; set; } = "Clean only";
     public string LanguageMode { get; set; } = "Auto";
+    public string PasteMethod { get; set; } = "Ctrl+V";
     public string MicrophoneName { get; set; } = "Windows default";
     public string ActiveEngine { get; set; } = "None";
     public decimal MonthlyCostWarning { get; set; } = 5.00m;

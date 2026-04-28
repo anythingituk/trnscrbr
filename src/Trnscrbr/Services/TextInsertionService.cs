@@ -39,7 +39,7 @@ public sealed class TextInsertionService
             }
 
             RetryClipboard(() => System.Windows.Clipboard.SetDataObject(output, true));
-            SendKeys.SendWait("^v");
+            SendPasteShortcut();
             System.Threading.Thread.Sleep(250);
             _lastInsertedOutput = output;
         }
@@ -98,6 +98,15 @@ public sealed class TextInsertionService
             SendKeys.SendWait($"{{BACKSPACE {chunk}}}");
             remaining -= chunk;
         }
+    }
+
+    private void SendPasteShortcut()
+    {
+        var shortcut = string.Equals(_state.Settings.PasteMethod, "Shift+Insert", StringComparison.OrdinalIgnoreCase)
+            ? "+{INSERT}"
+            : "^v";
+
+        SendKeys.SendWait(shortcut);
     }
 
     private static void RetryClipboard(Action action)

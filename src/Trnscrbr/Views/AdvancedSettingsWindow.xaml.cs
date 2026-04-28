@@ -347,6 +347,7 @@ public partial class AdvancedSettingsWindow : Window
         _state.Settings.ProviderName = imported.ProviderName;
         _state.Settings.CleanupMode = imported.CleanupMode;
         _state.Settings.LanguageMode = imported.LanguageMode;
+        _state.Settings.PasteMethod = imported.PasteMethod;
         _state.Settings.MicrophoneName = imported.MicrophoneName;
         _state.Settings.ActiveEngine = imported.ActiveEngine;
         _state.Settings.MonthlyCostWarning = imported.MonthlyCostWarning;
