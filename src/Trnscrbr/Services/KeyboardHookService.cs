@@ -17,7 +17,6 @@ public sealed class KeyboardHookService : IDisposable
     private SynchronizationContext? _context;
     private IntPtr _hookId;
     private bool _pushToTalkDown;
-    private bool _pasteLastTranscriptDown;
 
     public KeyboardHookService()
     {
@@ -27,7 +26,6 @@ public sealed class KeyboardHookService : IDisposable
     public event EventHandler? PushToTalkPressed;
     public event EventHandler? PushToTalkReleased;
     public event EventHandler? CancelPressed;
-    public event EventHandler? PasteLastTranscriptPressed;
 
     public void Start()
     {
@@ -84,27 +82,6 @@ public sealed class KeyboardHookService : IDisposable
             return (IntPtr)1;
         }
 
-        if (ctrl && win && key == Keys.V)
-        {
-            if (isDown && !_pasteLastTranscriptDown)
-            {
-                _pasteLastTranscriptDown = true;
-                PostEvent(PasteLastTranscriptPressed);
-            }
-            else if (isUp)
-            {
-                _pasteLastTranscriptDown = false;
-            }
-
-            return (IntPtr)1;
-        }
-
-        if (_pasteLastTranscriptDown && isUp && IsPasteLastTranscriptChordKey(key))
-        {
-            _pasteLastTranscriptDown = false;
-            return (IntPtr)1;
-        }
-
         if (key == Keys.Escape && isDown)
         {
             PostEvent(CancelPressed);
@@ -121,16 +98,6 @@ public sealed class KeyboardHookService : IDisposable
     private static bool IsPushToTalkChordKey(Keys key)
     {
         return key is Keys.Space
-            or Keys.LWin
-            or Keys.RWin
-            or Keys.LControlKey
-            or Keys.RControlKey
-            or Keys.ControlKey;
-    }
-
-    private static bool IsPasteLastTranscriptChordKey(Keys key)
-    {
-        return key is Keys.V
             or Keys.LWin
             or Keys.RWin
             or Keys.LControlKey

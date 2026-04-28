@@ -21,7 +21,7 @@
                             <TextBlock Text="- Hold Ctrl + Win + Space to record, then release to transcribe." TextWrapping="Wrap" />
                             <TextBlock Text="- Tap Ctrl + Win + Space or the glass button to toggle recording." TextWrapping="Wrap" />
                             <TextBlock Text="- Press Esc to cancel recording or processing." TextWrapping="Wrap" />
-                            <TextBlock Text="- Press Ctrl + Win + V to recover the last transcript for up to one hour." TextWrapping="Wrap" />
+                            <TextBlock Text="- Use the tray or glass button menu to recover the last transcript for up to one hour." TextWrapping="Wrap" />
                             <TextBlock Text="- Trnscrbr uses the clipboard temporarily, restores it afterwards, and does not save transcript history." TextWrapping="Wrap" />
                         </StackPanel>
                         <ComboBox SelectedValue="{Binding Settings.ProviderMode}" SelectedValuePath="Content" Margin="0,0,0,12" SelectionChanged="Settings_OnChanged">
@@ -195,8 +195,9 @@
                             <TextBlock Grid.Row="1" Text="Cancel" FontWeight="SemiBold" Margin="0,0,12,8" />
                             <TextBlock Grid.Row="1" Grid.Column="1" Text="Esc" Margin="0,0,0,8" />
                             <TextBlock Grid.Row="2" Text="Paste Last Transcript" FontWeight="SemiBold" Margin="0,0,12,8" />
-                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Ctrl + Win + V" Margin="0,0,0,8" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Tray/glass button menu" Margin="0,0,0,8" />
                         </Grid>
+                        <TextBlock Text="A global paste-last-transcript shortcut is disabled for now to avoid collisions with Windows clipboard and accessibility shortcuts." TextWrapping="Wrap" Margin="0,8,0,0" Foreground="{StaticResource MutedForegroundBrush}" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

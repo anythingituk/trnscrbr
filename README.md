@@ -12,7 +12,7 @@ See [PRODUCT_SPEC.md](PRODUCT_SPEC.md) for the current MVP specification.
 - System tray utility with floating glass recording button.
 - Default hotkey: `Ctrl + Win + Space`.
 - Default cancel: `Esc`.
-- Default Paste Last Transcript: `Ctrl + Win + V`.
+- Paste Last Transcript is available from the tray and glass button menus.
 - OpenAI bring-your-own-key transcription processing.
 - Local model detection only. Local transcription processing is not enabled yet.
 
@@ -49,7 +49,7 @@ artifacts\installer\Trnscrbr-Setup-0.1.0-win-x64.exe
 5. Focus a normal editable text field.
 6. Hold `Ctrl + Win + Space`, speak, then release to transcribe.
 7. Confirm text is inserted for review and Enter is not pressed.
-8. Test `Ctrl + Win + V` to paste the last transcript again.
+8. Test `Paste Last Transcript` from the tray or glass button menu.
 
 Useful settings while testing:
 
@@ -65,7 +65,7 @@ Useful settings while testing:
 WPF MVP in progress. Current build includes:
 
 - Dynamic tray icon and floating glass button with mic-level waveform states.
-- `Ctrl + Win + Space` push-to-talk/toggle, `Esc` cancel, and `Ctrl + Win + V` paste last transcript.
+- `Ctrl + Win + Space` push-to-talk/toggle and `Esc` cancel.
 - OpenAI bring-your-own-key transcription processing.
 - Temporary clipboard insertion with clipboard restoration.
 - One-hour last transcript recovery from hotkey, tray menu, and floating-button menu.

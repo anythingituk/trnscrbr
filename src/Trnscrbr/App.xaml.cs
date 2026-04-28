@@ -64,7 +64,6 @@ public partial class App : System.Windows.Application
         _keyboardHook.PushToTalkPressed += (_, _) => _recording.HandlePushToTalkPressed();
         _keyboardHook.PushToTalkReleased += (_, _) => _recording.HandlePushToTalkReleased();
         _keyboardHook.CancelPressed += (_, _) => _recording.Cancel();
-        _keyboardHook.PasteLastTranscriptPressed += (_, _) => _recording.PasteLastTranscript();
         try
         {
             _keyboardHook.Start();

@@ -30,7 +30,7 @@
             <TextBlock Text="{Binding ActiveEngineLabel}" Margin="0,3,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
 
             <TextBlock Text="Shortcuts" FontWeight="SemiBold" />
-            <TextBlock Text="Dictate: Ctrl + Win + Space | Paste: Ctrl + Win + V" Margin="0,3,0,12" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
+            <TextBlock Text="Dictate: Ctrl + Win + Space | Cancel: Esc" Margin="0,3,0,12" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
 
             <TextBlock Text="Paste Method" FontWeight="SemiBold" />
             <TextBlock Text="{Binding Settings.PasteMethod}" Margin="0,3,0,12" Foreground="{StaticResource MutedForegroundBrush}" />

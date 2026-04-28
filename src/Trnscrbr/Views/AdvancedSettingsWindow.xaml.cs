@@ -193,7 +193,7 @@ public partial class AdvancedSettingsWindow : Window
             Floating button enabled: {FormatBool(_state.Settings.FloatingButtonEnabled)}
             Add trailing space: {FormatBool(_state.Settings.AddTrailingSpace)}
             Custom vocabulary entries: {_state.Settings.CustomVocabulary.Count}
-            Hotkeys: Ctrl+Win+Space, Esc, Ctrl+Win+V
+            Hotkeys: Ctrl+Win+Space, Esc
             Transcript content: redacted
             Raw audio: redacted
 

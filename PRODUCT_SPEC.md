@@ -118,7 +118,7 @@ Defaults:
 
 - `Ctrl + Win + Space`: push-to-talk / toggle recording.
 - `Esc`: cancel current recording or processing.
-- `Ctrl + Win + V`: Paste Last Transcript.
+- Paste Last Transcript: no global shortcut for now; available from tray and floating-button menus.
 
 Push-to-talk behavior:
 
@@ -149,7 +149,7 @@ Requirements:
 
 Paste Last Transcript:
 
-- Default shortcut: `Ctrl + Win + V`.
+- No default global shortcut for now to avoid Windows clipboard/accessibility shortcut collisions.
 - Uses same trailing-space setting as normal insertion.
 - Temporary last transcript clears after 1 hour or app exit.
 - No transcript history is stored by default.
