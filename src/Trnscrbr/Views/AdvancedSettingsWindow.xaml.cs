@@ -64,7 +64,9 @@ public partial class AdvancedSettingsWindow : Window
     {
         ApiKeyStatusText.Text = "Testing OpenAI connection...";
         var result = await _openAiProvider.TestApiKeyAsync(ApiKeyBox.Password);
-        ApiKeyStatusText.Text = result.Message;
+        ApiKeyStatusText.Text = result.IsSuccess
+            ? $"{result.Message} Click Save With Warning to store this key."
+            : result.Message;
     }
 
     private async void SaveProvider_OnClick(object sender, RoutedEventArgs e)
