@@ -155,6 +155,31 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+            <TabItem Header="Hotkeys">
+                <ScrollViewer>
+                    <StackPanel Margin="16">
+                        <TextBlock Text="Hotkeys" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock Text="Hotkeys are fixed for the MVP. Configurable shortcuts are planned for a later version." TextWrapping="Wrap" Margin="0,8,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Dictate" FontWeight="SemiBold" Margin="0,0,12,8" />
+                            <TextBlock Grid.Column="1" Text="Ctrl + Win + Space" Margin="0,0,0,8" />
+                            <TextBlock Grid.Row="1" Text="Cancel" FontWeight="SemiBold" Margin="0,0,12,8" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="Esc" Margin="0,0,0,8" />
+                            <TextBlock Grid.Row="2" Text="Paste Last Transcript" FontWeight="SemiBold" Margin="0,0,12,8" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Ctrl + Win + V" Margin="0,0,0,8" />
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
             <TabItem Header="Vocabulary">
                 <Grid Margin="16">
                     <Grid.RowDefinitions>
