@@ -28,9 +28,9 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup --yes --no-progress
 
-      - name: Publish and package
+      - name: Package smoke test
         shell: pwsh
-        run: .\scripts\publish-win-x64.ps1 -BuildInstaller
+        run: .\scripts\test-package.ps1
 
       - name: Upload installer
         uses: actions/upload-artifact@v4

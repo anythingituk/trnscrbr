@@ -27,3 +27,13 @@ artifacts\installer\Trnscrbr-Setup-0.1.0-win-x64.exe
 ```
 
 The installer shows the current-user startup task checked by default and writes the startup entry only if that task remains selected. API keys remain stored separately in Windows Credential Manager and are not packaged.
+
+## Smoke test packaging
+
+Run:
+
+```powershell
+.\scripts\test-package.ps1
+```
+
+This publishes the app, builds the installer, and verifies that the expected installer executable exists and is non-empty.
