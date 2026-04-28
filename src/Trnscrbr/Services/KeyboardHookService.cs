@@ -17,6 +17,7 @@ public sealed class KeyboardHookService : IDisposable
     private SynchronizationContext? _context;
     private IntPtr _hookId;
     private bool _pushToTalkDown;
+    private bool _suppressWinKey;
 
     public KeyboardHookService()
     {
@@ -58,6 +59,15 @@ public sealed class KeyboardHookService : IDisposable
         var isUp = wParam == WM_KEYUP || wParam == WM_SYSKEYUP;
         var ctrl = IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey);
         var win = IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin);
+
+        if (IsWinKey(key) && (isDown || isUp))
+        {
+            if ((isDown && ctrl) || _pushToTalkDown || _suppressWinKey)
+            {
+                _suppressWinKey = isDown;
+                return (IntPtr)1;
+            }
+        }
 
         if (ctrl && win && key == Keys.Space)
         {
@@ -103,6 +113,11 @@ public sealed class KeyboardHookService : IDisposable
             or Keys.LControlKey
             or Keys.RControlKey
             or Keys.ControlKey;
+    }
+
+    private static bool IsWinKey(Keys key)
+    {
+        return key is Keys.LWin or Keys.RWin;
     }
 
     private void PostEvent(EventHandler? handler)

@@ -39,6 +39,7 @@ public sealed class TextInsertionService
             }
 
             RetryClipboard(() => System.Windows.Clipboard.SetDataObject(output, true));
+            WaitForHotkeyKeysReleased();
             SendPasteShortcut();
             System.Threading.Thread.Sleep(250);
             _lastInsertedOutput = output;
@@ -116,6 +117,39 @@ public sealed class TextInsertionService
         SendKeys.SendWait(shortcut);
     }
 
+    private static void WaitForHotkeyKeysReleased()
+    {
+        const int maxWaitMilliseconds = 3000;
+        const int pollMilliseconds = 20;
+        var waited = 0;
+
+        while (waited < maxWaitMilliseconds && IsAnyHotkeyKeyDown())
+        {
+            Thread.Sleep(pollMilliseconds);
+            waited += pollMilliseconds;
+        }
+
+        if (IsAnyHotkeyKeyDown())
+        {
+            throw new InvalidOperationException("Hotkey keys are still held. Release Ctrl, Win, and Space before text insertion.");
+        }
+    }
+
+    private static bool IsAnyHotkeyKeyDown()
+    {
+        return IsKeyDown(Keys.LControlKey)
+            || IsKeyDown(Keys.RControlKey)
+            || IsKeyDown(Keys.ControlKey)
+            || IsKeyDown(Keys.LWin)
+            || IsKeyDown(Keys.RWin)
+            || IsKeyDown(Keys.Space);
+    }
+
+    private static bool IsKeyDown(Keys key)
+    {
+        return (GetAsyncKeyState((int)key) & 0x8000) != 0;
+    }
+
     private static void RetryClipboard(Action action)
     {
         RetryClipboard(() =>
@@ -139,4 +173,7 @@ public sealed class TextInsertionService
             }
         }
     }
+
+    [DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int vKey);
 }
