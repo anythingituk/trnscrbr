@@ -13,6 +13,7 @@ public sealed class KeyboardHookService : IDisposable
     private const int WM_SYSKEYUP = 0x0105;
 
     private readonly LowLevelKeyboardProc _proc;
+    private SynchronizationContext? _context;
     private IntPtr _hookId;
     private bool _pushToTalkDown;
 
@@ -28,6 +29,7 @@ public sealed class KeyboardHookService : IDisposable
 
     public void Start()
     {
+        _context = SynchronizationContext.Current;
         _hookId = SetHook(_proc);
     }
 
@@ -58,12 +60,12 @@ public sealed class KeyboardHookService : IDisposable
             if (isDown && !_pushToTalkDown)
             {
                 _pushToTalkDown = true;
-                PushToTalkPressed?.Invoke(this, EventArgs.Empty);
+                PostEvent(PushToTalkPressed);
             }
             else if (isUp)
             {
                 _pushToTalkDown = false;
-                PushToTalkReleased?.Invoke(this, EventArgs.Empty);
+                PostEvent(PushToTalkReleased);
             }
 
             return (IntPtr)1;
@@ -72,19 +74,19 @@ public sealed class KeyboardHookService : IDisposable
         if (_pushToTalkDown && isUp && IsPushToTalkChordKey(key))
         {
             _pushToTalkDown = false;
-            PushToTalkReleased?.Invoke(this, EventArgs.Empty);
+            PostEvent(PushToTalkReleased);
             return (IntPtr)1;
         }
 
         if (ctrl && win && key == Keys.V && isDown)
         {
-            PasteLastTranscriptPressed?.Invoke(this, EventArgs.Empty);
+            PostEvent(PasteLastTranscriptPressed);
             return (IntPtr)1;
         }
 
         if (key == Keys.Escape && isDown)
         {
-            CancelPressed?.Invoke(this, EventArgs.Empty);
+            PostEvent(CancelPressed);
         }
 
         return CallNextHookEx(_hookId, nCode, wParam, lParam);
@@ -103,6 +105,23 @@ public sealed class KeyboardHookService : IDisposable
             or Keys.LControlKey
             or Keys.RControlKey
             or Keys.ControlKey;
+    }
+
+    private void PostEvent(EventHandler? handler)
+    {
+        if (handler is null)
+        {
+            return;
+        }
+
+        var context = _context;
+        if (context is null)
+        {
+            handler.Invoke(this, EventArgs.Empty);
+            return;
+        }
+
+        context.Post(_ => handler.Invoke(this, EventArgs.Empty), null);
     }
 
     private static IntPtr SetHook(LowLevelKeyboardProc proc)

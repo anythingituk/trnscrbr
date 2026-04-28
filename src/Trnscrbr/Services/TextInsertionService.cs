@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Forms;
 using Trnscrbr.ViewModels;
@@ -6,6 +7,10 @@ namespace Trnscrbr.Services;
 
 public sealed class TextInsertionService
 {
+    private const int ClipboardBusyHResult = unchecked((int)0x800401D0);
+    private const int ClipboardRetryCount = 8;
+    private const int ClipboardRetryDelayMilliseconds = 60;
+
     private readonly AppStateViewModel _state;
     private readonly DiagnosticLogService _diagnosticLog;
     private string? _lastInsertedOutput;
@@ -25,15 +30,15 @@ public sealed class TextInsertionService
 
         try
         {
-            if (System.Windows.Clipboard.ContainsData(System.Windows.DataFormats.Text)
-                || System.Windows.Clipboard.ContainsData(System.Windows.DataFormats.UnicodeText)
-                || System.Windows.Clipboard.ContainsData(System.Windows.DataFormats.Bitmap)
-                || System.Windows.Clipboard.ContainsData(System.Windows.DataFormats.FileDrop))
+            if (RetryClipboard(() => System.Windows.Clipboard.ContainsData(System.Windows.DataFormats.Text))
+                || RetryClipboard(() => System.Windows.Clipboard.ContainsData(System.Windows.DataFormats.UnicodeText))
+                || RetryClipboard(() => System.Windows.Clipboard.ContainsData(System.Windows.DataFormats.Bitmap))
+                || RetryClipboard(() => System.Windows.Clipboard.ContainsData(System.Windows.DataFormats.FileDrop)))
             {
-                previousClipboard = System.Windows.Clipboard.GetDataObject();
+                previousClipboard = RetryClipboard(System.Windows.Clipboard.GetDataObject);
             }
 
-            System.Windows.Clipboard.SetDataObject(output, true);
+            RetryClipboard(() => System.Windows.Clipboard.SetDataObject(output, true));
             SendKeys.SendWait("^v");
             System.Threading.Thread.Sleep(250);
             _lastInsertedOutput = output;
@@ -49,7 +54,7 @@ public sealed class TextInsertionService
             {
                 try
                 {
-                    System.Windows.Clipboard.SetDataObject(previousClipboard);
+                    RetryClipboard(() => System.Windows.Clipboard.SetDataObject(previousClipboard));
                 }
                 catch (Exception ex)
                 {
@@ -92,6 +97,30 @@ public sealed class TextInsertionService
             var chunk = Math.Min(chunkSize, remaining);
             SendKeys.SendWait($"{{BACKSPACE {chunk}}}");
             remaining -= chunk;
+        }
+    }
+
+    private static void RetryClipboard(Action action)
+    {
+        RetryClipboard(() =>
+        {
+            action();
+            return true;
+        });
+    }
+
+    private static T RetryClipboard<T>(Func<T> action)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return action();
+            }
+            catch (COMException ex) when (ex.HResult == ClipboardBusyHResult && attempt < ClipboardRetryCount)
+            {
+                Thread.Sleep(ClipboardRetryDelayMilliseconds);
+            }
         }
     }
 }

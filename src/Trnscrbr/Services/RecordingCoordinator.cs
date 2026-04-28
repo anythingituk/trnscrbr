@@ -130,9 +130,19 @@ public sealed class RecordingCoordinator
             return;
         }
 
-        _insertion.InsertText(_state.LastTranscript);
-        _state.StatusMessage = "Pasted last transcript";
-        _floatingButton.ShowTransient();
+        try
+        {
+            _insertion.InsertText(_state.LastTranscript);
+            _state.StatusMessage = "Pasted last transcript";
+            _floatingButton.ShowTransient();
+        }
+        catch (Exception ex)
+        {
+            _diagnosticLog.Error("Paste last transcript failed", ex);
+            _state.RecordingState = RecordingState.Error;
+            _state.StatusMessage = "Paste failed. Try again.";
+            _floatingButton.ShowTransient();
+        }
     }
 
     private void StartRecording()
