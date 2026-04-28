@@ -1,27 +1,29 @@
 <Window x:Class="Trnscrbr.Views.TrayPanelWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Width="380"
-        Height="570"
+        Width="410"
+        Height="600"
         WindowStyle="None"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
         Background="Transparent"
         AllowsTransparency="True">
     <Border Margin="12"
-            Padding="18"
-            CornerRadius="10"
-            Background="{StaticResource PanelBackgroundBrush}"
-            BorderBrush="#22000000"
+            Padding="20"
+            CornerRadius="14"
+            Background="{StaticResource SurfaceBrush}"
+            BorderBrush="{StaticResource SubtleBorderBrush}"
             BorderThickness="1">
         <Border.Effect>
-            <DropShadowEffect Color="#66000000" BlurRadius="24" ShadowDepth="2" Opacity="0.35" />
+            <DropShadowEffect Color="#66000000" BlurRadius="28" ShadowDepth="4" Opacity="0.25" />
         </Border.Effect>
         <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel>
-            <TextBlock Text="Trnscrbr" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource PanelForegroundBrush}" />
-            <TextBlock Text="{Binding StatusMessage}" Margin="0,4,0,18" Foreground="{StaticResource MutedForegroundBrush}" />
-            <Button x:Name="RecordButton" Content="Start Recording" Height="34" Margin="0,0,0,18" Click="Record_OnClick" />
+            <TextBlock Text="Trnscrbr" FontSize="24" FontWeight="SemiBold" Foreground="{StaticResource PanelForegroundBrush}" />
+            <Border Background="#EEF8F8" CornerRadius="8" Padding="10,7" Margin="0,8,0,16">
+                <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource AccentBrush}" TextWrapping="Wrap" />
+            </Border>
+            <Button x:Name="RecordButton" Content="Start Recording" Margin="0,0,0,18" Click="Record_OnClick" />
 
             <TextBlock Text="Provider" FontWeight="SemiBold" />
             <TextBlock Text="{Binding Settings.ProviderMode}" Margin="0,3,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
@@ -41,14 +43,26 @@
                 <ComboBoxItem Content="Rewrite" />
             </ComboBox>
 
-            <TextBlock Text="Rewrite Style" FontWeight="SemiBold" />
-            <ComboBox SelectedValue="{Binding Settings.RewriteStyle}" SelectedValuePath="Content" Margin="0,6,0,14" SelectionChanged="Settings_OnChanged">
-                <ComboBoxItem Content="Plain English" />
-                <ComboBoxItem Content="Professional" />
-                <ComboBoxItem Content="Friendly" />
-                <ComboBoxItem Content="Concise" />
-                <ComboBoxItem Content="Native-level English" />
-            </ComboBox>
+            <StackPanel Margin="0,0,0,14">
+                <StackPanel.Style>
+                    <Style TargetType="{x:Type StackPanel}">
+                        <Setter Property="Visibility" Value="Collapsed" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Settings.CleanupMode}" Value="Rewrite">
+                                <Setter Property="Visibility" Value="Visible" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <TextBlock Text="Rewrite Style" FontWeight="SemiBold" />
+                <ComboBox SelectedValue="{Binding Settings.RewriteStyle}" SelectedValuePath="Content" Margin="0,6,0,0" SelectionChanged="Settings_OnChanged">
+                    <ComboBoxItem Content="Plain English" />
+                    <ComboBoxItem Content="Professional" />
+                    <ComboBoxItem Content="Friendly" />
+                    <ComboBoxItem Content="Concise" />
+                    <ComboBoxItem Content="Native-level English" />
+                </ComboBox>
+            </StackPanel>
 
             <TextBlock Text="Microphone" FontWeight="SemiBold" />
             <ComboBox x:Name="MicrophoneBox"
@@ -61,7 +75,7 @@
             <CheckBox Content="Launch on Windows startup" IsChecked="{Binding Settings.LaunchOnStartup}" Margin="0,4" Click="Settings_OnChanged" />
             <CheckBox Content="Add trailing space" IsChecked="{Binding Settings.AddTrailingSpace}" Margin="0,4" Click="Settings_OnChanged" />
 
-            <Button Content="Advanced Settings" Margin="0,22,0,0" Height="36" Click="Advanced_OnClick" />
+            <Button Content="Advanced Settings" Margin="0,22,0,0" Click="Advanced_OnClick" />
         </StackPanel>
         </ScrollViewer>
     </Border>

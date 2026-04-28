@@ -6,10 +6,93 @@
         <ResourceDictionary>
             <Color x:Key="GlassBackgroundColor">#66202834</Color>
             <SolidColorBrush x:Key="GlassBackgroundBrush" Color="{StaticResource GlassBackgroundColor}" />
-            <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#F7FAFC" />
+            <SolidColorBrush x:Key="AppBackgroundBrush" Color="#EEF3F6" />
+            <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#F8FBFC" />
+            <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFF" />
             <SolidColorBrush x:Key="PanelForegroundBrush" Color="#15202B" />
             <SolidColorBrush x:Key="MutedForegroundBrush" Color="#617080" />
-            <SolidColorBrush x:Key="AccentBrush" Color="#227C9D" />
+            <SolidColorBrush x:Key="SubtleBorderBrush" Color="#D9E3E8" />
+            <SolidColorBrush x:Key="AccentBrush" Color="#1F8A8A" />
+            <SolidColorBrush x:Key="AccentHoverBrush" Color="#187676" />
+            <SolidColorBrush x:Key="ControlBackgroundBrush" Color="#FFFFFF" />
+
+            <Style TargetType="{x:Type TextBlock}">
+                <Setter Property="Foreground" Value="{StaticResource PanelForegroundBrush}" />
+                <Setter Property="FontSize" Value="13" />
+            </Style>
+
+            <Style TargetType="{x:Type Button}">
+                <Setter Property="Height" Value="34" />
+                <Setter Property="Padding" Value="14,0" />
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="Chrome"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="7">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"
+                                                  Margin="{TemplateBinding Padding}" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="{StaticResource AccentHoverBrush}" />
+                                    <Setter TargetName="Chrome" Property="BorderBrush" Value="{StaticResource AccentHoverBrush}" />
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Chrome" Property="Opacity" Value="0.55" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="{x:Type ComboBox}">
+                <Setter Property="Height" Value="34" />
+                <Setter Property="Padding" Value="8,4" />
+                <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource SubtleBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+            </Style>
+
+            <Style TargetType="{x:Type TextBox}">
+                <Setter Property="Padding" Value="8" />
+                <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource SubtleBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+            </Style>
+
+            <Style TargetType="{x:Type PasswordBox}">
+                <Setter Property="Padding" Value="8,5" />
+                <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource SubtleBorderBrush}" />
+                <Setter Property="BorderThickness" Value="1" />
+            </Style>
+
+            <Style TargetType="{x:Type CheckBox}">
+                <Setter Property="Foreground" Value="{StaticResource PanelForegroundBrush}" />
+                <Setter Property="Margin" Value="0,5" />
+            </Style>
+
+            <Style TargetType="{x:Type TabControl}">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+            </Style>
+
+            <Style TargetType="{x:Type TabItem}">
+                <Setter Property="Padding" Value="12,7" />
+                <Setter Property="Margin" Value="0,0,4,0" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

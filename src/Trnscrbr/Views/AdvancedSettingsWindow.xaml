@@ -3,17 +3,34 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         Title="Trnscrbr Settings"
-        Width="720"
-        Height="680"
-        MinWidth="620"
-        MinHeight="520"
+        Width="880"
+        Height="740"
+        MinWidth="760"
+        MinHeight="580"
         WindowStartupLocation="CenterScreen">
-    <Grid Background="{StaticResource PanelBackgroundBrush}">
-        <TabControl Margin="16">
+    <Grid Background="{StaticResource AppBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Background="{StaticResource SurfaceBrush}"
+                BorderBrush="{StaticResource SubtleBorderBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="24,18">
+            <StackPanel>
+                <TextBlock Text="Trnscrbr Settings" FontSize="24" FontWeight="SemiBold" />
+                <TextBlock Text="Configure provider, transcription behaviour, privacy, diagnostics, and packaging support."
+                           Margin="0,4,0,0"
+                           Foreground="{StaticResource MutedForegroundBrush}" />
+            </StackPanel>
+        </Border>
+
+        <TabControl Grid.Row="1" Margin="18">
             <TabItem Header="Setup">
                 <ScrollViewer>
-                    <StackPanel Margin="16">
-                        <TextBlock Text="First Run" FontSize="18" FontWeight="SemiBold" />
+                    <StackPanel Margin="18">
+                        <TextBlock Text="First Run" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock Margin="0,8,0,12" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}"
                                    Text="Press Ctrl + Win + Space to dictate into the focused text field. Trnscrbr inserts text for review and never presses Enter. Cloud/API modes may use third-party services; local mode is free and private but needs model downloads." />
                         <StackPanel Margin="0,0,0,12">
@@ -37,8 +54,8 @@
             </TabItem>
             <TabItem Header="Provider">
                 <ScrollViewer>
-                    <StackPanel Margin="16">
-                        <TextBlock Text="OpenAI" FontSize="18" FontWeight="SemiBold" />
+                    <StackPanel Margin="18">
+                        <TextBlock Text="OpenAI" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock Text="API keys are stored locally in Windows Credential Manager and are never exported with settings." TextWrapping="Wrap" Margin="0,8,0,12" />
                         <PasswordBox x:Name="ApiKeyBox" Height="32" />
                         <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
@@ -55,8 +72,8 @@
             </TabItem>
             <TabItem Header="Local Models">
                 <ScrollViewer>
-                    <StackPanel Margin="16">
-                        <TextBlock Text="Local Mode" FontSize="18" FontWeight="SemiBold" />
+                    <StackPanel Margin="18">
+                        <TextBlock Text="Local Mode" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock Margin="0,8,0,12" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}"
                                    Text="Local mode sends no audio or transcript text to cloud services. The MVP can detect local model candidates, but local transcription/cleanup execution is not enabled yet." />
                         <ListView>
@@ -73,21 +90,33 @@
             </TabItem>
             <TabItem Header="Privacy &amp; Context">
                 <ScrollViewer>
-                    <StackPanel Margin="16">
+                    <StackPanel Margin="18">
                         <TextBlock Text="Transcription type" FontWeight="SemiBold" />
                         <ComboBox SelectedValue="{Binding Settings.CleanupMode}" SelectedValuePath="Content" Margin="0,6,0,14" SelectionChanged="Settings_OnChanged">
                             <ComboBoxItem Content="Clean only" />
                             <ComboBoxItem Content="Rewrite" />
                         </ComboBox>
-                        <TextBlock Text="Rewrite style" FontWeight="SemiBold" />
-                        <ComboBox SelectedValue="{Binding Settings.RewriteStyle}" SelectedValuePath="Content" Margin="0,6,0,14" SelectionChanged="Settings_OnChanged">
-                            <ComboBoxItem Content="Plain English" />
-                            <ComboBoxItem Content="Professional" />
-                            <ComboBoxItem Content="Friendly" />
-                            <ComboBoxItem Content="Concise" />
-                            <ComboBoxItem Content="Native-level English" />
-                        </ComboBox>
-                        <TextBlock Text="Rewrite style is used only when transcription type is set to Rewrite." TextWrapping="Wrap" Margin="0,0,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <StackPanel Margin="0,0,0,14">
+                            <StackPanel.Style>
+                                <Style TargetType="{x:Type StackPanel}">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Settings.CleanupMode}" Value="Rewrite">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="Rewrite style" FontWeight="SemiBold" />
+                            <ComboBox SelectedValue="{Binding Settings.RewriteStyle}" SelectedValuePath="Content" Margin="0,6,0,8" SelectionChanged="Settings_OnChanged">
+                                <ComboBoxItem Content="Plain English" />
+                                <ComboBoxItem Content="Professional" />
+                                <ComboBoxItem Content="Friendly" />
+                                <ComboBoxItem Content="Concise" />
+                                <ComboBoxItem Content="Native-level English" />
+                            </ComboBox>
+                            <TextBlock Text="Rewrite style is used only when transcription type is set to Rewrite." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
+                        </StackPanel>
                         <CheckBox Content="Contextual correction" IsChecked="{Binding Settings.ContextualCorrectionEnabled}" Margin="0,4" Click="Settings_OnChanged" />
                         <CheckBox Content="Use text around cursor as context" IsChecked="{Binding Settings.CursorContextEnabled}" Margin="0,4" Click="CursorContext_OnClick" />
                         <TextBlock Text="Reading text around the cursor may expose nearby content from another app and may be unreliable depending on the target application." TextWrapping="Wrap" Margin="24,4,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
@@ -177,8 +206,8 @@
             </TabItem>
             <TabItem Header="Hotkeys">
                 <ScrollViewer>
-                    <StackPanel Margin="16">
-                        <TextBlock Text="Hotkeys" FontSize="18" FontWeight="SemiBold" />
+                    <StackPanel Margin="18">
+                        <TextBlock Text="Hotkeys" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock Text="Hotkeys are fixed for the MVP. Configurable shortcuts are planned for a later version." TextWrapping="Wrap" Margin="0,8,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
                         <Grid>
                             <Grid.ColumnDefinitions>
@@ -202,7 +231,7 @@
                 </ScrollViewer>
             </TabItem>
             <TabItem Header="Vocabulary">
-                <Grid Margin="16">
+                <Grid Margin="18">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
@@ -213,7 +242,7 @@
             </TabItem>
             <TabItem Header="Diagnostics">
                 <ScrollViewer>
-                    <StackPanel Margin="16">
+                    <StackPanel Margin="18">
                         <TextBlock Text="Diagnostics never include transcript text, raw audio, or API keys." TextWrapping="Wrap" />
                         <StackPanel Orientation="Horizontal" Margin="0,14,0,18">
                             <Button Content="Copy Diagnostics" Width="150" Click="CopyDiagnostics_OnClick" />
@@ -226,8 +255,8 @@
             </TabItem>
             <TabItem Header="Usage">
                 <ScrollViewer>
-                    <StackPanel Margin="16">
-                        <TextBlock Text="Usage" FontSize="18" FontWeight="SemiBold" />
+                    <StackPanel Margin="18">
+                        <TextBlock Text="Usage" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock Text="Metadata only. Transcript text and raw audio are not stored." TextWrapping="Wrap" Margin="0,8,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
                         <TextBlock Text="Monthly cost warning (USD)" FontWeight="SemiBold" />
                         <TextBox x:Name="MonthlyWarningBox" Text="{Binding Settings.MonthlyCostWarning}" Width="120" HorizontalAlignment="Left" Margin="0,6,0,12" LostFocus="MonthlyWarning_OnLostFocus" />
@@ -242,8 +271,8 @@
             </TabItem>
             <TabItem Header="Updates">
                 <ScrollViewer>
-                    <StackPanel Margin="16">
-                        <TextBlock Text="Updates" FontSize="18" FontWeight="SemiBold" />
+                    <StackPanel Margin="18">
+                        <TextBlock Text="Updates" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock x:Name="CurrentVersionText" Margin="0,8,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
                         <TextBlock Text="Manual updates are used for the MVP. Check the releases page for installer updates when published." TextWrapping="Wrap" Margin="0,0,0,12" />
                         <TextBlock Margin="0,0,0,12">
@@ -255,8 +284,8 @@
             </TabItem>
             <TabItem Header="Import/Export">
                 <ScrollViewer>
-                    <StackPanel Margin="16">
-                        <TextBlock Text="Import / Export" FontSize="18" FontWeight="SemiBold" />
+                    <StackPanel Margin="18">
+                        <TextBlock Text="Import / Export" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock Text="Exports include settings and custom vocabulary only. API keys, transcripts, raw audio, diagnostics, and usage history are never exported." TextWrapping="Wrap" Margin="0,8,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
                         <StackPanel Orientation="Horizontal">
                             <Button Content="Export Settings" Width="130" Click="ExportSettings_OnClick" />
