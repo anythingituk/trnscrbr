@@ -176,7 +176,7 @@ public sealed class RecordingCoordinator
         _processingCancellation = new CancellationTokenSource();
         _state.RecordingState = RecordingState.Processing;
         _state.StatusMessage = "Transcribing";
-        _floatingButton.ShowTransient();
+        _floatingButton.ShowNearTaskbar();
 
         try
         {

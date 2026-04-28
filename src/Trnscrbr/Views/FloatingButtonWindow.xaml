@@ -16,14 +16,14 @@
           MouseMove="Root_OnMouseMove"
           MouseRightButtonUp="Root_OnMouseRightButtonUp">
         <Ellipse x:Name="GlowHalo"
-                 Width="48"
-                 Height="42"
+                 Width="40"
+                 Height="34"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center"
                  Fill="#6636D5D3"
-                 Opacity="0.9">
+                 Opacity="0.58">
             <Ellipse.Effect>
-                <BlurEffect Radius="8" />
+                <BlurEffect Radius="6" />
             </Ellipse.Effect>
         </Ellipse>
         <Border x:Name="Shell"
