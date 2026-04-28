@@ -17,6 +17,7 @@ public partial class AdvancedSettingsWindow : Window
     private readonly DiagnosticLogService _diagnosticLog;
     private readonly UsageStatsService _usageStats;
     private readonly SettingsImportExportService _settingsImportExport;
+    private readonly LocalModelDiscoveryService _localModelDiscovery = new();
 
     public AdvancedSettingsWindow(
         AppStateViewModel state,
@@ -41,6 +42,7 @@ public partial class AdvancedSettingsWindow : Window
         VocabularyBox.Text = string.Join(Environment.NewLine, state.Settings.CustomVocabulary);
         DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
         UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
+        RefreshLocalModels();
         UpdateApiKeyStatus();
         Closing += (_, args) =>
         {
@@ -133,6 +135,11 @@ public partial class AdvancedSettingsWindow : Window
         Persist();
     }
 
+    private void DetectLocalModels_OnClick(object sender, RoutedEventArgs e)
+    {
+        RefreshLocalModels();
+    }
+
     private void CopyDiagnostics_OnClick(object sender, RoutedEventArgs e)
     {
         var diagnostics = $"""
@@ -157,6 +164,20 @@ public partial class AdvancedSettingsWindow : Window
     private void RefreshUsage_OnClick(object sender, RoutedEventArgs e)
     {
         UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
+    }
+
+    private void RefreshLocalModels()
+    {
+        var candidates = _localModelDiscovery.Discover();
+        if (candidates.Count == 0)
+        {
+            LocalModelsBox.Text = "No local model candidates found in Trnscrbr, Hugging Face, or Whisper cache folders.";
+            return;
+        }
+
+        LocalModelsBox.Text = string.Join(
+            Environment.NewLine + Environment.NewLine,
+            candidates.Select(candidate => $"{candidate.Name}{Environment.NewLine}{candidate.Path}"));
     }
 
     private void MonthlyWarning_OnLostFocus(object sender, RoutedEventArgs e)
