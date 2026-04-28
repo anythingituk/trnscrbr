@@ -11,8 +11,11 @@ public partial class FloatingButtonWindow : Window
 {
     private readonly AppStateViewModel _state;
     private readonly DispatcherTimer _hideTimer = new() { Interval = TimeSpan.FromSeconds(4) };
+    private readonly DispatcherTimer _animationTimer = new() { Interval = TimeSpan.FromMilliseconds(45) };
     private System.Windows.Point? _dragStart;
     private bool _dragging;
+    private double _animationPhase;
+    private double _smoothedInputLevel;
 
     public FloatingButtonWindow(AppStateViewModel state)
     {
@@ -27,6 +30,8 @@ public partial class FloatingButtonWindow : Window
                 Hide();
             }
         };
+        _animationTimer.Tick += (_, _) => AnimateWaveform();
+        _animationTimer.Start();
         ApplyState();
     }
 
@@ -68,13 +73,6 @@ public partial class FloatingButtonWindow : Window
 
     private void ApplyState()
     {
-        var level = Math.Max(0.12, _state.InputLevel);
-        Bar1.Height = 10 + (level * 14);
-        Bar2.Height = 14 + (level * 24);
-        Bar3.Height = 8 + (level * 18);
-        Bar4.Height = 16 + (level * 20);
-        Bar5.Height = 10 + (level * 16);
-
         TimerText.Visibility = _state.Elapsed >= TimeSpan.FromMinutes(1)
             ? Visibility.Visible
             : Visibility.Collapsed;
@@ -87,34 +85,68 @@ public partial class FloatingButtonWindow : Window
         switch (_state.RecordingState)
         {
             case RecordingState.Recording:
-                Width = 132;
+                Width = 220;
                 Shell.Width = 112;
                 Shell.CornerRadius = new CornerRadius(34);
-                Glow.Color = System.Windows.Media.Color.FromRgb(255, 92, 56);
-                Glow.BlurRadius = 34;
+                GlowHalo.Width = 178;
+                GlowHalo.Height = 118;
+                GlowHalo.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(130, 255, 92, 56));
                 break;
             case RecordingState.Processing:
-                Width = 132;
+                Width = 220;
                 Shell.Width = 112;
                 Shell.CornerRadius = new CornerRadius(34);
-                Glow.Color = System.Windows.Media.Color.FromRgb(255, 214, 102);
-                Glow.BlurRadius = 32;
+                GlowHalo.Width = 178;
+                GlowHalo.Height = 118;
+                GlowHalo.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(120, 255, 214, 102));
                 break;
             case RecordingState.Error:
-                Width = 280;
+                Width = 320;
                 Shell.Width = 68;
                 Shell.CornerRadius = new CornerRadius(34);
-                Glow.Color = System.Windows.Media.Color.FromRgb(255, 214, 102);
-                Glow.BlurRadius = 22;
+                GlowHalo.Width = 128;
+                GlowHalo.Height = 104;
+                GlowHalo.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(105, 255, 214, 102));
                 break;
             default:
-                Width = 104;
+                Width = 220;
                 Shell.Width = 68;
                 Shell.CornerRadius = new CornerRadius(34);
-                Glow.Color = System.Windows.Media.Color.FromRgb(54, 213, 211);
-                Glow.BlurRadius = 28;
+                GlowHalo.Width = 128;
+                GlowHalo.Height = 104;
+                GlowHalo.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(115, 54, 213, 211));
                 break;
         }
+
+        AnimateWaveform();
+    }
+
+    private void AnimateWaveform()
+    {
+        _animationPhase += 0.22;
+        _smoothedInputLevel = (_smoothedInputLevel * 0.72) + (_state.InputLevel * 0.28);
+
+        var activeLevel = _state.RecordingState == RecordingState.Recording
+            ? Math.Max(0.18, Math.Min(1.0, _smoothedInputLevel * 2.4))
+            : _state.RecordingState == RecordingState.Processing
+                ? 0.42
+                : 0.14;
+
+        SetBarHeight(Bar1, 10, 18, activeLevel, 0.0);
+        SetBarHeight(Bar2, 12, 30, activeLevel, 1.1);
+        SetBarHeight(Bar3, 8, 24, activeLevel, 2.0);
+        SetBarHeight(Bar4, 12, 32, activeLevel, 2.9);
+        SetBarHeight(Bar5, 10, 20, activeLevel, 3.8);
+
+        var pulse = 0.84 + (Math.Sin(_animationPhase * 0.65) * 0.12);
+        GlowHalo.Opacity = _state.RecordingState == RecordingState.Idle ? pulse : 0.95;
+    }
+
+    private void SetBarHeight(FrameworkElement bar, double min, double range, double level, double offset)
+    {
+        var movement = (Math.Sin(_animationPhase + offset) + 1) / 2;
+        var height = min + (range * ((level * 0.72) + (movement * 0.28)));
+        bar.Height = Math.Round(height);
     }
 
     private void Root_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
