@@ -2,6 +2,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.ComponentModel;
 using System.Windows.Forms;
+using System.Windows.Threading;
 using Trnscrbr.Models;
 using Trnscrbr.ViewModels;
 
@@ -56,7 +57,7 @@ public sealed class TrayIconService : IDisposable
         {
             if (args.Button == MouseButtons.Left)
             {
-                _onShowSettings();
+                Dispatcher.CurrentDispatcher.BeginInvoke(_onShowSettings, DispatcherPriority.ApplicationIdle);
             }
         };
     }

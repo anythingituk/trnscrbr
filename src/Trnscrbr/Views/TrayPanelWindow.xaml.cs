@@ -23,8 +23,11 @@ public partial class TrayPanelWindow : Window
     public void ShowFromSystemTray()
     {
         var area = SystemParameters.WorkArea;
-        Left = area.Right - Width - 8;
-        Top = area.Bottom - Height - 8;
+        const double trayOverflowAvoidanceWidth = 260;
+        const double bottomOffset = 72;
+
+        Left = Math.Max(area.Left + 8, area.Right - Width - trayOverflowAvoidanceWidth);
+        Top = Math.Max(area.Top + 8, area.Bottom - Height - bottomOffset);
         Show();
         Activate();
     }
