@@ -32,7 +32,7 @@ public sealed class AppSettingsStore
         try
         {
             var json = File.ReadAllText(_settingsPath);
-            return JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+            return AppSettingsNormalizer.Normalize(JsonSerializer.Deserialize<AppSettings>(json));
         }
         catch
         {
@@ -42,6 +42,7 @@ public sealed class AppSettingsStore
 
     public void Save(AppSettings settings)
     {
+        AppSettingsNormalizer.Normalize(settings);
         var json = JsonSerializer.Serialize(settings, JsonOptions);
         File.WriteAllText(_settingsPath, json);
     }

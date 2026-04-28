@@ -28,7 +28,7 @@ public sealed class SettingsImportExportService
         var export = JsonSerializer.Deserialize<SettingsExport>(json)
             ?? throw new InvalidOperationException("The selected file is not a valid Trnscrbr settings export.");
 
-        var settings = export.Settings ?? throw new InvalidOperationException("The selected export does not contain settings.");
+        var settings = AppSettingsNormalizer.Normalize(export.Settings);
 
         // Provider secrets are never exported. Keep the provider name, but require local key setup.
         if (settings.ProviderMode == "Bring your own API key")
@@ -36,11 +36,13 @@ public sealed class SettingsImportExportService
             settings.ActiveEngine = "OpenAI";
         }
 
-        return settings;
+        return AppSettingsNormalizer.Normalize(settings);
     }
 
     private static AppSettings Clone(AppSettings settings)
     {
+        AppSettingsNormalizer.Normalize(settings);
+
         return new AppSettings
         {
             OnboardingCompleted = settings.OnboardingCompleted,
