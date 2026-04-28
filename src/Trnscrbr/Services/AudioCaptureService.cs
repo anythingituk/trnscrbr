@@ -52,7 +52,8 @@ public sealed class AudioCaptureService : IDisposable
         {
             DeviceNumber = ResolveDeviceNumber(),
             WaveFormat = new WaveFormat(16000, 16, 1),
-            BufferMilliseconds = 50
+            BufferMilliseconds = 20,
+            NumberOfBuffers = 3
         };
 
         _writer = new WaveFileWriter(_recordingPath, _waveIn.WaveFormat);

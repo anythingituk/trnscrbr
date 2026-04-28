@@ -6,7 +6,7 @@ namespace Trnscrbr.Services;
 
 public sealed class RecordingCoordinator
 {
-    private static readonly TimeSpan TapThreshold = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan TapThreshold = TimeSpan.FromMilliseconds(140);
 
     private readonly AppStateViewModel _state;
     private readonly TextInsertionService _insertion;
@@ -74,7 +74,7 @@ public sealed class RecordingCoordinator
             return;
         }
 
-        if (duration >= TapThreshold && _state.RecordingState == RecordingState.Recording)
+        if (_state.RecordingState == RecordingState.Recording)
         {
             StopAndProcess();
         }
@@ -133,12 +133,12 @@ public sealed class RecordingCoordinator
     {
         _recordingStartedAt = DateTimeOffset.Now;
         _state.Elapsed = TimeSpan.Zero;
-        _state.RecordingState = RecordingState.Recording;
-        _state.StatusMessage = "Recording";
-        _floatingButton.ShowNearTaskbar();
         try
         {
             _audioCapture.Start();
+            _state.RecordingState = RecordingState.Recording;
+            _state.StatusMessage = "Recording";
+            _floatingButton.ShowNearTaskbar();
             _timer.Start();
         }
         catch (Exception ex)
