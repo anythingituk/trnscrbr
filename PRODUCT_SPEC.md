@@ -116,7 +116,7 @@ Settings should follow Windows light/dark mode automatically.
 
 Defaults:
 
-- `Ctrl + Win + Space`: push-to-talk / toggle recording.
+- `Ctrl + Win + Space`: hold to record, release to transcribe.
 - `Esc`: cancel current recording or processing.
 - Paste Last Transcript: no global shortcut for now; available from tray and floating-button menus.
 

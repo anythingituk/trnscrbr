@@ -6,8 +6,6 @@ namespace Trnscrbr.Services;
 
 public sealed class RecordingCoordinator
 {
-    private static readonly TimeSpan TapThreshold = TimeSpan.FromMilliseconds(140);
-
     private readonly AppStateViewModel _state;
     private readonly TextInsertionService _insertion;
     private readonly FloatingButtonWindow _floatingButton;
@@ -72,7 +70,6 @@ public sealed class RecordingCoordinator
             return;
         }
 
-        var duration = DateTimeOffset.Now - _pressStartedAt.Value;
         _pressStartedAt = null;
 
         if (!_state.IsProviderConfigured)
