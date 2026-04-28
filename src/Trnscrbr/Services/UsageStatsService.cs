@@ -45,7 +45,14 @@ public sealed partial class UsageStatsService
         }
     }
 
-    public UsageStats RecordDictation(string cleanedTranscript, RecordedAudio audio, string provider, string engine)
+    public UsageStats RecordDictation(
+        string cleanedTranscript,
+        RecordedAudio audio,
+        string provider,
+        string engine,
+        int inputTokens,
+        int outputTokens,
+        double estimatedCostUsd)
     {
         lock (_syncRoot)
         {
@@ -58,6 +65,9 @@ public sealed partial class UsageStatsService
             stats.Totals.AudioSeconds += audio.Duration.TotalSeconds;
             stats.Totals.Words += words;
             stats.Totals.Characters += characters;
+            stats.Totals.InputTokens += inputTokens;
+            stats.Totals.OutputTokens += outputTokens;
+            stats.Totals.EstimatedCostUsd += estimatedCostUsd;
 
             if (!stats.Monthly.TryGetValue(monthKey, out var month))
             {
@@ -69,6 +79,9 @@ public sealed partial class UsageStatsService
             month.AudioSeconds += audio.Duration.TotalSeconds;
             month.Words += words;
             month.Characters += characters;
+            month.InputTokens += inputTokens;
+            month.OutputTokens += outputTokens;
+            month.EstimatedCostUsd += estimatedCostUsd;
 
             stats.Last = new LastUsageSummary
             {
@@ -77,6 +90,9 @@ public sealed partial class UsageStatsService
                 Words = words,
                 Characters = characters,
                 WordsPerMinute = audio.Duration.TotalSeconds <= 0 ? 0 : words / audio.Duration.TotalSeconds * 60,
+                InputTokens = inputTokens,
+                OutputTokens = outputTokens,
+                EstimatedCostUsd = estimatedCostUsd,
                 Provider = provider,
                 Engine = engine
             };
@@ -86,7 +102,16 @@ public sealed partial class UsageStatsService
         }
     }
 
-    public string FormatSummary()
+    public UsageBucket GetCurrentMonth()
+    {
+        var stats = Load();
+        var currentMonthKey = DateTimeOffset.Now.ToString("yyyy-MM");
+        return stats.Monthly.TryGetValue(currentMonthKey, out var currentMonth)
+            ? currentMonth
+            : new UsageBucket();
+    }
+
+    public string FormatSummary(decimal monthlyWarningUsd)
     {
         var stats = Load();
         var currentMonthKey = DateTimeOffset.Now.ToString("yyyy-MM");
@@ -95,7 +120,11 @@ public sealed partial class UsageStatsService
 
         var last = stats.Last.At is null
             ? "No dictations yet."
-            : $"Last: {stats.Last.Words} words, {stats.Last.AudioSeconds:0.0}s, {stats.Last.WordsPerMinute:0} wpm, {stats.Last.Provider}/{stats.Last.Engine}";
+            : $"Last: {stats.Last.Words} words, {stats.Last.AudioSeconds:0.0}s, {stats.Last.WordsPerMinute:0} wpm, est. ${stats.Last.EstimatedCostUsd:0.0000}, {stats.Last.Provider}/{stats.Last.Engine}";
+
+        var warning = monthlyWarningUsd > 0 && currentMonth.EstimatedCostUsd >= (double)monthlyWarningUsd
+            ? $"Monthly warning: estimate has reached ${currentMonth.EstimatedCostUsd:0.00} of ${monthlyWarningUsd:0.00}."
+            : $"Monthly warning threshold: ${monthlyWarningUsd:0.00}";
 
         return $"""
             {last}
@@ -105,12 +134,21 @@ public sealed partial class UsageStatsService
             Audio: {FormatDuration(currentMonth.AudioSeconds)}
             Words: {currentMonth.Words}
             Characters: {currentMonth.Characters}
+            Input tokens: {currentMonth.InputTokens}
+            Output tokens: {currentMonth.OutputTokens}
+            Estimated API cost: ${currentMonth.EstimatedCostUsd:0.0000} USD
+            {warning}
 
             Totals
             Recordings: {stats.Totals.Recordings}
             Audio: {FormatDuration(stats.Totals.AudioSeconds)}
             Words: {stats.Totals.Words}
             Characters: {stats.Totals.Characters}
+            Input tokens: {stats.Totals.InputTokens}
+            Output tokens: {stats.Totals.OutputTokens}
+            Estimated API cost: ${stats.Totals.EstimatedCostUsd:0.0000} USD
+
+            Estimates are based on local metadata and configured pricing constants. Check the provider dashboard for official billing.
             """;
     }
 

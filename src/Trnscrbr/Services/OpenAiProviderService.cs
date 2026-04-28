@@ -14,7 +14,7 @@ public sealed class OpenAiProviderService
     private static readonly Uri TranscriptionsUri = new("https://api.openai.com/v1/audio/transcriptions");
     private static readonly Uri ResponsesUri = new("https://api.openai.com/v1/responses");
     private const string TranscriptionModel = "gpt-4o-mini-transcribe";
-    private const string CleanupModel = "gpt-5.2";
+    private const string CleanupModel = "gpt-5.4-mini";
     private readonly HttpClient _httpClient = new();
 
     public async Task<ProviderTestResult> TestApiKeyAsync(string apiKey, CancellationToken cancellationToken = default)
@@ -43,7 +43,7 @@ public sealed class OpenAiProviderService
         }
     }
 
-    public async Task<string> TranscribeAndCleanAsync(
+    public async Task<TranscriptionResult> TranscribeAndCleanAsync(
         string apiKey,
         RecordedAudio audio,
         AppStateViewModel state,
@@ -55,7 +55,15 @@ public sealed class OpenAiProviderService
             throw new InvalidOperationException("OpenAI returned an empty transcript.");
         }
 
-        return await CleanTranscriptAsync(apiKey, rawTranscript, state, cancellationToken);
+        var cleanup = await CleanTranscriptAsync(apiKey, rawTranscript, state, cancellationToken);
+        var transcriptionCost = OpenAiPricingCatalog.EstimateTranscriptionCost(audio.Duration);
+        var cleanupCost = OpenAiPricingCatalog.EstimateCleanupCost(cleanup.InputTokens, cleanup.OutputTokens);
+
+        return new TranscriptionResult(
+            cleanup.CleanedTranscript,
+            cleanup.InputTokens,
+            cleanup.OutputTokens,
+            transcriptionCost + cleanupCost);
     }
 
     private async Task<string> TranscribeAsync(
@@ -96,7 +104,7 @@ public sealed class OpenAiProviderService
             : string.Empty;
     }
 
-    private async Task<string> CleanTranscriptAsync(
+    private async Task<CleanupResult> CleanTranscriptAsync(
         string apiKey,
         string rawTranscript,
         AppStateViewModel state,
@@ -123,7 +131,16 @@ public sealed class OpenAiProviderService
             throw new InvalidOperationException($"OpenAI cleanup failed: {(int)response.StatusCode} {response.ReasonPhrase}");
         }
 
-        return ExtractOutputText(json).Trim();
+        var cleaned = ExtractOutputText(json).Trim();
+        var (inputTokens, outputTokens) = ExtractUsage(json);
+
+        if (inputTokens == 0 && outputTokens == 0)
+        {
+            inputTokens = EstimateTokens(instructions) + EstimateTokens(rawTranscript);
+            outputTokens = EstimateTokens(cleaned);
+        }
+
+        return new CleanupResult(cleaned, inputTokens, outputTokens);
     }
 
     private static string BuildCleanupInstructions(AppStateViewModel state)
@@ -190,6 +207,33 @@ public sealed class OpenAiProviderService
 
         return builder.ToString();
     }
+
+    private static (int InputTokens, int OutputTokens) ExtractUsage(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+
+        if (!root.TryGetProperty("usage", out var usage))
+        {
+            return (0, 0);
+        }
+
+        var inputTokens = usage.TryGetProperty("input_tokens", out var input)
+            ? input.GetInt32()
+            : 0;
+        var outputTokens = usage.TryGetProperty("output_tokens", out var output)
+            ? output.GetInt32()
+            : 0;
+
+        return (inputTokens, outputTokens);
+    }
+
+    private static int EstimateTokens(string text)
+    {
+        return Math.Max(1, (int)Math.Ceiling(text.Length / 4d));
+    }
+
+    private sealed record CleanupResult(string CleanedTranscript, int InputTokens, int OutputTokens);
 }
 
 public sealed record ProviderTestResult(bool IsSuccess, string Message)

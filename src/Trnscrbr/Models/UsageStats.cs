@@ -13,6 +13,9 @@ public sealed class UsageBucket
     public double AudioSeconds { get; set; }
     public int Words { get; set; }
     public int Characters { get; set; }
+    public int InputTokens { get; set; }
+    public int OutputTokens { get; set; }
+    public double EstimatedCostUsd { get; set; }
 }
 
 public sealed class LastUsageSummary
@@ -22,6 +25,9 @@ public sealed class LastUsageSummary
     public int Words { get; set; }
     public int Characters { get; set; }
     public double WordsPerMinute { get; set; }
+    public int InputTokens { get; set; }
+    public int OutputTokens { get; set; }
+    public double EstimatedCostUsd { get; set; }
     public string Provider { get; set; } = "";
     public string Engine { get; set; } = "";
 }

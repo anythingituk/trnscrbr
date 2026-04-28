@@ -40,7 +40,7 @@ public partial class AdvancedSettingsWindow : Window
         DataContext = state;
         VocabularyBox.Text = string.Join(Environment.NewLine, state.Settings.CustomVocabulary);
         DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
-        UsageBox.Text = _usageStats.FormatSummary();
+        UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
         UpdateApiKeyStatus();
         Closing += (_, args) =>
         {
@@ -156,7 +156,21 @@ public partial class AdvancedSettingsWindow : Window
 
     private void RefreshUsage_OnClick(object sender, RoutedEventArgs e)
     {
-        UsageBox.Text = _usageStats.FormatSummary();
+        UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
+    }
+
+    private void MonthlyWarning_OnLostFocus(object sender, RoutedEventArgs e)
+    {
+        if (decimal.TryParse(MonthlyWarningBox.Text, out var warning) && warning >= 0)
+        {
+            _state.Settings.MonthlyCostWarning = warning;
+            Persist();
+            UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
+        }
+        else
+        {
+            MonthlyWarningBox.Text = _state.Settings.MonthlyCostWarning.ToString("0.00");
+        }
     }
 
     private void ExportSettings_OnClick(object sender, RoutedEventArgs e)

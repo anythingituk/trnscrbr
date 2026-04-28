@@ -203,7 +203,7 @@ public sealed class RecordingCoordinator
 
         try
         {
-            var cleanedTranscript = await _openAiProvider.TranscribeAndCleanAsync(
+            var result = await _openAiProvider.TranscribeAndCleanAsync(
                 apiKey,
                 recordedAudio,
                 _state,
@@ -214,14 +214,21 @@ public sealed class RecordingCoordinator
                 return;
             }
 
-            _insertion.InsertText(cleanedTranscript);
+            _insertion.InsertText(result.CleanedTranscript);
             var usage = _usageStats.RecordDictation(
-                cleanedTranscript,
+                result.CleanedTranscript,
                 recordedAudio,
                 _state.Settings.ProviderName,
-                _state.Settings.ActiveEngine);
+                _state.Settings.ActiveEngine,
+                result.InputTokens,
+                result.OutputTokens,
+                result.EstimatedCostUsd);
             _state.RecordingState = RecordingState.Idle;
-            _state.StatusMessage = $"Inserted transcript ({usage.Last.WordsPerMinute:0} wpm)";
+            var currentMonth = _usageStats.GetCurrentMonth();
+            var threshold = (double)_state.Settings.MonthlyCostWarning;
+            _state.StatusMessage = threshold > 0 && currentMonth.EstimatedCostUsd >= threshold
+                ? $"Inserted transcript. Monthly estimate ${currentMonth.EstimatedCostUsd:0.00}."
+                : $"Inserted transcript ({usage.Last.WordsPerMinute:0} wpm)";
             _floatingButton.ShowTransient();
         }
         catch (OperationCanceledException)
