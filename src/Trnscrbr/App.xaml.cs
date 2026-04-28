@@ -14,6 +14,7 @@ public partial class App : System.Windows.Application
     private CredentialStore? _credentialStore;
     private OpenAiProviderService? _openAiProvider;
     private DiagnosticLogService? _diagnosticLog;
+    private UsageStatsService? _usageStats;
     private RecordingCoordinator? _recording;
     private FloatingButtonWindow? _floatingButton;
     private TrayPanelWindow? _trayPanel;
@@ -27,13 +28,14 @@ public partial class App : System.Windows.Application
         _credentialStore = new CredentialStore();
         _openAiProvider = new OpenAiProviderService();
         _diagnosticLog = new DiagnosticLogService();
+        _usageStats = new UsageStatsService();
         var settings = _settingsStore.Load();
         var appState = new AppStateViewModel(settings);
 
         _floatingButton = new FloatingButtonWindow(appState);
         _audioCapture = new AudioCaptureService(appState);
         var insertion = new TextInsertionService(appState, _diagnosticLog);
-        _recording = new RecordingCoordinator(appState, insertion, _floatingButton, _audioCapture, _credentialStore, _openAiProvider, _diagnosticLog);
+        _recording = new RecordingCoordinator(appState, insertion, _floatingButton, _audioCapture, _credentialStore, _openAiProvider, _diagnosticLog, _usageStats);
         _floatingButton.ToggleRecordingRequested += (_, _) => _recording.ToggleRecording();
         _floatingButton.SettingsRequested += (_, _) => ShowTrayPanel();
         _floatingButton.QuitRequested += (_, _) => Shutdown();
@@ -113,12 +115,13 @@ public partial class App : System.Windows.Application
             || _credentialStore is null
             || _openAiProvider is null
             || _audioCapture is null
-            || _diagnosticLog is null)
+            || _diagnosticLog is null
+            || _usageStats is null)
         {
             return;
         }
 
-        _advancedSettings ??= new AdvancedSettingsWindow(state, _settingsStore, _credentialStore, _openAiProvider, _audioCapture, _diagnosticLog);
+        _advancedSettings ??= new AdvancedSettingsWindow(state, _settingsStore, _credentialStore, _openAiProvider, _audioCapture, _diagnosticLog, _usageStats);
         _advancedSettings.Show();
         _advancedSettings.Activate();
     }

@@ -14,6 +14,7 @@ public partial class AdvancedSettingsWindow : Window
     private readonly OpenAiProviderService _openAiProvider;
     private readonly AudioCaptureService _audioCapture;
     private readonly DiagnosticLogService _diagnosticLog;
+    private readonly UsageStatsService _usageStats;
 
     public AdvancedSettingsWindow(
         AppStateViewModel state,
@@ -21,7 +22,8 @@ public partial class AdvancedSettingsWindow : Window
         CredentialStore credentialStore,
         OpenAiProviderService openAiProvider,
         AudioCaptureService audioCapture,
-        DiagnosticLogService diagnosticLog)
+        DiagnosticLogService diagnosticLog,
+        UsageStatsService usageStats)
     {
         InitializeComponent();
         _state = state;
@@ -30,9 +32,11 @@ public partial class AdvancedSettingsWindow : Window
         _openAiProvider = openAiProvider;
         _audioCapture = audioCapture;
         _diagnosticLog = diagnosticLog;
+        _usageStats = usageStats;
         DataContext = state;
         VocabularyBox.Text = string.Join(Environment.NewLine, state.Settings.CustomVocabulary);
         DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
+        UsageBox.Text = _usageStats.FormatSummary();
         UpdateApiKeyStatus();
         Closing += (_, args) =>
         {
@@ -144,6 +148,11 @@ public partial class AdvancedSettingsWindow : Window
             """;
 
         System.Windows.Clipboard.SetText(diagnostics);
+    }
+
+    private void RefreshUsage_OnClick(object sender, RoutedEventArgs e)
+    {
+        UsageBox.Text = _usageStats.FormatSummary();
     }
 
     private void Hyperlink_OnRequestNavigate(object sender, RequestNavigateEventArgs e)

@@ -113,6 +113,16 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
+            <TabItem Header="Usage">
+                <ScrollViewer>
+                    <StackPanel Margin="16">
+                        <TextBlock Text="Usage" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock Text="Metadata only. Transcript text and raw audio are not stored." TextWrapping="Wrap" Margin="0,8,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <Button Content="Refresh Usage" Width="130" HorizontalAlignment="Left" Margin="0,0,0,12" Click="RefreshUsage_OnClick" />
+                        <TextBox x:Name="UsageBox" IsReadOnly="True" MinHeight="320" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

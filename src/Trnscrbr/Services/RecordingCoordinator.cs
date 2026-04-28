@@ -15,6 +15,7 @@ public sealed class RecordingCoordinator
     private readonly CredentialStore _credentialStore;
     private readonly OpenAiProviderService _openAiProvider;
     private readonly DiagnosticLogService _diagnosticLog;
+    private readonly UsageStatsService _usageStats;
     private readonly DispatcherTimer _timer;
     private readonly Dispatcher _dispatcher;
     private CancellationTokenSource? _processingCancellation;
@@ -28,7 +29,8 @@ public sealed class RecordingCoordinator
         AudioCaptureService audioCapture,
         CredentialStore credentialStore,
         OpenAiProviderService openAiProvider,
-        DiagnosticLogService diagnosticLog)
+        DiagnosticLogService diagnosticLog,
+        UsageStatsService usageStats)
     {
         _state = state;
         _insertion = insertion;
@@ -37,6 +39,7 @@ public sealed class RecordingCoordinator
         _credentialStore = credentialStore;
         _openAiProvider = openAiProvider;
         _diagnosticLog = diagnosticLog;
+        _usageStats = usageStats;
         _dispatcher = Dispatcher.CurrentDispatcher;
         _audioCapture.InputLevelChanged += (_, level) =>
         {
@@ -212,8 +215,13 @@ public sealed class RecordingCoordinator
             }
 
             _insertion.InsertText(cleanedTranscript);
+            var usage = _usageStats.RecordDictation(
+                cleanedTranscript,
+                recordedAudio,
+                _state.Settings.ProviderName,
+                _state.Settings.ActiveEngine);
             _state.RecordingState = RecordingState.Idle;
-            _state.StatusMessage = "Inserted transcript";
+            _state.StatusMessage = $"Inserted transcript ({usage.Last.WordsPerMinute:0} wpm)";
             _floatingButton.ShowTransient();
         }
         catch (OperationCanceledException)
