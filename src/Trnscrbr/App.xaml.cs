@@ -78,10 +78,22 @@ public partial class App : System.Windows.Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        _keyboardHook?.Dispose();
-        _audioCapture?.Dispose();
-        _trayIcon?.Dispose();
-        _settingsStore?.Save(((AppStateViewModel)_floatingButton!.DataContext).Settings);
+        try
+        {
+            _keyboardHook?.Dispose();
+            _audioCapture?.Dispose();
+            _trayIcon?.Dispose();
+
+            if (_settingsStore is not null && _floatingButton?.DataContext is AppStateViewModel state)
+            {
+                _settingsStore.Save(state.Settings);
+            }
+        }
+        catch (Exception ex)
+        {
+            _diagnosticLog?.Error("Shutdown cleanup failed", ex);
+        }
+
         base.OnExit(e);
     }
 
