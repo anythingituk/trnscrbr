@@ -69,6 +69,13 @@ public sealed class KeyboardHookService : IDisposable
             return (IntPtr)1;
         }
 
+        if (_pushToTalkDown && isUp && IsPushToTalkChordKey(key))
+        {
+            _pushToTalkDown = false;
+            PushToTalkReleased?.Invoke(this, EventArgs.Empty);
+            return (IntPtr)1;
+        }
+
         if (ctrl && win && key == Keys.V && isDown)
         {
             PasteLastTranscriptPressed?.Invoke(this, EventArgs.Empty);
@@ -86,6 +93,16 @@ public sealed class KeyboardHookService : IDisposable
     private static bool IsKeyDown(Keys key)
     {
         return (GetAsyncKeyState((int)key) & 0x8000) != 0;
+    }
+
+    private static bool IsPushToTalkChordKey(Keys key)
+    {
+        return key is Keys.Space
+            or Keys.LWin
+            or Keys.RWin
+            or Keys.LControlKey
+            or Keys.RControlKey
+            or Keys.ControlKey;
     }
 
     private static IntPtr SetHook(LowLevelKeyboardProc proc)

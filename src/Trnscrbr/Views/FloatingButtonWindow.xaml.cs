@@ -85,35 +85,39 @@ public partial class FloatingButtonWindow : Window
         switch (_state.RecordingState)
         {
             case RecordingState.Recording:
-                Width = 220;
-                Shell.Width = 112;
-                Shell.CornerRadius = new CornerRadius(34);
-                GlowHalo.Width = 178;
-                GlowHalo.Height = 118;
+                Width = 118;
+                Shell.Width = 64;
+                Shell.Height = 38;
+                Shell.CornerRadius = new CornerRadius(19);
+                GlowHalo.Width = 92;
+                GlowHalo.Height = 62;
                 GlowHalo.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(130, 255, 92, 56));
                 break;
             case RecordingState.Processing:
-                Width = 220;
-                Shell.Width = 112;
-                Shell.CornerRadius = new CornerRadius(34);
-                GlowHalo.Width = 178;
-                GlowHalo.Height = 118;
+                Width = 118;
+                Shell.Width = 64;
+                Shell.Height = 38;
+                Shell.CornerRadius = new CornerRadius(19);
+                GlowHalo.Width = 92;
+                GlowHalo.Height = 62;
                 GlowHalo.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(120, 255, 214, 102));
                 break;
             case RecordingState.Error:
-                Width = 320;
-                Shell.Width = 68;
-                Shell.CornerRadius = new CornerRadius(34);
-                GlowHalo.Width = 128;
-                GlowHalo.Height = 104;
+                Width = 240;
+                Shell.Width = 38;
+                Shell.Height = 38;
+                Shell.CornerRadius = new CornerRadius(19);
+                GlowHalo.Width = 72;
+                GlowHalo.Height = 60;
                 GlowHalo.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(105, 255, 214, 102));
                 break;
             default:
-                Width = 220;
-                Shell.Width = 68;
-                Shell.CornerRadius = new CornerRadius(34);
-                GlowHalo.Width = 128;
-                GlowHalo.Height = 104;
+                Width = 118;
+                Shell.Width = 38;
+                Shell.Height = 38;
+                Shell.CornerRadius = new CornerRadius(19);
+                GlowHalo.Width = 72;
+                GlowHalo.Height = 60;
                 GlowHalo.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(115, 54, 213, 211));
                 break;
         }
@@ -132,11 +136,11 @@ public partial class FloatingButtonWindow : Window
                 ? 0.42
                 : 0.14;
 
-        SetBarHeight(Bar1, 10, 18, activeLevel, 0.0);
-        SetBarHeight(Bar2, 12, 30, activeLevel, 1.1);
-        SetBarHeight(Bar3, 8, 24, activeLevel, 2.0);
-        SetBarHeight(Bar4, 12, 32, activeLevel, 2.9);
-        SetBarHeight(Bar5, 10, 20, activeLevel, 3.8);
+        SetBarHeight(Bar1, 6, 10, activeLevel, 0.0);
+        SetBarHeight(Bar2, 7, 18, activeLevel, 1.1);
+        SetBarHeight(Bar3, 5, 14, activeLevel, 2.0);
+        SetBarHeight(Bar4, 7, 19, activeLevel, 2.9);
+        SetBarHeight(Bar5, 6, 11, activeLevel, 3.8);
 
         var pulse = 0.84 + (Math.Sin(_animationPhase * 0.65) * 0.12);
         GlowHalo.Opacity = _state.RecordingState == RecordingState.Idle ? pulse : 0.95;

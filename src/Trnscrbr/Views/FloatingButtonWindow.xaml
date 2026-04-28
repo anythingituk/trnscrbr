@@ -1,8 +1,8 @@
 <Window x:Class="Trnscrbr.Views.FloatingButtonWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Width="220"
-        Height="150"
+        Width="118"
+        Height="82"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
@@ -16,20 +16,20 @@
           MouseMove="Root_OnMouseMove"
           MouseRightButtonUp="Root_OnMouseRightButtonUp">
         <Ellipse x:Name="GlowHalo"
-                 Width="128"
-                 Height="104"
+                 Width="72"
+                 Height="60"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center"
                  Fill="#6636D5D3"
                  Opacity="0.9">
             <Ellipse.Effect>
-                <BlurEffect Radius="24" />
+                <BlurEffect Radius="14" />
             </Ellipse.Effect>
         </Ellipse>
         <Border x:Name="Shell"
-                Width="68"
-                Height="68"
-                CornerRadius="34"
+                Width="38"
+                Height="38"
+                CornerRadius="19"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 BorderThickness="1"
@@ -40,25 +40,25 @@
                             Orientation="Horizontal"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center">
-                    <Rectangle x:Name="Bar1" Width="4" Height="14" RadiusX="2" RadiusY="2" Fill="#EFFFFFFF" Margin="2" />
-                    <Rectangle x:Name="Bar2" Width="4" Height="26" RadiusX="2" RadiusY="2" Fill="#EFFFFFFF" Margin="2" />
-                    <Rectangle x:Name="Bar3" Width="4" Height="18" RadiusX="2" RadiusY="2" Fill="#EFFFFFFF" Margin="2" />
-                    <Rectangle x:Name="Bar4" Width="4" Height="30" RadiusX="2" RadiusY="2" Fill="#EFFFFFFF" Margin="2" />
-                    <Rectangle x:Name="Bar5" Width="4" Height="16" RadiusX="2" RadiusY="2" Fill="#EFFFFFFF" Margin="2" />
+                    <Rectangle x:Name="Bar1" Width="2.5" Height="8" RadiusX="1.25" RadiusY="1.25" Fill="#EFFFFFFF" Margin="1" />
+                    <Rectangle x:Name="Bar2" Width="2.5" Height="14" RadiusX="1.25" RadiusY="1.25" Fill="#EFFFFFFF" Margin="1" />
+                    <Rectangle x:Name="Bar3" Width="2.5" Height="10" RadiusX="1.25" RadiusY="1.25" Fill="#EFFFFFFF" Margin="1" />
+                    <Rectangle x:Name="Bar4" Width="2.5" Height="16" RadiusX="1.25" RadiusY="1.25" Fill="#EFFFFFFF" Margin="1" />
+                    <Rectangle x:Name="Bar5" Width="2.5" Height="8" RadiusX="1.25" RadiusY="1.25" Fill="#EFFFFFFF" Margin="1" />
                 </StackPanel>
                 <TextBlock x:Name="TimerText"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Bottom"
-                           Margin="0,0,0,8"
-                           FontSize="10"
+                           Margin="0,0,0,5"
+                           FontSize="8"
                            FontWeight="SemiBold"
                            Foreground="White"
                            Visibility="Collapsed" />
             </Grid>
         </Border>
         <Border x:Name="MessageBubble"
-                MaxWidth="260"
-                Padding="10,6"
+                MaxWidth="210"
+                Padding="8,5"
                 CornerRadius="8"
                 Background="#EE101820"
                 HorizontalAlignment="Center"
