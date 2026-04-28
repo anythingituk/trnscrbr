@@ -11,6 +11,8 @@ public partial class App : System.Windows.Application
     private KeyboardHookService? _keyboardHook;
     private TrayIconService? _trayIcon;
     private AudioCaptureService? _audioCapture;
+    private CredentialStore? _credentialStore;
+    private OpenAiProviderService? _openAiProvider;
     private RecordingCoordinator? _recording;
     private FloatingButtonWindow? _floatingButton;
     private TrayPanelWindow? _trayPanel;
@@ -21,6 +23,8 @@ public partial class App : System.Windows.Application
         base.OnStartup(e);
 
         _settingsStore = new AppSettingsStore();
+        _credentialStore = new CredentialStore();
+        _openAiProvider = new OpenAiProviderService();
         var settings = _settingsStore.Load();
         var appState = new AppStateViewModel(settings);
 
@@ -94,12 +98,15 @@ public partial class App : System.Windows.Application
 
     private void ShowAdvancedSettings()
     {
-        if (_floatingButton?.DataContext is not AppStateViewModel state || _settingsStore is null)
+        if (_floatingButton?.DataContext is not AppStateViewModel state
+            || _settingsStore is null
+            || _credentialStore is null
+            || _openAiProvider is null)
         {
             return;
         }
 
-        _advancedSettings ??= new AdvancedSettingsWindow(state, _settingsStore);
+        _advancedSettings ??= new AdvancedSettingsWindow(state, _settingsStore, _credentialStore, _openAiProvider);
         _advancedSettings.Show();
         _advancedSettings.Activate();
     }

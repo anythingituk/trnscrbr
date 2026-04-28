@@ -10,14 +10,23 @@ public partial class AdvancedSettingsWindow : Window
 {
     private readonly AppStateViewModel _state;
     private readonly AppSettingsStore _settingsStore;
+    private readonly CredentialStore _credentialStore;
+    private readonly OpenAiProviderService _openAiProvider;
 
-    public AdvancedSettingsWindow(AppStateViewModel state, AppSettingsStore settingsStore)
+    public AdvancedSettingsWindow(
+        AppStateViewModel state,
+        AppSettingsStore settingsStore,
+        CredentialStore credentialStore,
+        OpenAiProviderService openAiProvider)
     {
         InitializeComponent();
         _state = state;
         _settingsStore = settingsStore;
+        _credentialStore = credentialStore;
+        _openAiProvider = openAiProvider;
         DataContext = state;
         VocabularyBox.Text = string.Join(Environment.NewLine, state.Settings.CustomVocabulary);
+        UpdateApiKeyStatus();
         Closing += (_, args) =>
         {
             args.Cancel = true;
@@ -32,17 +41,57 @@ public partial class AdvancedSettingsWindow : Window
         Persist();
     }
 
-    private void TestConnection_OnClick(object sender, RoutedEventArgs e)
+    private async void TestConnection_OnClick(object sender, RoutedEventArgs e)
     {
-        System.Windows.MessageBox.Show("Provider test is not implemented yet. The key can be saved with a warning.", "Trnscrbr");
+        ApiKeyStatusText.Text = "Testing OpenAI connection...";
+        var result = await _openAiProvider.TestApiKeyAsync(ApiKeyBox.Password);
+        ApiKeyStatusText.Text = result.Message;
     }
 
-    private void SaveProvider_OnClick(object sender, RoutedEventArgs e)
+    private async void SaveProvider_OnClick(object sender, RoutedEventArgs e)
     {
+        var apiKey = ApiKeyBox.Password.Trim();
+        if (apiKey.Length == 0)
+        {
+            System.Windows.MessageBox.Show("Enter an API key before saving.", "Trnscrbr");
+            return;
+        }
+
+        ApiKeyStatusText.Text = "Testing OpenAI connection before save...";
+        var result = await _openAiProvider.TestApiKeyAsync(apiKey);
+        if (!result.IsSuccess)
+        {
+            var choice = System.Windows.MessageBox.Show(
+                $"{result.Message}\n\nSave this key anyway?",
+                "Trnscrbr",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (choice != MessageBoxResult.Yes)
+            {
+                ApiKeyStatusText.Text = "API key not saved.";
+                return;
+            }
+        }
+
+        _credentialStore.SaveOpenAiApiKey(apiKey);
+        ApiKeyBox.Clear();
         _state.Settings.ProviderMode = "Bring your own API key";
         _state.Settings.ActiveEngine = "OpenAI";
         Persist();
-        System.Windows.MessageBox.Show("Provider saved with warning. Secure API key storage is still to be implemented.", "Trnscrbr");
+        ApiKeyStatusText.Text = result.IsSuccess
+            ? "OpenAI key saved in Windows Credential Manager."
+            : "OpenAI key saved with warning in Windows Credential Manager.";
+    }
+
+    private void DeleteKey_OnClick(object sender, RoutedEventArgs e)
+    {
+        _credentialStore.DeleteOpenAiApiKey();
+        ApiKeyBox.Clear();
+        _state.Settings.ProviderMode = "Not configured";
+        _state.Settings.ActiveEngine = "None";
+        Persist();
+        UpdateApiKeyStatus();
     }
 
     private void CopyDiagnostics_OnClick(object sender, RoutedEventArgs e)
@@ -53,7 +102,7 @@ public partial class AdvancedSettingsWindow : Window
             Provider: {_state.Settings.ProviderName}
             Provider mode: {_state.Settings.ProviderMode}
             Active engine: {_state.Settings.ActiveEngine}
-            API key present: {(ApiKeyBox.Password.Length > 0 ? "yes" : "no")}
+            API key present: {(_credentialStore.HasOpenAiApiKey() ? "yes" : "no")}
             Microphone: {_state.Settings.MicrophoneName}
             Hotkeys: Ctrl+Win+Space, Esc, Ctrl+Win+V
             Transcript content: redacted
@@ -76,5 +125,12 @@ public partial class AdvancedSettingsWindow : Window
             .ToList();
         _settingsStore.Save(_state.Settings);
         _state.RaiseSettingsChanged();
+    }
+
+    private void UpdateApiKeyStatus()
+    {
+        ApiKeyStatusText.Text = _credentialStore.HasOpenAiApiKey()
+            ? "OpenAI API key is stored locally in Windows Credential Manager."
+            : "No OpenAI API key is stored.";
     }
 }
