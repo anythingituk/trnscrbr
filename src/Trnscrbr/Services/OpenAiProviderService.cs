@@ -1,11 +1,20 @@
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.IO;
+using Trnscrbr.Models;
+using Trnscrbr.ViewModels;
 
 namespace Trnscrbr.Services;
 
 public sealed class OpenAiProviderService
 {
     private static readonly Uri ModelsUri = new("https://api.openai.com/v1/models");
+    private static readonly Uri TranscriptionsUri = new("https://api.openai.com/v1/audio/transcriptions");
+    private static readonly Uri ResponsesUri = new("https://api.openai.com/v1/responses");
+    private const string TranscriptionModel = "gpt-4o-mini-transcribe";
+    private const string CleanupModel = "gpt-5.2";
     private readonly HttpClient _httpClient = new();
 
     public async Task<ProviderTestResult> TestApiKeyAsync(string apiKey, CancellationToken cancellationToken = default)
@@ -32,6 +41,150 @@ public sealed class OpenAiProviderService
         {
             return ProviderTestResult.Fail($"OpenAI test failed: {ex.Message}");
         }
+    }
+
+    public async Task<string> TranscribeAndCleanAsync(
+        string apiKey,
+        RecordedAudio audio,
+        AppStateViewModel state,
+        CancellationToken cancellationToken = default)
+    {
+        var rawTranscript = await TranscribeAsync(apiKey, audio, state, cancellationToken);
+        if (string.IsNullOrWhiteSpace(rawTranscript))
+        {
+            throw new InvalidOperationException("OpenAI returned an empty transcript.");
+        }
+
+        return await CleanTranscriptAsync(apiKey, rawTranscript, state, cancellationToken);
+    }
+
+    private async Task<string> TranscribeAsync(
+        string apiKey,
+        RecordedAudio audio,
+        AppStateViewModel state,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, TranscriptionsUri);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey.Trim());
+
+        await using var stream = File.OpenRead(audio.FilePath);
+        using var form = new MultipartFormDataContent();
+        using var fileContent = new StreamContent(stream);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
+        form.Add(fileContent, "file", Path.GetFileName(audio.FilePath));
+        form.Add(new StringContent(TranscriptionModel), "model");
+        form.Add(new StringContent("json"), "response_format");
+
+        if (!string.Equals(state.Settings.LanguageMode, "Auto", StringComparison.OrdinalIgnoreCase))
+        {
+            form.Add(new StringContent(state.Settings.LanguageMode), "language");
+        }
+
+        request.Content = form;
+
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException($"OpenAI transcription failed: {(int)response.StatusCode} {response.ReasonPhrase}");
+        }
+
+        using var document = JsonDocument.Parse(json);
+        return document.RootElement.TryGetProperty("text", out var text)
+            ? text.GetString() ?? string.Empty
+            : string.Empty;
+    }
+
+    private async Task<string> CleanTranscriptAsync(
+        string apiKey,
+        string rawTranscript,
+        AppStateViewModel state,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, ResponsesUri);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey.Trim());
+
+        var instructions = BuildCleanupInstructions(state);
+        var payload = JsonSerializer.Serialize(new
+        {
+            model = CleanupModel,
+            instructions,
+            input = rawTranscript,
+            store = false
+        });
+
+        request.Content = new StringContent(payload, Encoding.UTF8, "application/json");
+
+        using var response = await _httpClient.SendAsync(request, cancellationToken);
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new InvalidOperationException($"OpenAI cleanup failed: {(int)response.StatusCode} {response.ReasonPhrase}");
+        }
+
+        return ExtractOutputText(json).Trim();
+    }
+
+    private static string BuildCleanupInstructions(AppStateViewModel state)
+    {
+        var rewrite = string.Equals(state.Settings.CleanupMode, "Rewrite", StringComparison.OrdinalIgnoreCase);
+        var vocabulary = state.Settings.CustomVocabulary.Count == 0
+            ? "None."
+            : string.Join(", ", state.Settings.CustomVocabulary);
+        var previous = state.LastTranscript is { Length: > 0 }
+            ? state.LastTranscript
+            : "None.";
+
+        var mode = rewrite
+            ? "Rewrite the transcript into cleaner, polished prose while preserving the user's meaning."
+            : "Remove filler words, repeated stutters, and pause artifacts while preserving the user's wording as much as possible.";
+
+        return $"""
+            You clean dictation transcripts for direct insertion into a focused text field.
+            {mode}
+            Always apply contextual correction for obvious speech recognition mistakes unless doing so would change the likely meaning.
+            Convert spoken punctuation/layout commands when context indicates they are commands: new line, full stop, question mark, comma.
+            Do not add commentary, labels, markdown, or quotes. Return only the final text to insert.
+            Do not press Enter or imply submission.
+
+            Custom vocabulary to prefer during correction: {vocabulary}
+            Previous temporary transcript for context only: {previous}
+            """;
+    }
+
+    private static string ExtractOutputText(string json)
+    {
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
+
+        if (root.TryGetProperty("output_text", out var outputText))
+        {
+            return outputText.GetString() ?? string.Empty;
+        }
+
+        if (!root.TryGetProperty("output", out var output) || output.ValueKind != JsonValueKind.Array)
+        {
+            return string.Empty;
+        }
+
+        var builder = new StringBuilder();
+        foreach (var item in output.EnumerateArray())
+        {
+            if (!item.TryGetProperty("content", out var content) || content.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            foreach (var contentItem in content.EnumerateArray())
+            {
+                if (contentItem.TryGetProperty("text", out var text))
+                {
+                    builder.Append(text.GetString());
+                }
+            }
+        }
+
+        return builder.ToString();
     }
 }
 

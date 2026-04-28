@@ -31,7 +31,7 @@ public partial class App : System.Windows.Application
         _floatingButton = new FloatingButtonWindow(appState);
         _audioCapture = new AudioCaptureService(appState);
         var insertion = new TextInsertionService(appState);
-        _recording = new RecordingCoordinator(appState, insertion, _floatingButton, _audioCapture);
+        _recording = new RecordingCoordinator(appState, insertion, _floatingButton, _audioCapture, _credentialStore, _openAiProvider);
         _floatingButton.ToggleRecordingRequested += (_, _) => _recording.ToggleRecording();
         _floatingButton.SettingsRequested += (_, _) => ShowTrayPanel();
         _floatingButton.QuitRequested += (_, _) => Shutdown();

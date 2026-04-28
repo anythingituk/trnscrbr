@@ -12,8 +12,11 @@ public sealed class RecordingCoordinator
     private readonly TextInsertionService _insertion;
     private readonly FloatingButtonWindow _floatingButton;
     private readonly AudioCaptureService _audioCapture;
+    private readonly CredentialStore _credentialStore;
+    private readonly OpenAiProviderService _openAiProvider;
     private readonly DispatcherTimer _timer;
     private readonly Dispatcher _dispatcher;
+    private CancellationTokenSource? _processingCancellation;
     private DateTimeOffset? _pressStartedAt;
     private DateTimeOffset? _recordingStartedAt;
 
@@ -21,12 +24,16 @@ public sealed class RecordingCoordinator
         AppStateViewModel state,
         TextInsertionService insertion,
         FloatingButtonWindow floatingButton,
-        AudioCaptureService audioCapture)
+        AudioCaptureService audioCapture,
+        CredentialStore credentialStore,
+        OpenAiProviderService openAiProvider)
     {
         _state = state;
         _insertion = insertion;
         _floatingButton = floatingButton;
         _audioCapture = audioCapture;
+        _credentialStore = credentialStore;
+        _openAiProvider = openAiProvider;
         _dispatcher = Dispatcher.CurrentDispatcher;
         _audioCapture.InputLevelChanged += (_, level) =>
         {
@@ -99,6 +106,7 @@ public sealed class RecordingCoordinator
         }
 
         _timer.Stop();
+        _processingCancellation?.Cancel();
         _audioCapture.StopAndDelete();
         _state.Elapsed = TimeSpan.Zero;
         _state.InputLevel = 0;
@@ -154,22 +162,56 @@ public sealed class RecordingCoordinator
             return;
         }
 
+        var apiKey = _credentialStore.ReadOpenAiApiKey();
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            _audioCapture.DeleteRecording(recordedAudio);
+            _state.RecordingState = RecordingState.Error;
+            _state.StatusMessage = "OpenAI API key required. Right-click for Settings.";
+            _floatingButton.ShowTransient();
+            return;
+        }
+
+        _processingCancellation?.Dispose();
+        _processingCancellation = new CancellationTokenSource();
         _state.RecordingState = RecordingState.Processing;
         _state.StatusMessage = "Transcribing";
         _floatingButton.ShowTransient();
 
-        await Task.Delay(1200);
+        try
+        {
+            var cleanedTranscript = await _openAiProvider.TranscribeAndCleanAsync(
+                apiKey,
+                recordedAudio,
+                _state,
+                _processingCancellation.Token);
 
-        if (_state.RecordingState != RecordingState.Processing)
+            if (_state.RecordingState != RecordingState.Processing)
+            {
+                return;
+            }
+
+            _insertion.InsertText(cleanedTranscript);
+            _state.RecordingState = RecordingState.Idle;
+            _state.StatusMessage = "Inserted transcript";
+            _floatingButton.ShowTransient();
+        }
+        catch (OperationCanceledException)
+        {
+            _state.RecordingState = RecordingState.Idle;
+            _state.StatusMessage = "Cancelled";
+            _floatingButton.ShowTransient();
+        }
+        catch (Exception ex)
+        {
+            _state.RecordingState = RecordingState.Error;
+            _state.StatusMessage = ex.Message;
+            _floatingButton.ShowTransient();
+        }
+        finally
         {
             _audioCapture.DeleteRecording(recordedAudio);
-            return;
         }
-
-        _state.RecordingState = RecordingState.Error;
-        _state.StatusMessage = $"Transcription provider not implemented yet ({recordedAudio.Duration.TotalSeconds:0.0}s recorded)";
-        _floatingButton.ShowTransient();
-        _audioCapture.DeleteRecording(recordedAudio);
     }
 
     private void ShowProviderRequired()
