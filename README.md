@@ -17,7 +17,17 @@ See [PRODUCT_SPEC.md](PRODUCT_SPEC.md) for the current MVP specification.
 - OpenAI bring-your-own-key first.
 - Local mode with explicit model downloads.
 
+## Build Prerequisites
+
+- Windows 10/11
+- .NET 8 SDK with Windows Desktop workload/runtime
+
+Build:
+
+```powershell
+dotnet build .\Trnscrbr.sln
+```
+
 ## Status
 
-Planning/specification stage.
-
+WPF shell scaffold in progress. Current scaffold includes tray icon, global hotkey hook, floating glass button, quick panel, advanced settings window, local settings persistence, and stub recording/provider flow.
