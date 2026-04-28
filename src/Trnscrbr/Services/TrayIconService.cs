@@ -155,6 +155,19 @@ public sealed class TrayIconService : IDisposable
 
     private static Icon CreateStateIcon(RecordingState state)
     {
+        if (state == RecordingState.Idle)
+        {
+            var executablePath = Environment.ProcessPath;
+            if (!string.IsNullOrWhiteSpace(executablePath))
+            {
+                var associatedIcon = Icon.ExtractAssociatedIcon(executablePath);
+                if (associatedIcon is not null)
+                {
+                    return (Icon)associatedIcon.Clone();
+                }
+            }
+        }
+
         var color = state switch
         {
             RecordingState.Recording => Color.FromArgb(255, 92, 56),

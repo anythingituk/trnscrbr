@@ -8,6 +8,10 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $installerDir = Join-Path $repoRoot "artifacts\installer"
 $expectedInstaller = Join-Path $installerDir "Trnscrbr-Setup-0.1.0-$Runtime.exe"
 
+if (Test-Path $expectedInstaller) {
+    Remove-Item -Force $expectedInstaller
+}
+
 & (Join-Path $PSScriptRoot "publish-win-x64.ps1") -Runtime $Runtime -BuildInstaller
 if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
     throw "Package build failed with exit code $LASTEXITCODE"

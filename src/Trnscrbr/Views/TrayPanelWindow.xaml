@@ -19,7 +19,67 @@
             <DropShadowEffect Color="#66000000" BlurRadius="28" ShadowDepth="4" Opacity="0.25" />
         </Border.Effect>
         <StackPanel>
-            <TextBlock Text="Trnscrbr" FontSize="24" FontWeight="SemiBold" Foreground="{StaticResource PanelForegroundBrush}" Margin="0,0,0,8" />
+            <DockPanel Margin="0,0,0,8" LastChildFill="True">
+                <Button DockPanel.Dock="Right"
+                        Width="32"
+                        Height="32"
+                        Padding="0"
+                        Background="Transparent"
+                        BorderBrush="Transparent"
+                        Click="Advanced_OnClick"
+                        ToolTip="Advanced Settings">
+                    <Button.Template>
+                        <ControlTemplate TargetType="{x:Type Button}">
+                            <Border x:Name="Chrome" Background="Transparent" CornerRadius="16">
+                                <TextBlock Text="⚙"
+                                           FontSize="18"
+                                           FontFamily="Segoe UI Symbol"
+                                           Foreground="{StaticResource PanelForegroundBrush}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="{StaticResource AccentSoftBrush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Grid Width="24" Height="24" Margin="0,0,8,0" SnapsToDevicePixels="True">
+                        <Ellipse Width="23" Height="23" Opacity="0.52">
+                            <Ellipse.Fill>
+                                <RadialGradientBrush Center="0.5,0.5" GradientOrigin="0.42,0.36" RadiusX="0.62" RadiusY="0.62">
+                                    <GradientStop Color="#8846FFF0" Offset="0" />
+                                    <GradientStop Color="#3364E6C8" Offset="0.58" />
+                                    <GradientStop Color="#0036D5D3" Offset="1" />
+                                </RadialGradientBrush>
+                            </Ellipse.Fill>
+                        </Ellipse>
+                        <Ellipse Width="18" Height="18">
+                            <Ellipse.Fill>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                    <GradientStop Color="#46FFF0" Offset="0" />
+                                    <GradientStop Color="#2396BE" Offset="0.58" />
+                                    <GradientStop Color="#8C70FF" Offset="1" />
+                                </LinearGradientBrush>
+                            </Ellipse.Fill>
+                        </Ellipse>
+                        <Ellipse Width="17" Height="17" Stroke="#AAFFFFFF" StrokeThickness="1.3" />
+                        <Ellipse Width="5.5" Height="4" Fill="#DDFFFFFF" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="6.5,4.5,0,0" />
+                    </Grid>
+                    <TextBlock Text="Trnscrbr" FontSize="24" FontWeight="SemiBold">
+                        <TextBlock.Foreground>
+                            <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                <GradientStop Color="#15202B" Offset="0" />
+                                <GradientStop Color="#227C9D" Offset="0.55" />
+                                <GradientStop Color="#7C5CFF" Offset="1" />
+                            </LinearGradientBrush>
+                        </TextBlock.Foreground>
+                    </TextBlock>
+                </StackPanel>
+            </DockPanel>
             <DockPanel Margin="0,0,0,12" LastChildFill="True">
                 <Button x:Name="RecordButton"
                         DockPanel.Dock="Right"
@@ -65,8 +125,11 @@
                 </Border>
             </DockPanel>
 
-            <TextBlock Text="Provider" FontWeight="SemiBold" />
-            <TextBlock Text="{Binding Settings.ProviderMode}" Margin="0,3,0,6" Foreground="{StaticResource MutedForegroundBrush}" />
+            <TextBlock Margin="0,0,0,6">
+                <Run Text="Provider" FontWeight="SemiBold" />
+                <Run Text=" " />
+                <Run Text="{Binding Settings.ProviderMode}" Foreground="{StaticResource MutedForegroundBrush}" />
+            </TextBlock>
             <Border x:Name="UsageBadge" Background="{StaticResource AccentSoftBrush}" CornerRadius="7" Padding="9,6" Margin="0,0,0,12">
                 <TextBlock x:Name="UsageText" Foreground="{StaticResource AccentBrush}" TextWrapping="Wrap" />
             </Border>
@@ -105,9 +168,6 @@
                       Margin="0,6,0,12"
                       SelectionChanged="Microphone_OnSelectionChanged" />
 
-            <CheckBox Content="Show floating button" IsChecked="{Binding Settings.FloatingButtonEnabled}" Margin="0,4" Click="FloatingButton_OnClick" />
-
-            <Button Content="Advanced Settings" Margin="0,18,0,0" Click="Advanced_OnClick" />
         </StackPanel>
     </Border>
 </Window>

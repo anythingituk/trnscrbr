@@ -19,7 +19,15 @@
                 BorderThickness="0,0,0,1"
                 Padding="24,18">
             <StackPanel>
-                <TextBlock Text="Trnscrbr Settings" FontSize="24" FontWeight="SemiBold" />
+                <TextBlock Text="Trnscrbr Settings" FontSize="24" FontWeight="SemiBold">
+                    <TextBlock.Foreground>
+                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                            <GradientStop Color="#15202B" Offset="0" />
+                            <GradientStop Color="#227C9D" Offset="0.55" />
+                            <GradientStop Color="#7C5CFF" Offset="1" />
+                        </LinearGradientBrush>
+                    </TextBlock.Foreground>
+                </TextBlock>
                 <TextBlock Text="Configure provider, transcription behaviour, privacy, diagnostics, and packaging support."
                            Margin="0,4,0,0"
                            Foreground="{StaticResource MutedForegroundBrush}" />
@@ -243,7 +251,8 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    <TextBlock Text="One word or phrase per line. Used for cleanup and contextual correction." Margin="0,0,0,10" />
+                        <TextBlock Text="Add names, product names, acronyms, or specialist words Trnscrbr should spell correctly. Put one word or phrase on each line." TextWrapping="Wrap" Margin="0,0,0,6" />
+                        <TextBlock Text="Example: Trnscrbr, HyperX QuadCast, Inno Setup" TextWrapping="Wrap" Margin="0,0,0,10" Foreground="{StaticResource MutedForegroundBrush}" />
                     <TextBox x:Name="VocabularyBox" Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
                 </Grid>
             </TabItem>

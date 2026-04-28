@@ -36,15 +36,19 @@ function Invoke-Checked {
         [string[]]$Arguments
     )
 
-    & $FilePath @Arguments
-    if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-        throw "$FilePath failed with exit code $LASTEXITCODE"
+    $process = Start-Process -FilePath $FilePath -ArgumentList $Arguments -Wait -PassThru -NoNewWindow
+    if ($process.ExitCode -ne 0) {
+        throw "$FilePath failed with exit code $($process.ExitCode)"
     }
 }
 
 $dotnetPath = Resolve-DotNet
 
 Invoke-Checked $dotnetPath @("restore", $project, "-r", $Runtime)
+
+if (Test-Path $publishDir) {
+    Remove-Item -Recurse -Force $publishDir
+}
 
 Invoke-Checked $dotnetPath @(
     "publish",
