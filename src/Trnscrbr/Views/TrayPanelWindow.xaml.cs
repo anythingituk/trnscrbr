@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using Trnscrbr.Models;
 using Trnscrbr.Services;
@@ -10,6 +11,7 @@ public partial class TrayPanelWindow : Window
     private readonly AppStateViewModel _state;
     private readonly AppSettingsStore _settingsStore;
     private readonly Func<IReadOnlyList<AudioInputDevice>> _getMicrophones;
+    private readonly Action _toggleRecording;
     private readonly Action _showAdvanced;
     private bool _loadingMicrophones;
 
@@ -17,14 +19,17 @@ public partial class TrayPanelWindow : Window
         AppStateViewModel state,
         AppSettingsStore settingsStore,
         Func<IReadOnlyList<AudioInputDevice>> getMicrophones,
+        Action toggleRecording,
         Action showAdvanced)
     {
         InitializeComponent();
         _state = state;
         _settingsStore = settingsStore;
         _getMicrophones = getMicrophones;
+        _toggleRecording = toggleRecording;
         DataContext = state;
         _showAdvanced = showAdvanced;
+        _state.PropertyChanged += State_OnPropertyChanged;
         Deactivated += (_, _) => Hide();
     }
 
@@ -35,16 +40,29 @@ public partial class TrayPanelWindow : Window
         const double bottomOffset = 72;
 
         RefreshMicrophones();
+        RefreshRecordButton();
         Left = Math.Max(area.Left + 8, area.Right - Width - trayOverflowAvoidanceWidth);
         Top = Math.Max(area.Top + 8, area.Bottom - Height - bottomOffset);
         Show();
         Activate();
     }
 
+    protected override void OnClosed(EventArgs e)
+    {
+        _state.PropertyChanged -= State_OnPropertyChanged;
+        base.OnClosed(e);
+    }
+
     private void Advanced_OnClick(object sender, RoutedEventArgs e)
     {
         Persist();
         _showAdvanced();
+    }
+
+    private void Record_OnClick(object sender, RoutedEventArgs e)
+    {
+        _toggleRecording();
+        RefreshRecordButton();
     }
 
     private void Settings_OnChanged(object sender, RoutedEventArgs e)
@@ -81,6 +99,22 @@ public partial class TrayPanelWindow : Window
         {
             _loadingMicrophones = false;
         }
+    }
+
+    private void State_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(AppStateViewModel.RecordingState))
+        {
+            Dispatcher.Invoke(RefreshRecordButton);
+        }
+    }
+
+    private void RefreshRecordButton()
+    {
+        RecordButton.Content = _state.RecordingState == RecordingState.Recording
+            ? "Stop Recording"
+            : "Start Recording";
+        RecordButton.IsEnabled = _state.RecordingState is RecordingState.Idle or RecordingState.Recording or RecordingState.Error;
     }
 
     private void Persist()

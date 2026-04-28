@@ -20,6 +20,7 @@
         <StackPanel>
             <TextBlock Text="Trnscrbr" FontSize="22" FontWeight="SemiBold" Foreground="{StaticResource PanelForegroundBrush}" />
             <TextBlock Text="{Binding StatusMessage}" Margin="0,4,0,18" Foreground="{StaticResource MutedForegroundBrush}" />
+            <Button x:Name="RecordButton" Content="Start Recording" Height="34" Margin="0,0,0,18" Click="Record_OnClick" />
 
             <TextBlock Text="Provider" FontWeight="SemiBold" />
             <TextBlock Text="{Binding Settings.ProviderMode}" Margin="0,3,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
