@@ -98,6 +98,7 @@ public partial class AdvancedSettingsWindow : Window
         _state.Settings.ProviderMode = "Bring your own API key";
         _state.Settings.ActiveEngine = "OpenAI";
         Persist();
+        UpdateProviderModeStatus();
         ApiKeyStatusText.Text = result.IsSuccess
             ? "OpenAI key saved in Windows Credential Manager."
             : "OpenAI key saved with warning in Windows Credential Manager.";
@@ -111,6 +112,7 @@ public partial class AdvancedSettingsWindow : Window
         _state.Settings.ActiveEngine = "None";
         Persist();
         UpdateApiKeyStatus();
+        UpdateProviderModeStatus();
     }
 
     private void CaptureBuffer_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

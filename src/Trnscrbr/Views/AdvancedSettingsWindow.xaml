@@ -39,7 +39,7 @@
                 <ScrollViewer>
                     <StackPanel Margin="16">
                         <TextBlock Text="OpenAI" FontSize="18" FontWeight="SemiBold" />
-                        <TextBlock Text="API keys should be stored in Windows Credential Manager. This scaffold does not save secrets yet." TextWrapping="Wrap" Margin="0,8,0,12" />
+                        <TextBlock Text="API keys are stored locally in Windows Credential Manager and are never exported with settings." TextWrapping="Wrap" Margin="0,8,0,12" />
                         <PasswordBox x:Name="ApiKeyBox" Height="32" />
                         <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
                             <Button Content="Test Connection" Width="130" Click="TestConnection_OnClick" />
