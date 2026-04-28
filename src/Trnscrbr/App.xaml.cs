@@ -108,7 +108,7 @@ public partial class App : System.Windows.Application
             return;
         }
 
-        _trayPanel ??= new TrayPanelWindow(state, _settingsStore, ShowAdvancedSettings);
+        _trayPanel ??= new TrayPanelWindow(state, _settingsStore, () => _audioCapture?.GetInputDevices() ?? [], ShowAdvancedSettings);
         _trayPanel.ShowFromSystemTray();
     }
 
