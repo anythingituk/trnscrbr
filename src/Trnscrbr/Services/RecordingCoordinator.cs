@@ -11,17 +11,29 @@ public sealed class RecordingCoordinator
     private readonly AppStateViewModel _state;
     private readonly TextInsertionService _insertion;
     private readonly FloatingButtonWindow _floatingButton;
+    private readonly AudioCaptureService _audioCapture;
     private readonly DispatcherTimer _timer;
+    private readonly Dispatcher _dispatcher;
     private DateTimeOffset? _pressStartedAt;
     private DateTimeOffset? _recordingStartedAt;
 
-    public RecordingCoordinator(AppStateViewModel state, TextInsertionService insertion, FloatingButtonWindow floatingButton)
+    public RecordingCoordinator(
+        AppStateViewModel state,
+        TextInsertionService insertion,
+        FloatingButtonWindow floatingButton,
+        AudioCaptureService audioCapture)
     {
         _state = state;
         _insertion = insertion;
         _floatingButton = floatingButton;
+        _audioCapture = audioCapture;
+        _dispatcher = Dispatcher.CurrentDispatcher;
+        _audioCapture.InputLevelChanged += (_, level) =>
+        {
+            _dispatcher.BeginInvoke(() => _state.InputLevel = level);
+        };
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
-        _timer.Tick += (_, _) => UpdateElapsedAndInputLevel();
+        _timer.Tick += (_, _) => UpdateElapsed();
     }
 
     public void HandlePushToTalkPressed()
@@ -87,6 +99,7 @@ public sealed class RecordingCoordinator
         }
 
         _timer.Stop();
+        _audioCapture.StopAndDelete();
         _state.Elapsed = TimeSpan.Zero;
         _state.InputLevel = 0;
         _state.RecordingState = RecordingState.Idle;
@@ -115,13 +128,32 @@ public sealed class RecordingCoordinator
         _state.RecordingState = RecordingState.Recording;
         _state.StatusMessage = "Recording";
         _floatingButton.ShowNearTaskbar();
-        _timer.Start();
+        try
+        {
+            _audioCapture.Start();
+            _timer.Start();
+        }
+        catch (Exception ex)
+        {
+            _state.RecordingState = RecordingState.Error;
+            _state.StatusMessage = $"Microphone failed: {ex.Message}";
+            _floatingButton.ShowTransient();
+        }
     }
 
     private async void StopAndProcess()
     {
         _timer.Stop();
         _state.InputLevel = 0;
+        var recordedAudio = _audioCapture.Stop();
+        if (recordedAudio is null)
+        {
+            _state.RecordingState = RecordingState.Error;
+            _state.StatusMessage = "No microphone input recorded";
+            _floatingButton.ShowTransient();
+            return;
+        }
+
         _state.RecordingState = RecordingState.Processing;
         _state.StatusMessage = "Transcribing";
         _floatingButton.ShowTransient();
@@ -130,12 +162,14 @@ public sealed class RecordingCoordinator
 
         if (_state.RecordingState != RecordingState.Processing)
         {
+            _audioCapture.DeleteRecording(recordedAudio);
             return;
         }
 
         _state.RecordingState = RecordingState.Error;
-        _state.StatusMessage = "Transcription provider not implemented yet";
+        _state.StatusMessage = $"Transcription provider not implemented yet ({recordedAudio.Duration.TotalSeconds:0.0}s recorded)";
         _floatingButton.ShowTransient();
+        _audioCapture.DeleteRecording(recordedAudio);
     }
 
     private void ShowProviderRequired()
@@ -145,14 +179,11 @@ public sealed class RecordingCoordinator
         _floatingButton.ShowNearTaskbar();
     }
 
-    private void UpdateElapsedAndInputLevel()
+    private void UpdateElapsed()
     {
         if (_recordingStartedAt is not null)
         {
             _state.Elapsed = DateTimeOffset.Now - _recordingStartedAt.Value;
         }
-
-        var wave = (Math.Sin(DateTimeOffset.Now.ToUnixTimeMilliseconds() / 90.0) + 1) / 2;
-        _state.InputLevel = 0.2 + (wave * 0.8);
     }
 }

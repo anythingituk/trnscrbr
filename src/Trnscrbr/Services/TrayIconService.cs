@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Windows.Forms;
+using Trnscrbr.Models;
 using Trnscrbr.ViewModels;
 
 namespace Trnscrbr.Services;
@@ -9,6 +10,7 @@ public sealed class TrayIconService : IDisposable
     private readonly AppStateViewModel _state;
     private readonly Action _onToggleRecording;
     private readonly Action _onToggleFloatingButton;
+    private readonly Func<IReadOnlyList<AudioInputDevice>> _getMicrophones;
     private readonly Action _onShowSettings;
     private readonly Action _onShowAdvancedSettings;
     private readonly Action _onQuit;
@@ -18,6 +20,7 @@ public sealed class TrayIconService : IDisposable
         AppStateViewModel state,
         Action onToggleRecording,
         Action onToggleFloatingButton,
+        Func<IReadOnlyList<AudioInputDevice>> getMicrophones,
         Action onShowSettings,
         Action onShowAdvancedSettings,
         Action onQuit)
@@ -25,6 +28,7 @@ public sealed class TrayIconService : IDisposable
         _state = state;
         _onToggleRecording = onToggleRecording;
         _onToggleFloatingButton = onToggleFloatingButton;
+        _getMicrophones = getMicrophones;
         _onShowSettings = onShowSettings;
         _onShowAdvancedSettings = onShowAdvancedSettings;
         _onQuit = onQuit;
@@ -65,18 +69,11 @@ public sealed class TrayIconService : IDisposable
         var recordItem = new ToolStripMenuItem("Start Recording", null, (_, _) => _onToggleRecording());
         var showItem = new ToolStripMenuItem("Show/Hide Floating Button", null, (_, _) => _onToggleFloatingButton());
         var micMenu = new ToolStripMenuItem("Microphone");
-        micMenu.DropDownItems.Add(new ToolStripMenuItem("Windows default", null, (_, _) =>
-        {
-            _state.Settings.MicrophoneName = "Windows default";
-            _state.RaiseSettingsChanged();
-        })
-        {
-            Checked = _state.Settings.MicrophoneName == "Windows default"
-        });
 
         menu.Opening += (_, _) =>
         {
             recordItem.Text = _state.RecordingState == RecordingState.Recording ? "Stop Recording" : "Start Recording";
+            RebuildMicrophoneMenu(micMenu);
         };
 
         menu.Items.Add(recordItem);
@@ -88,5 +85,24 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem("Quit", null, (_, _) => _onQuit()));
         return menu;
+    }
+
+    private void RebuildMicrophoneMenu(ToolStripMenuItem micMenu)
+    {
+        micMenu.DropDownItems.Clear();
+
+        foreach (var device in _getMicrophones())
+        {
+            var item = new ToolStripMenuItem(device.Name, null, (_, _) =>
+            {
+                _state.Settings.MicrophoneName = device.Name;
+                _state.RaiseSettingsChanged();
+            })
+            {
+                Checked = device.Name == _state.Settings.MicrophoneName
+            };
+
+            micMenu.DropDownItems.Add(item);
+        }
     }
 }

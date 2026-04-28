@@ -24,10 +24,9 @@ appsettings.Local.json
 .env.*
 
 # Local model/cache data
-models/
-cache/
+/models/
+/cache/
 
 # OS
 Thumbs.db
 Desktop.ini
-

@@ -10,6 +10,7 @@ public partial class App : System.Windows.Application
     private AppSettingsStore? _settingsStore;
     private KeyboardHookService? _keyboardHook;
     private TrayIconService? _trayIcon;
+    private AudioCaptureService? _audioCapture;
     private RecordingCoordinator? _recording;
     private FloatingButtonWindow? _floatingButton;
     private TrayPanelWindow? _trayPanel;
@@ -24,8 +25,9 @@ public partial class App : System.Windows.Application
         var appState = new AppStateViewModel(settings);
 
         _floatingButton = new FloatingButtonWindow(appState);
+        _audioCapture = new AudioCaptureService(appState);
         var insertion = new TextInsertionService(appState);
-        _recording = new RecordingCoordinator(appState, insertion, _floatingButton);
+        _recording = new RecordingCoordinator(appState, insertion, _floatingButton, _audioCapture);
         _floatingButton.ToggleRecordingRequested += (_, _) => _recording.ToggleRecording();
         _floatingButton.SettingsRequested += (_, _) => ShowTrayPanel();
         _floatingButton.QuitRequested += (_, _) => Shutdown();
@@ -41,6 +43,7 @@ public partial class App : System.Windows.Application
             appState,
             onToggleRecording: () => _recording.ToggleRecording(),
             onToggleFloatingButton: ToggleFloatingButton,
+            getMicrophones: () => _audioCapture.GetInputDevices(),
             onShowSettings: ShowTrayPanel,
             onShowAdvancedSettings: ShowAdvancedSettings,
             onQuit: Shutdown);
@@ -55,6 +58,7 @@ public partial class App : System.Windows.Application
     protected override void OnExit(ExitEventArgs e)
     {
         _keyboardHook?.Dispose();
+        _audioCapture?.Dispose();
         _trayIcon?.Dispose();
         _settingsStore?.Save(((AppStateViewModel)_floatingButton!.DataContext).Settings);
         base.OnExit(e);
