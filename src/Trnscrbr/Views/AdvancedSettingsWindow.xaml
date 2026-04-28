@@ -67,6 +67,12 @@
                         <TextBlock Margin="0,18,0,0">
                             <Hyperlink NavigateUri="https://platform.openai.com/api-keys" RequestNavigate="Hyperlink_OnRequestNavigate">OpenAI API keys page</Hyperlink>
                         </TextBlock>
+                        <TextBlock Margin="0,6,0,0">
+                            <Hyperlink NavigateUri="https://platform.openai.com/docs/quickstart/overview" RequestNavigate="Hyperlink_OnRequestNavigate">OpenAI quickstart</Hyperlink>
+                        </TextBlock>
+                        <TextBlock Margin="0,6,0,0">
+                            <Hyperlink NavigateUri="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key" RequestNavigate="Hyperlink_OnRequestNavigate">Where to find your OpenAI API key</Hyperlink>
+                        </TextBlock>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -85,6 +91,7 @@
                         <TextBlock Text="Detected models are suggestions only and are not used automatically." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,0,0,8" />
                         <TextBox x:Name="LocalModelsBox" IsReadOnly="True" MinHeight="120" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
                         <CheckBox Content="Force CPU-only mode" IsChecked="{Binding Settings.ForceCpuOnly}" Margin="0,14,0,0" Click="Settings_OnChanged" />
+                        <TextBlock Text="Local transcription may be slow on some hardware. Managed downloads, checksum verification, GPU detection, and model removal are planned before local mode is enabled." TextWrapping="Wrap" Margin="0,8,0,0" Foreground="{StaticResource MutedForegroundBrush}" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -275,10 +282,12 @@
                         <TextBlock Text="Updates" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock x:Name="CurrentVersionText" Margin="0,8,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
                         <TextBlock Text="Manual updates are used for the MVP. Check the releases page for installer updates when published." TextWrapping="Wrap" Margin="0,0,0,12" />
+                        <Button Content="Check for Updates" Width="150" HorizontalAlignment="Left" Margin="0,0,0,12" Click="CheckUpdates_OnClick" />
+                        <TextBlock x:Name="UpdateStatusText" TextWrapping="Wrap" Margin="0,0,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
                         <TextBlock Margin="0,0,0,12">
                             <Hyperlink NavigateUri="https://github.com/anythingituk/trnscrbr/releases" RequestNavigate="Hyperlink_OnRequestNavigate">Open Trnscrbr releases</Hyperlink>
                         </TextBlock>
-                        <TextBlock Text="Automatic update checks are planned for a later version." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <TextBlock Text="Automatic installation is planned for a later version." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

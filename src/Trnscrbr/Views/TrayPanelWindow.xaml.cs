@@ -1,5 +1,8 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Input;
+using System.Windows.Media;
 using Trnscrbr.Models;
 using Trnscrbr.Services;
 using Trnscrbr.ViewModels;
@@ -10,6 +13,7 @@ public partial class TrayPanelWindow : Window
 {
     private readonly AppStateViewModel _state;
     private readonly AppSettingsStore _settingsStore;
+    private readonly UsageStatsService _usageStats;
     private readonly Func<IReadOnlyList<AudioInputDevice>> _getMicrophones;
     private readonly Action _toggleRecording;
     private readonly Action<bool> _setFloatingButtonVisibility;
@@ -19,6 +23,7 @@ public partial class TrayPanelWindow : Window
     public TrayPanelWindow(
         AppStateViewModel state,
         AppSettingsStore settingsStore,
+        UsageStatsService usageStats,
         Func<IReadOnlyList<AudioInputDevice>> getMicrophones,
         Action toggleRecording,
         Action<bool> setFloatingButtonVisibility,
@@ -27,6 +32,7 @@ public partial class TrayPanelWindow : Window
         InitializeComponent();
         _state = state;
         _settingsStore = settingsStore;
+        _usageStats = usageStats;
         _getMicrophones = getMicrophones;
         _toggleRecording = toggleRecording;
         _setFloatingButtonVisibility = setFloatingButtonVisibility;
@@ -38,16 +44,18 @@ public partial class TrayPanelWindow : Window
 
     public void ShowFromSystemTray()
     {
-        var area = SystemParameters.WorkArea;
+        var area = GetCurrentScreenWorkArea();
         const double trayOverflowAvoidanceWidth = 260;
         const double bottomOffset = 72;
 
         RefreshMicrophones();
         RefreshRecordButton();
+        RefreshUsageBadge();
         Left = Math.Max(area.Left + 8, area.Right - Width - trayOverflowAvoidanceWidth);
         Top = Math.Max(area.Top + 8, area.Bottom - Height - bottomOffset);
         Show();
         Activate();
+        RecordButton.Focus();
     }
 
     protected override void OnClosed(EventArgs e)
@@ -60,6 +68,15 @@ public partial class TrayPanelWindow : Window
     {
         Persist();
         _showAdvanced();
+    }
+
+    private void Window_OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            Hide();
+            e.Handled = true;
+        }
     }
 
     private void Record_OnClick(object sender, RoutedEventArgs e)
@@ -115,14 +132,29 @@ public partial class TrayPanelWindow : Window
         {
             Dispatcher.Invoke(RefreshRecordButton);
         }
+
+        if (e.PropertyName == nameof(AppStateViewModel.StatusMessage))
+        {
+            Dispatcher.Invoke(RefreshUsageBadge);
+        }
     }
 
     private void RefreshRecordButton()
     {
-        RecordButton.Content = _state.RecordingState == RecordingState.Recording
-            ? "Stop Recording"
-            : "Start Recording";
+        var isRecording = _state.RecordingState == RecordingState.Recording;
+        RecordButton.ToolTip = isRecording ? "Stop Recording" : "Start Recording";
         RecordButton.IsEnabled = _state.RecordingState is RecordingState.Idle or RecordingState.Recording or RecordingState.Error;
+    }
+
+    private void RefreshUsageBadge()
+    {
+        var month = _usageStats.GetCurrentMonth();
+        var threshold = _state.Settings.MonthlyCostWarning;
+        var cost = month.EstimatedCostUsd;
+
+        UsageText.Text = threshold > 0 && cost >= (double)threshold
+            ? $"Usage warning: ${cost:0.00} of ${threshold:0.00}"
+            : $"This month: {month.Recordings} dictations, est. ${cost:0.00}";
     }
 
     private void Persist()
@@ -130,5 +162,29 @@ public partial class TrayPanelWindow : Window
         _settingsStore.Save(_state.Settings);
         StartupService.Apply(_state.Settings);
         _state.RaiseSettingsChanged();
+    }
+
+    private Rect GetCurrentScreenWorkArea()
+    {
+        var screen = System.Windows.Forms.Screen.FromPoint(System.Windows.Forms.Cursor.Position);
+        var rectangle = screen.WorkingArea;
+        var topLeft = new System.Windows.Point(rectangle.Left, rectangle.Top);
+        var bottomRight = new System.Windows.Point(rectangle.Right, rectangle.Bottom);
+        var source = PresentationSource.FromVisual(this);
+        var transform = source?.CompositionTarget?.TransformFromDevice;
+
+        if (transform is not null)
+        {
+            topLeft = transform.Value.Transform(topLeft);
+            bottomRight = transform.Value.Transform(bottomRight);
+        }
+        else
+        {
+            var dpi = VisualTreeHelper.GetDpi(this);
+            topLeft = new System.Windows.Point(topLeft.X / dpi.DpiScaleX, topLeft.Y / dpi.DpiScaleY);
+            bottomRight = new System.Windows.Point(bottomRight.X / dpi.DpiScaleX, bottomRight.Y / dpi.DpiScaleY);
+        }
+
+        return new Rect(topLeft, bottomRight);
     }
 }

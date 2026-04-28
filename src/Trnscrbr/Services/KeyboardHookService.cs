@@ -89,7 +89,9 @@ public sealed class KeyboardHookService : IDisposable
         {
             _pushToTalkDown = false;
             PostEvent(PushToTalkReleased);
-            return (IntPtr)1;
+            return key == Keys.Space || IsWinKey(key)
+                ? (IntPtr)1
+                : CallNextHookEx(_hookId, nCode, wParam, lParam);
         }
 
         if (key == Keys.Escape && isDown)

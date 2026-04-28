@@ -10,6 +10,10 @@ public sealed class TextInsertionService
     private const int ClipboardBusyHResult = unchecked((int)0x800401D0);
     private const int ClipboardRetryCount = 8;
     private const int ClipboardRetryDelayMilliseconds = 60;
+    private const int ProcessQueryLimitedInformation = 0x1000;
+    private const int TokenQuery = 0x0008;
+    private const int TokenElevation = 20;
+    private const int AccessDenied = 5;
 
     private readonly AppStateViewModel _state;
     private readonly DiagnosticLogService _diagnosticLog;
@@ -30,6 +34,12 @@ public sealed class TextInsertionService
 
         try
         {
+            if (IsForegroundWindowElevated())
+            {
+                throw new ElevatedTargetInsertionException(
+                    "Target app is running as administrator. Paste into normal apps, or use Paste Last Transcript after switching targets.");
+            }
+
             if (RetryClipboard(() => System.Windows.Clipboard.ContainsData(System.Windows.DataFormats.Text))
                 || RetryClipboard(() => System.Windows.Clipboard.ContainsData(System.Windows.DataFormats.UnicodeText))
                 || RetryClipboard(() => System.Windows.Clipboard.ContainsData(System.Windows.DataFormats.Bitmap))
@@ -49,7 +59,8 @@ public sealed class TextInsertionService
             _diagnosticLog.Error("Text insertion failed", ex, new Dictionary<string, string>
             {
                 ["pasteMethod"] = _state.Settings.PasteMethod,
-                ["characters"] = output.Length.ToString()
+                ["characters"] = output.Length.ToString(),
+                ["targetElevated"] = (ex is ElevatedTargetInsertionException).ToString()
             });
             throw;
         }
@@ -150,6 +161,51 @@ public sealed class TextInsertionService
         return (GetAsyncKeyState((int)key) & 0x8000) != 0;
     }
 
+    private static bool IsForegroundWindowElevated()
+    {
+        var foregroundWindow = GetForegroundWindow();
+        if (foregroundWindow == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        _ = GetWindowThreadProcessId(foregroundWindow, out var processId);
+        if (processId == 0 || processId == Environment.ProcessId)
+        {
+            return false;
+        }
+
+        var processHandle = OpenProcess(ProcessQueryLimitedInformation, false, processId);
+        if (processHandle == IntPtr.Zero)
+        {
+            return Marshal.GetLastWin32Error() == AccessDenied;
+        }
+
+        try
+        {
+            if (!OpenProcessToken(processHandle, TokenQuery, out var tokenHandle))
+            {
+                return Marshal.GetLastWin32Error() == AccessDenied;
+            }
+
+            try
+            {
+                var elevation = new TokenElevationInfo();
+                var size = Marshal.SizeOf<TokenElevationInfo>();
+                return GetTokenInformation(tokenHandle, TokenElevation, ref elevation, size, out _)
+                    && elevation.TokenIsElevated != 0;
+            }
+            finally
+            {
+                CloseHandle(tokenHandle);
+            }
+        }
+        finally
+        {
+            CloseHandle(processHandle);
+        }
+    }
+
     private static void RetryClipboard(Action action)
     {
         RetryClipboard(() =>
@@ -176,4 +232,41 @@ public sealed class TextInsertionService
 
     [DllImport("user32.dll")]
     private static extern short GetAsyncKeyState(int vKey);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out int processId);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern IntPtr OpenProcess(int processAccess, bool inheritHandle, int processId);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool OpenProcessToken(IntPtr processHandle, int desiredAccess, out IntPtr tokenHandle);
+
+    [DllImport("advapi32.dll", SetLastError = true)]
+    private static extern bool GetTokenInformation(
+        IntPtr tokenHandle,
+        int tokenInformationClass,
+        ref TokenElevationInfo tokenInformation,
+        int tokenInformationLength,
+        out int returnLength);
+
+    [DllImport("kernel32.dll")]
+    private static extern bool CloseHandle(IntPtr handle);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct TokenElevationInfo
+    {
+        public int TokenIsElevated;
+    }
+}
+
+public sealed class ElevatedTargetInsertionException : InvalidOperationException
+{
+    public ElevatedTargetInsertionException(string message)
+        : base(message)
+    {
+    }
 }

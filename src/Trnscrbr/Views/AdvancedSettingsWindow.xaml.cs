@@ -18,6 +18,7 @@ public partial class AdvancedSettingsWindow : Window
     private readonly UsageStatsService _usageStats;
     private readonly SettingsImportExportService _settingsImportExport;
     private readonly LocalModelDiscoveryService _localModelDiscovery = new();
+    private readonly UpdateCheckService _updateCheck = new();
 
     public AdvancedSettingsWindow(
         AppStateViewModel state,
@@ -222,6 +223,13 @@ public partial class AdvancedSettingsWindow : Window
     private void RefreshUsage_OnClick(object sender, RoutedEventArgs e)
     {
         UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
+    }
+
+    private async void CheckUpdates_OnClick(object sender, RoutedEventArgs e)
+    {
+        UpdateStatusText.Text = "Checking GitHub releases...";
+        var result = await _updateCheck.CheckLatestReleaseAsync();
+        UpdateStatusText.Text = result.Message;
     }
 
     private void RefreshLocalModels()

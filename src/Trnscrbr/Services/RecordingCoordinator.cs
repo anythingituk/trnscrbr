@@ -6,6 +6,8 @@ namespace Trnscrbr.Services;
 
 public sealed class RecordingCoordinator
 {
+    private static readonly TimeSpan TapToToggleThreshold = TimeSpan.FromMilliseconds(450);
+
     private readonly AppStateViewModel _state;
     private readonly TextInsertionService _insertion;
     private readonly FloatingButtonWindow _floatingButton;
@@ -19,6 +21,7 @@ public sealed class RecordingCoordinator
     private CancellationTokenSource? _processingCancellation;
     private DateTimeOffset? _pressStartedAt;
     private DateTimeOffset? _recordingStartedAt;
+    private bool _recordingWasActiveOnPress;
 
     public RecordingCoordinator(
         AppStateViewModel state,
@@ -50,6 +53,7 @@ public sealed class RecordingCoordinator
     public void HandlePushToTalkPressed()
     {
         _pressStartedAt = DateTimeOffset.Now;
+        _recordingWasActiveOnPress = _state.RecordingState == RecordingState.Recording;
 
         if (!_state.IsProviderConfigured)
         {
@@ -70,14 +74,19 @@ public sealed class RecordingCoordinator
             return;
         }
 
+        var pressDuration = DateTimeOffset.Now - _pressStartedAt.Value;
+        var isTap = pressDuration <= TapToToggleThreshold;
+        var shouldStopRecording = _recordingWasActiveOnPress || !isTap;
+
         _pressStartedAt = null;
+        _recordingWasActiveOnPress = false;
 
         if (!_state.IsProviderConfigured)
         {
             return;
         }
 
-        if (_state.RecordingState == RecordingState.Recording)
+        if (_state.RecordingState == RecordingState.Recording && shouldStopRecording)
         {
             StopAndProcess();
         }
@@ -122,6 +131,8 @@ public sealed class RecordingCoordinator
     {
         if (_state.LastTranscript is null || _state.LastTranscriptExpiresAt < DateTimeOffset.Now)
         {
+            _state.LastTranscript = null;
+            _state.LastTranscriptExpiresAt = null;
             _state.StatusMessage = "No recent transcript";
             _floatingButton.ShowTransient();
             return;
@@ -221,17 +232,27 @@ public sealed class RecordingCoordinator
                 return;
             }
 
-            var isVoiceAction = string.Equals(
-                result.CleanedTranscript.Trim(),
+            var cleanedTranscript = result.CleanedTranscript.Trim();
+            var isDeleteAction = string.Equals(
+                cleanedTranscript,
                 OpenAiProviderService.DeleteLastInsertionAction,
                 StringComparison.Ordinal);
+            var isDiscardAction = string.Equals(
+                cleanedTranscript,
+                OpenAiProviderService.DiscardCurrentTranscriptAction,
+                StringComparison.Ordinal);
+            var isVoiceAction = isDeleteAction || isDiscardAction;
 
-            if (isVoiceAction)
+            if (isDeleteAction)
             {
                 var deleted = _insertion.DeleteLastInsertedText();
                 _state.StatusMessage = deleted
                     ? "Removed last insertion"
                     : "No Trnscrbr insertion to remove";
+            }
+            else if (isDiscardAction)
+            {
+                _state.StatusMessage = "Discarded dictation";
             }
             else
             {

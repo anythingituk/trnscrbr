@@ -1,4 +1,6 @@
+using Microsoft.Win32;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Trnscrbr.Services;
 using Trnscrbr.ViewModels;
@@ -21,13 +23,17 @@ public partial class App : System.Windows.Application
     private UsageStatsService? _usageStats;
     private SettingsImportExportService? _settingsImportExport;
     private RecordingCoordinator? _recording;
+    private DispatcherTimer? _lastTranscriptTimer;
     private FloatingButtonWindow? _floatingButton;
+    private OnboardingWindow? _onboarding;
     private TrayPanelWindow? _trayPanel;
     private AdvancedSettingsWindow? _advancedSettings;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        ApplyWindowsTheme();
+        SystemEvents.UserPreferenceChanged += SystemEventsOnUserPreferenceChanged;
 
         _singleInstanceMutex = new Mutex(initiallyOwned: true, SingleInstanceService.MutexName, out var createdNew);
         if (!createdNew)
@@ -48,6 +54,7 @@ public partial class App : System.Windows.Application
         _settingsImportExport = new SettingsImportExportService();
         var settings = _settingsStore.Load();
         var appState = new AppStateViewModel(settings);
+        StartLastTranscriptExpiryTimer(appState);
         _singleInstance = new SingleInstanceService(() => Dispatcher.BeginInvoke(ShowTrayPanel));
         _singleInstance.Start();
 
@@ -95,7 +102,7 @@ public partial class App : System.Windows.Application
 
         if (!settings.OnboardingCompleted)
         {
-            ShowAdvancedSettings();
+            ShowOnboarding();
         }
     }
 
@@ -107,6 +114,8 @@ public partial class App : System.Windows.Application
             _audioCapture?.Dispose();
             _trayIcon?.Dispose();
             _singleInstance?.Dispose();
+            _lastTranscriptTimer?.Stop();
+            _lastTranscriptTimer = null;
 
             if (_settingsStore is not null && _floatingButton?.DataContext is AppStateViewModel state)
             {
@@ -116,6 +125,7 @@ public partial class App : System.Windows.Application
             _singleInstanceMutex?.ReleaseMutex();
             _singleInstanceMutex?.Dispose();
             _singleInstanceMutex = null;
+            SystemEvents.UserPreferenceChanged -= SystemEventsOnUserPreferenceChanged;
         }
         catch (Exception ex)
         {
@@ -123,6 +133,52 @@ public partial class App : System.Windows.Application
         }
 
         base.OnExit(e);
+    }
+
+    private void SystemEventsOnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
+    {
+        if (e.Category is UserPreferenceCategory.General or UserPreferenceCategory.Color)
+        {
+            Dispatcher.BeginInvoke(ApplyWindowsTheme);
+        }
+    }
+
+    private void ApplyWindowsTheme()
+    {
+        var light = IsWindowsLightTheme();
+
+        SetBrush("AppBackgroundBrush", light ? "#EEF3F6" : "#101820");
+        SetBrush("PanelBackgroundBrush", light ? "#F8FBFC" : "#14222B");
+        SetBrush("SurfaceBrush", light ? "#FFFFFF" : "#17252F");
+        SetBrush("PanelForegroundBrush", light ? "#15202B" : "#ECF7FA");
+        SetBrush("MutedForegroundBrush", light ? "#617080" : "#A6B7C2");
+        SetBrush("SubtleBorderBrush", light ? "#D9E3E8" : "#2F4652");
+        SetBrush("ControlBackgroundBrush", light ? "#FFFFFF" : "#101B23");
+        SetBrush("ControlHoverBrush", light ? "#F8FEFE" : "#1C303A");
+        SetBrush("ControlSelectedBrush", light ? "#DFF4F7" : "#203D49");
+        SetBrush("AccentSoftBrush", light ? "#E8F8F8" : "#163B43");
+        SetBrush("StatusBackgroundBrush", light ? "#EEF8F8" : "#112F36");
+    }
+
+    private static bool IsWindowsLightTheme()
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+            return key?.GetValue("AppsUseLightTheme") is not int value || value != 0;
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    private void SetBrush(string key, string color)
+    {
+        if (Resources[key] is SolidColorBrush brush && !brush.IsFrozen)
+        {
+            brush.Color = (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(color);
+        }
     }
 
     private void RegisterExceptionHandlers(DiagnosticLogService diagnosticLog)
@@ -158,6 +214,21 @@ public partial class App : System.Windows.Application
             diagnosticLog.Error("Unobserved task exception", args.Exception);
             args.SetObserved();
         };
+    }
+
+    private void StartLastTranscriptExpiryTimer(AppStateViewModel state)
+    {
+        _lastTranscriptTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
+        _lastTranscriptTimer.Tick += (_, _) =>
+        {
+            if (state.LastTranscriptExpiresAt is not null
+                && state.LastTranscriptExpiresAt <= DateTimeOffset.Now)
+            {
+                state.LastTranscript = null;
+                state.LastTranscriptExpiresAt = null;
+            }
+        };
+        _lastTranscriptTimer.Start();
     }
 
     private void ShowRecoverableError(Exception exception)
@@ -229,7 +300,7 @@ public partial class App : System.Windows.Application
             return;
         }
 
-        if (_settingsStore is null)
+        if (_settingsStore is null || _usageStats is null)
         {
             return;
         }
@@ -237,11 +308,30 @@ public partial class App : System.Windows.Application
         _trayPanel ??= new TrayPanelWindow(
             state,
             _settingsStore,
+            _usageStats,
             () => _audioCapture?.GetInputDevices() ?? [],
             () => _recording?.ToggleRecording(),
             SetFloatingButtonVisibility,
             ShowAdvancedSettings);
         _trayPanel.ShowFromSystemTray();
+    }
+
+    private void ShowOnboarding()
+    {
+        if (_floatingButton?.DataContext is not AppStateViewModel state
+            || _settingsStore is null)
+        {
+            return;
+        }
+
+        if (_onboarding is null)
+        {
+            _onboarding = new OnboardingWindow(state, _settingsStore, ShowAdvancedSettings);
+            _onboarding.Closed += (_, _) => _onboarding = null;
+        }
+
+        _onboarding.Show();
+        _onboarding.Activate();
     }
 
     private void ShowAdvancedSettings()

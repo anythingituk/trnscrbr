@@ -10,6 +10,25 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $project = Join-Path $repoRoot "src\Trnscrbr\Trnscrbr.csproj"
 $publishDir = Join-Path $repoRoot "artifacts\publish\$Runtime"
 
+function Resolve-DotNet {
+    $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
+    if ($dotnet) {
+        return $dotnet.Source
+    }
+
+    $candidates = @(
+        (Join-Path $env:ProgramFiles "dotnet\dotnet.exe"),
+        (Join-Path ${env:ProgramFiles(x86)} "dotnet\dotnet.exe")
+    )
+
+    $resolved = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+    if ($resolved) {
+        return $resolved
+    }
+
+    throw ".NET SDK was not found. Install the .NET 8 SDK or add dotnet to PATH."
+}
+
 function Invoke-Checked {
     param(
         [Parameter(Mandatory = $true)]
@@ -18,14 +37,16 @@ function Invoke-Checked {
     )
 
     & $FilePath @Arguments
-    if ($LASTEXITCODE -ne 0) {
+    if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
         throw "$FilePath failed with exit code $LASTEXITCODE"
     }
 }
 
-Invoke-Checked dotnet @("restore", $project, "-r", $Runtime)
+$dotnetPath = Resolve-DotNet
 
-Invoke-Checked dotnet @(
+Invoke-Checked $dotnetPath @("restore", $project, "-r", $Runtime)
+
+Invoke-Checked $dotnetPath @(
     "publish",
     $project,
     "-c", $Configuration,

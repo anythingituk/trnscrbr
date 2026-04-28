@@ -66,19 +66,21 @@ WPF MVP in progress. Current build includes:
 
 - Dynamic tray icon and floating glass button with mic-level waveform states.
 - `Ctrl + Win + Space` push-to-talk/toggle and `Esc` cancel.
+- Lightweight first-run onboarding.
+- Compact tray panel with usage estimate, monitor-aware placement, and Windows light/dark theme support.
 - OpenAI bring-your-own-key transcription processing.
 - Temporary clipboard insertion with clipboard restoration.
 - One-hour last transcript recovery from hotkey, tray menu, and floating-button menu.
-- Optional voice action command for deleting the last Trnscrbr insertion.
-- Advanced settings for provider, local model discovery, privacy/context, language, vocabulary, diagnostics, usage, and import/export.
-- Windows installer packaging script and GitHub Actions build artifact.
+- Optional voice action commands for deleting the last Trnscrbr insertion or discarding the current dictation.
+- Optional cursor-context correction using Windows UI Automation.
+- Advanced settings for provider, local model discovery, privacy/context, language, vocabulary, diagnostics, usage, updates, and import/export.
+- Windows installer packaging script, GitHub Actions build artifact, and package smoke test.
 - Single-instance relaunch behaviour that shows the running instance.
-- Package smoke test script.
 
 ## Known MVP Limits
 
 - Local mode cannot transcribe yet.
 - Hotkeys are fixed for now.
-- Elevated/admin target windows are not supported yet.
+- Elevated/admin target windows are detected but not supported yet.
 - Text insertion depends on the target app accepting clipboard paste.
 - No transcript history is stored beyond temporary last-transcript recovery.

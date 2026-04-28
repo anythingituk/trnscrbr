@@ -48,7 +48,7 @@ public partial class FloatingButtonWindow : Window
 
     public void ShowNearTaskbar()
     {
-        var area = SystemParameters.WorkArea;
+        var area = GetTargetScreenWorkArea();
         Left = area.Left + (area.Width - Width) / 2;
         Top = area.Bottom - Height - 12;
         Show();
@@ -97,7 +97,7 @@ public partial class FloatingButtonWindow : Window
                 Shell.CornerRadius = new CornerRadius(14);
                 GlowHalo.Width = 52;
                 GlowHalo.Height = 34;
-                GlowHalo.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(92, 255, 92, 56));
+                GlowHalo.Fill = new SolidColorBrush(GetRecordingDurationColor());
                 break;
             case RecordingState.Processing:
                 Width = 76;
@@ -129,6 +129,26 @@ public partial class FloatingButtonWindow : Window
         }
 
         AnimateWaveform();
+    }
+
+    private System.Windows.Media.Color GetRecordingDurationColor()
+    {
+        if (_state.Elapsed >= TimeSpan.FromMinutes(3))
+        {
+            return System.Windows.Media.Color.FromArgb(104, 255, 55, 55);
+        }
+
+        if (_state.Elapsed >= TimeSpan.FromMinutes(2))
+        {
+            return System.Windows.Media.Color.FromArgb(98, 255, 95, 48);
+        }
+
+        if (_state.Elapsed >= TimeSpan.FromMinutes(1))
+        {
+            return System.Windows.Media.Color.FromArgb(92, 255, 132, 48);
+        }
+
+        return System.Windows.Media.Color.FromArgb(92, 255, 92, 56);
     }
 
     private void AnimateWaveform()
@@ -232,9 +252,45 @@ public partial class FloatingButtonWindow : Window
         SetWindowLong(handle, GWL_EXSTYLE, style | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
     }
 
+    private Rect GetTargetScreenWorkArea()
+    {
+        var foregroundWindow = GetForegroundWindow();
+        var ownWindow = new WindowInteropHelper(this).Handle;
+        var screen = foregroundWindow != IntPtr.Zero && foregroundWindow != ownWindow
+            ? System.Windows.Forms.Screen.FromHandle(foregroundWindow)
+            : System.Windows.Forms.Screen.FromPoint(System.Windows.Forms.Cursor.Position);
+
+        return DeviceRectToWindowRect(screen.WorkingArea);
+    }
+
+    private Rect DeviceRectToWindowRect(System.Drawing.Rectangle rectangle)
+    {
+        var topLeft = new System.Windows.Point(rectangle.Left, rectangle.Top);
+        var bottomRight = new System.Windows.Point(rectangle.Right, rectangle.Bottom);
+        var source = PresentationSource.FromVisual(this);
+        var transform = source?.CompositionTarget?.TransformFromDevice;
+
+        if (transform is not null)
+        {
+            topLeft = transform.Value.Transform(topLeft);
+            bottomRight = transform.Value.Transform(bottomRight);
+        }
+        else
+        {
+            var dpi = VisualTreeHelper.GetDpi(this);
+            topLeft = new System.Windows.Point(topLeft.X / dpi.DpiScaleX, topLeft.Y / dpi.DpiScaleY);
+            bottomRight = new System.Windows.Point(bottomRight.X / dpi.DpiScaleX, bottomRight.Y / dpi.DpiScaleY);
+        }
+
+        return new Rect(topLeft, bottomRight);
+    }
+
     [DllImport("user32.dll")]
     private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
 
     [DllImport("user32.dll")]
     private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
 }

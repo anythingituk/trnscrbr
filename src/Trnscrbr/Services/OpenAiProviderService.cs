@@ -11,12 +11,14 @@ namespace Trnscrbr.Services;
 public sealed class OpenAiProviderService
 {
     public const string DeleteLastInsertionAction = "__TRNSCRBR_ACTION_DELETE_LAST_INSERTION__";
+    public const string DiscardCurrentTranscriptAction = "__TRNSCRBR_ACTION_DISCARD_CURRENT_TRANSCRIPT__";
     private static readonly Uri ModelsUri = new("https://api.openai.com/v1/models");
     private static readonly Uri TranscriptionsUri = new("https://api.openai.com/v1/audio/transcriptions");
     private static readonly Uri ResponsesUri = new("https://api.openai.com/v1/responses");
     private const string TranscriptionModel = "gpt-4o-mini-transcribe";
     private const string CleanupModel = "gpt-5.4-mini";
     private readonly HttpClient _httpClient = new();
+    private readonly CursorContextService _cursorContext = new();
     private readonly DiagnosticLogService? _diagnosticLog;
 
     public OpenAiProviderService(DiagnosticLogService? diagnosticLog = null)
@@ -123,7 +125,10 @@ public sealed class OpenAiProviderService
         using var request = new HttpRequestMessage(HttpMethod.Post, ResponsesUri);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey.Trim());
 
-        var instructions = BuildCleanupInstructions(state);
+        var cursorContext = state.Settings.CursorContextEnabled
+            ? _cursorContext.TryReadFocusedContext()
+            : string.Empty;
+        var instructions = BuildCleanupInstructions(state, cursorContext);
         var payload = JsonSerializer.Serialize(new
         {
             model = CleanupModel,
@@ -154,7 +159,7 @@ public sealed class OpenAiProviderService
         return new CleanupResult(cleaned, inputTokens, outputTokens);
     }
 
-    private static string BuildCleanupInstructions(AppStateViewModel state)
+    private static string BuildCleanupInstructions(AppStateViewModel state, string cursorContext)
     {
         var rewrite = string.Equals(state.Settings.CleanupMode, "Rewrite", StringComparison.OrdinalIgnoreCase);
         var vocabulary = state.Settings.CustomVocabulary.Count == 0
@@ -163,6 +168,9 @@ public sealed class OpenAiProviderService
         var previous = state.LastTranscript is { Length: > 0 }
             ? state.LastTranscript
             : "None.";
+        var activeCursorContext = string.IsNullOrWhiteSpace(cursorContext)
+            ? "None."
+            : cursorContext;
         var contextInstruction = state.Settings.ContextualCorrectionEnabled
             ? "Apply contextual correction for obvious speech recognition mistakes unless doing so would change the likely meaning."
             : "Do not perform contextual correction beyond basic cleanup; preserve the recognized wording unless it is clearly filler, stutter, or punctuation/layout handling.";
@@ -175,9 +183,13 @@ public sealed class OpenAiProviderService
             : "Remove filler words, repeated stutters, and pause artifacts while preserving the user's wording as much as possible.";
         var voiceActions = state.Settings.VoiceActionCommandsEnabled
             ? $"""
-            Voice action commands are enabled. If the whole utterance is clearly an action command to delete the previous Trnscrbr insertion, such as "delete that", "remove that", or "undo that", return exactly {DeleteLastInsertionAction}. Do not use this action for mixed dictation, quoted text, or discussion about the command.
+            Voice action commands are enabled, but only when the whole utterance is clearly a command.
+            If the whole utterance asks to delete the previous Trnscrbr insertion, such as "delete that", "remove that", "undo that", or "scratch that" when it refers to already inserted text, return exactly {DeleteLastInsertionAction}.
+            If the whole utterance asks to discard the current dictation/transcript, such as "cancel that", "cancel this", "discard that", "scratch that" when it refers to the current dictation, or "never mind", return exactly {DiscardCurrentTranscriptAction}.
+            Treat "stop recording" as a control command only if it is the whole utterance; in this cleanup stage return exactly {DiscardCurrentTranscriptAction} because recording has already stopped and there is no text to insert.
+            Do not use action tokens for mixed dictation, quoted text, or discussion about the command words.
             """
-            : "Voice action commands are disabled. Treat phrases such as delete that, remove that, or undo that as literal dictated text.";
+            : "Voice action commands are disabled. Treat phrases such as delete that, cancel that, scratch that, stop recording, remove that, or undo that as literal dictated text.";
 
         return $"""
             You clean dictation transcripts for direct insertion into a focused text field.
@@ -194,6 +206,7 @@ public sealed class OpenAiProviderService
 
             Custom vocabulary to prefer during correction: {vocabulary}
             Previous temporary transcript for context only: {previous}
+            Text near the active cursor for correction context only: {activeCursorContext}
             """;
     }
 
