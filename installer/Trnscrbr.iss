@@ -30,7 +30,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
-Name: "startup"; Description: "Start Trnscrbr when Windows starts"; GroupDescription: "Startup:"; Flags: checkedonce
+Name: "startup"; Description: "Start Trnscrbr when Windows starts"; GroupDescription: "Startup:"
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Excludes: "*.pdb"; Flags: ignoreversion recursesubdirs createallsubdirs
