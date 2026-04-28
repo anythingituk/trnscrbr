@@ -7,6 +7,9 @@ namespace Trnscrbr.Services;
 
 public sealed class AudioCaptureService : IDisposable
 {
+    private const int WavHeaderBytes = 44;
+    private const int MinimumAudioDataBytes = 3200;
+
     private readonly AppStateViewModel _state;
     private readonly object _syncRoot = new();
     private readonly Queue<byte[]> _preBuffer = new();
@@ -95,7 +98,7 @@ public sealed class AudioCaptureService : IDisposable
         }
 
         var file = new FileInfo(path);
-        if (!file.Exists || file.Length <= 44)
+        if (!file.Exists || file.Length - WavHeaderBytes < MinimumAudioDataBytes)
         {
             TryDelete(path);
             return null;

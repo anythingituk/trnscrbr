@@ -42,7 +42,8 @@ public sealed class OpenAiProviderService
                 return ProviderTestResult.Success();
             }
 
-            LogProviderFailure("OpenAI API key test failed", response, "models");
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            LogProviderFailure("OpenAI API key test failed", response, "models", body);
             return ProviderTestResult.Fail($"OpenAI test failed: {(int)response.StatusCode} {response.ReasonPhrase}");
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
@@ -103,7 +104,7 @@ public sealed class OpenAiProviderService
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            LogProviderFailure("OpenAI transcription failed", response, TranscriptionModel);
+            LogProviderFailure("OpenAI transcription failed", response, TranscriptionModel, json);
             throw new InvalidOperationException($"OpenAI transcription failed: {(int)response.StatusCode} {response.ReasonPhrase}");
         }
 
@@ -137,7 +138,7 @@ public sealed class OpenAiProviderService
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            LogProviderFailure("OpenAI cleanup failed", response, CleanupModel);
+            LogProviderFailure("OpenAI cleanup failed", response, CleanupModel, json);
             throw new InvalidOperationException($"OpenAI cleanup failed: {(int)response.StatusCode} {response.ReasonPhrase}");
         }
 
@@ -268,16 +269,25 @@ public sealed class OpenAiProviderService
         };
     }
 
-    private void LogProviderFailure(string message, HttpResponseMessage response, string model)
+    private void LogProviderFailure(string message, HttpResponseMessage response, string model, string? responseBody = null)
     {
-        _diagnosticLog?.Error(message, metadata: new Dictionary<string, string>
+        var metadata = new Dictionary<string, string>
         {
             ["provider"] = "OpenAI",
             ["model"] = model,
             ["statusCode"] = ((int)response.StatusCode).ToString(),
             ["reason"] = response.ReasonPhrase ?? string.Empty,
             ["requestId"] = GetRequestId(response)
-        });
+        };
+
+        if (!string.IsNullOrWhiteSpace(responseBody))
+        {
+            metadata["response"] = responseBody.Length <= 600
+                ? responseBody
+                : responseBody[..600];
+        }
+
+        _diagnosticLog?.Error(message, metadata: metadata);
     }
 
     private static string GetRequestId(HttpResponseMessage response)
