@@ -26,6 +26,7 @@ appsettings.Local.json
 # Local model/cache data
 /models/
 /cache/
+/artifacts/
 
 # OS
 Thumbs.db
