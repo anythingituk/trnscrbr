@@ -10,6 +10,7 @@ namespace Trnscrbr.Services;
 
 public sealed class OpenAiProviderService
 {
+    public const string DeleteLastInsertionAction = "__TRNSCRBR_ACTION_DELETE_LAST_INSERTION__";
     private static readonly Uri ModelsUri = new("https://api.openai.com/v1/models");
     private static readonly Uri TranscriptionsUri = new("https://api.openai.com/v1/audio/transcriptions");
     private static readonly Uri ResponsesUri = new("https://api.openai.com/v1/responses");
@@ -156,6 +157,11 @@ public sealed class OpenAiProviderService
         var mode = rewrite
             ? "Rewrite the transcript into cleaner, polished prose while preserving the user's meaning."
             : "Remove filler words, repeated stutters, and pause artifacts while preserving the user's wording as much as possible.";
+        var voiceActions = state.Settings.VoiceActionCommandsEnabled
+            ? $"""
+            Voice action commands are enabled. If the whole utterance is clearly an action command to delete the previous Trnscrbr insertion, such as "delete that", "remove that", or "undo that", return exactly {DeleteLastInsertionAction}. Do not use this action for mixed dictation, quoted text, or discussion about the command.
+            """
+            : "Voice action commands are disabled. Treat phrases such as delete that, remove that, or undo that as literal dictated text.";
 
         return $"""
             You clean dictation transcripts for direct insertion into a focused text field.
@@ -165,6 +171,7 @@ public sealed class OpenAiProviderService
             Remove only true hesitation filler, not meaningful conversational framing.
             Always apply contextual correction for obvious speech recognition mistakes unless doing so would change the likely meaning.
             Convert spoken punctuation/layout commands when context indicates they are commands: new line, full stop, question mark, comma.
+            {voiceActions}
             Do not add commentary, labels, markdown, or quotes. Return only the final text to insert.
             Do not press Enter or imply submission.
 

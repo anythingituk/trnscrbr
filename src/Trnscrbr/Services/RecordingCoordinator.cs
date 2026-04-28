@@ -214,9 +214,25 @@ public sealed class RecordingCoordinator
                 return;
             }
 
-            _insertion.InsertText(result.CleanedTranscript);
+            var isVoiceAction = string.Equals(
+                result.CleanedTranscript.Trim(),
+                OpenAiProviderService.DeleteLastInsertionAction,
+                StringComparison.Ordinal);
+
+            if (isVoiceAction)
+            {
+                var deleted = _insertion.DeleteLastInsertedText();
+                _state.StatusMessage = deleted
+                    ? "Removed last insertion"
+                    : "No Trnscrbr insertion to remove";
+            }
+            else
+            {
+                _insertion.InsertText(result.CleanedTranscript);
+            }
+
             var usage = _usageStats.RecordDictation(
-                result.CleanedTranscript,
+                isVoiceAction ? string.Empty : result.CleanedTranscript,
                 recordedAudio,
                 _state.Settings.ProviderName,
                 _state.Settings.ActiveEngine,
@@ -226,9 +242,13 @@ public sealed class RecordingCoordinator
             _state.RecordingState = RecordingState.Idle;
             var currentMonth = _usageStats.GetCurrentMonth();
             var threshold = (double)_state.Settings.MonthlyCostWarning;
-            _state.StatusMessage = threshold > 0 && currentMonth.EstimatedCostUsd >= threshold
-                ? $"Inserted transcript. Monthly estimate ${currentMonth.EstimatedCostUsd:0.00}."
-                : $"Inserted transcript ({usage.Last.WordsPerMinute:0} wpm)";
+            if (!isVoiceAction)
+            {
+                _state.StatusMessage = threshold > 0 && currentMonth.EstimatedCostUsd >= threshold
+                    ? $"Inserted transcript. Monthly estimate ${currentMonth.EstimatedCostUsd:0.00}."
+                    : $"Inserted transcript ({usage.Last.WordsPerMinute:0} wpm)";
+            }
+
             _floatingButton.ShowTransient();
         }
         catch (OperationCanceledException)
