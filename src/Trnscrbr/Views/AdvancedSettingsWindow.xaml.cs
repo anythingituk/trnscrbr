@@ -12,18 +12,21 @@ public partial class AdvancedSettingsWindow : Window
     private readonly AppSettingsStore _settingsStore;
     private readonly CredentialStore _credentialStore;
     private readonly OpenAiProviderService _openAiProvider;
+    private readonly AudioCaptureService _audioCapture;
 
     public AdvancedSettingsWindow(
         AppStateViewModel state,
         AppSettingsStore settingsStore,
         CredentialStore credentialStore,
-        OpenAiProviderService openAiProvider)
+        OpenAiProviderService openAiProvider,
+        AudioCaptureService audioCapture)
     {
         InitializeComponent();
         _state = state;
         _settingsStore = settingsStore;
         _credentialStore = credentialStore;
         _openAiProvider = openAiProvider;
+        _audioCapture = audioCapture;
         DataContext = state;
         VocabularyBox.Text = string.Join(Environment.NewLine, state.Settings.CustomVocabulary);
         UpdateApiKeyStatus();
@@ -92,6 +95,21 @@ public partial class AdvancedSettingsWindow : Window
         _state.Settings.ActiveEngine = "None";
         Persist();
         UpdateApiKeyStatus();
+    }
+
+    private void CaptureBuffer_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (sender is not System.Windows.Controls.ComboBox comboBox
+            || comboBox.SelectedItem is not System.Windows.Controls.ComboBoxItem item
+            || item.Tag is not string tag
+            || !int.TryParse(tag, out var milliseconds))
+        {
+            return;
+        }
+
+        _state.Settings.CaptureStartupBufferMilliseconds = milliseconds;
+        Persist();
+        _audioCapture.ApplyPreBufferSetting();
     }
 
     private void CopyDiagnostics_OnClick(object sender, RoutedEventArgs e)

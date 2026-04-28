@@ -52,6 +52,7 @@ public partial class App : System.Windows.Application
             onShowAdvancedSettings: ShowAdvancedSettings,
             onQuit: Shutdown);
         _trayIcon.Start();
+        _audioCapture.ApplyPreBufferSetting();
 
         if (!settings.OnboardingCompleted)
         {
@@ -101,12 +102,13 @@ public partial class App : System.Windows.Application
         if (_floatingButton?.DataContext is not AppStateViewModel state
             || _settingsStore is null
             || _credentialStore is null
-            || _openAiProvider is null)
+            || _openAiProvider is null
+            || _audioCapture is null)
         {
             return;
         }
 
-        _advancedSettings ??= new AdvancedSettingsWindow(state, _settingsStore, _credentialStore, _openAiProvider);
+        _advancedSettings ??= new AdvancedSettingsWindow(state, _settingsStore, _credentialStore, _openAiProvider, _audioCapture);
         _advancedSettings.Show();
         _advancedSettings.Activate();
     }

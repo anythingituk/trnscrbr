@@ -64,6 +64,14 @@
                         <CheckBox Content="Contextual correction" IsChecked="{Binding Settings.ContextualCorrectionEnabled}" Margin="0,4" />
                         <CheckBox Content="Use text around cursor as context" IsChecked="{Binding Settings.CursorContextEnabled}" Margin="0,4" />
                         <TextBlock Text="Reading text around the cursor may expose nearby content from another app and may be unreliable depending on the target application." TextWrapping="Wrap" Margin="24,4,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <TextBlock Text="Capture startup buffer" FontWeight="SemiBold" Margin="0,14,0,6" />
+                        <ComboBox SelectedValue="{Binding Settings.CaptureStartupBufferMilliseconds}" SelectionChanged="CaptureBuffer_OnSelectionChanged">
+                            <ComboBoxItem Content="Off" Tag="0" />
+                            <ComboBoxItem Content="250ms" Tag="250" />
+                            <ComboBoxItem Content="500ms" Tag="500" />
+                            <ComboBoxItem Content="750ms" Tag="750" />
+                        </ComboBox>
+                        <TextBlock Text="Keeps a short in-memory audio buffer while the app is running so the first word is less likely to be clipped. Audio is not saved unless recording starts." TextWrapping="Wrap" Margin="0,6,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
                         <CheckBox Content="Voice action commands" IsChecked="{Binding Settings.VoiceActionCommandsEnabled}" Margin="0,4" />
                         <CheckBox Content="Anonymous diagnostics" IsChecked="{Binding Settings.DiagnosticsEnabled}" Margin="0,4" />
                     </StackPanel>

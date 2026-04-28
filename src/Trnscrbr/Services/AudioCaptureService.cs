@@ -8,11 +8,16 @@ namespace Trnscrbr.Services;
 public sealed class AudioCaptureService : IDisposable
 {
     private readonly AppStateViewModel _state;
+    private readonly object _syncRoot = new();
+    private readonly Queue<byte[]> _preBuffer = new();
     private WaveInEvent? _waveIn;
     private WaveFileWriter? _writer;
     private string? _recordingPath;
     private DateTimeOffset? _startedAt;
     private bool _cancelled;
+    private bool _isRecording;
+    private int _preBufferBytes;
+    private WaveFormat _waveFormat = new(16000, 16, 1);
 
     public AudioCaptureService(AppStateViewModel state)
     {
@@ -39,49 +44,49 @@ public sealed class AudioCaptureService : IDisposable
 
     public void Start()
     {
-        StopAndDelete();
-
         var directory = Path.Combine(Path.GetTempPath(), "Trnscrbr");
         Directory.CreateDirectory(directory);
 
         _recordingPath = Path.Combine(directory, $"recording-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss-fff}.wav");
         _startedAt = DateTimeOffset.Now;
         _cancelled = false;
+        EnsureCaptureStarted();
 
-        _waveIn = new WaveInEvent
+        lock (_syncRoot)
         {
-            DeviceNumber = ResolveDeviceNumber(),
-            WaveFormat = new WaveFormat(16000, 16, 1),
-            BufferMilliseconds = 20,
-            NumberOfBuffers = 3
-        };
+            _writer = new WaveFileWriter(_recordingPath, _waveFormat);
+            foreach (var chunk in _preBuffer)
+            {
+                _writer.Write(chunk, 0, chunk.Length);
+            }
 
-        _writer = new WaveFileWriter(_recordingPath, _waveIn.WaveFormat);
-        _waveIn.DataAvailable += OnDataAvailable;
-        _waveIn.StartRecording();
+            _writer.Flush();
+            _isRecording = true;
+        }
     }
 
     public RecordedAudio? Stop()
     {
-        if (_waveIn is null || _writer is null || _recordingPath is null)
+        if (_writer is null || _recordingPath is null)
         {
             return null;
         }
 
         var path = _recordingPath;
         var startedAt = _startedAt ?? DateTimeOffset.Now;
-        var format = _writer.WaveFormat;
+        var format = _waveFormat;
         var microphone = _state.Settings.MicrophoneName;
 
-        _waveIn.DataAvailable -= OnDataAvailable;
-        _waveIn.StopRecording();
-        _waveIn.Dispose();
-        _waveIn = null;
+        lock (_syncRoot)
+        {
+            _isRecording = false;
+            _writer.Dispose();
+            _writer = null;
+            _recordingPath = null;
+            _startedAt = null;
+        }
 
-        _writer.Dispose();
-        _writer = null;
-        _recordingPath = null;
-        _startedAt = null;
+        StopIdleCaptureIfDisabled();
 
         if (_cancelled)
         {
@@ -110,22 +115,16 @@ public sealed class AudioCaptureService : IDisposable
         _cancelled = true;
         var path = _recordingPath;
 
-        try
+        lock (_syncRoot)
         {
-            _waveIn?.StopRecording();
-        }
-        catch
-        {
-            // Cancellation is best effort; disposal below releases the device.
+            _isRecording = false;
+            _writer?.Dispose();
+            _writer = null;
+            _recordingPath = null;
+            _startedAt = null;
         }
 
-        _waveIn?.Dispose();
-        _waveIn = null;
-
-        _writer?.Dispose();
-        _writer = null;
-        _recordingPath = null;
-        _startedAt = null;
+        StopIdleCaptureIfDisabled();
 
         if (path is not null)
         {
@@ -144,13 +143,110 @@ public sealed class AudioCaptureService : IDisposable
     public void Dispose()
     {
         StopAndDelete();
+        StopCapture();
     }
 
     private void OnDataAvailable(object? sender, WaveInEventArgs e)
     {
-        _writer?.Write(e.Buffer, 0, e.BytesRecorded);
-        _writer?.Flush();
+        lock (_syncRoot)
+        {
+            if (_isRecording)
+            {
+                _writer?.Write(e.Buffer, 0, e.BytesRecorded);
+                _writer?.Flush();
+            }
+            else
+            {
+                AddToPreBuffer(e.Buffer, e.BytesRecorded);
+            }
+        }
+
         InputLevelChanged?.Invoke(this, CalculatePeak(e.Buffer, e.BytesRecorded));
+    }
+
+    public void ApplyPreBufferSetting()
+    {
+        if (_state.Settings.CaptureStartupBufferMilliseconds > 0)
+        {
+            EnsureCaptureStarted();
+        }
+        else if (!_isRecording)
+        {
+            StopCapture();
+        }
+    }
+
+    private void EnsureCaptureStarted()
+    {
+        if (_waveIn is not null)
+        {
+            return;
+        }
+
+        _waveIn = new WaveInEvent
+        {
+            DeviceNumber = ResolveDeviceNumber(),
+            WaveFormat = _waveFormat,
+            BufferMilliseconds = 20,
+            NumberOfBuffers = 3
+        };
+
+        _waveIn.DataAvailable += OnDataAvailable;
+        _waveIn.StartRecording();
+    }
+
+    private void StopIdleCaptureIfDisabled()
+    {
+        if (_state.Settings.CaptureStartupBufferMilliseconds == 0 && !_isRecording)
+        {
+            StopCapture();
+        }
+    }
+
+    private void StopCapture()
+    {
+        try
+        {
+            if (_waveIn is not null)
+            {
+                _waveIn.DataAvailable -= OnDataAvailable;
+                _waveIn.StopRecording();
+            }
+        }
+        catch
+        {
+            // Stopping capture can race with device removal or app shutdown.
+        }
+
+        _waveIn?.Dispose();
+        _waveIn = null;
+
+        lock (_syncRoot)
+        {
+            _preBuffer.Clear();
+            _preBufferBytes = 0;
+        }
+    }
+
+    private void AddToPreBuffer(byte[] buffer, int bytesRecorded)
+    {
+        if (_state.Settings.CaptureStartupBufferMilliseconds <= 0)
+        {
+            _preBuffer.Clear();
+            _preBufferBytes = 0;
+            return;
+        }
+
+        var chunk = new byte[bytesRecorded];
+        Buffer.BlockCopy(buffer, 0, chunk, 0, bytesRecorded);
+        _preBuffer.Enqueue(chunk);
+        _preBufferBytes += chunk.Length;
+
+        var maxBytes = _waveFormat.AverageBytesPerSecond * _state.Settings.CaptureStartupBufferMilliseconds / 1000;
+        while (_preBufferBytes > maxBytes && _preBuffer.Count > 0)
+        {
+            _preBufferBytes -= _preBuffer.Dequeue().Length;
+        }
     }
 
     private int ResolveDeviceNumber()

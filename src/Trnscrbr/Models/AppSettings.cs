@@ -11,6 +11,7 @@ public sealed class AppSettings
     public bool VoiceActionCommandsEnabled { get; set; }
     public bool DiagnosticsEnabled { get; set; }
     public bool ForceCpuOnly { get; set; }
+    public int CaptureStartupBufferMilliseconds { get; set; }
     public string ProviderMode { get; set; } = "Not configured";
     public string ProviderName { get; set; } = "OpenAI";
     public string CleanupMode { get; set; } = "Clean only";

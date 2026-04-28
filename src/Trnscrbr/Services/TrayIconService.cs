@@ -1,4 +1,6 @@
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.ComponentModel;
 using System.Windows.Forms;
 using Trnscrbr.Models;
 using Trnscrbr.ViewModels;
@@ -15,6 +17,7 @@ public sealed class TrayIconService : IDisposable
     private readonly Action _onShowAdvancedSettings;
     private readonly Action _onQuit;
     private NotifyIcon? _notifyIcon;
+    private Icon? _currentIcon;
 
     public TrayIconService(
         AppStateViewModel state,
@@ -38,11 +41,13 @@ public sealed class TrayIconService : IDisposable
     {
         _notifyIcon = new NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = CreateStateIcon(_state.RecordingState),
             Text = "Trnscrbr",
             Visible = true,
             ContextMenuStrip = BuildMenu()
         };
+        _currentIcon = _notifyIcon.Icon;
+        _state.PropertyChanged += StateOnPropertyChanged;
 
         _notifyIcon.MouseClick += (_, args) =>
         {
@@ -55,12 +60,37 @@ public sealed class TrayIconService : IDisposable
 
     public void Dispose()
     {
+        _state.PropertyChanged -= StateOnPropertyChanged;
         if (_notifyIcon is not null)
         {
             _notifyIcon.Visible = false;
             _notifyIcon.Dispose();
             _notifyIcon = null;
         }
+
+        _currentIcon?.Dispose();
+        _currentIcon = null;
+    }
+
+    private void StateOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(AppStateViewModel.RecordingState))
+        {
+            UpdateIcon();
+        }
+    }
+
+    private void UpdateIcon()
+    {
+        if (_notifyIcon is null)
+        {
+            return;
+        }
+
+        var previous = _currentIcon;
+        _currentIcon = CreateStateIcon(_state.RecordingState);
+        _notifyIcon.Icon = _currentIcon;
+        previous?.Dispose();
     }
 
     private ContextMenuStrip BuildMenu()
@@ -105,4 +135,42 @@ public sealed class TrayIconService : IDisposable
             micMenu.DropDownItems.Add(item);
         }
     }
+
+    private static Icon CreateStateIcon(RecordingState state)
+    {
+        var color = state switch
+        {
+            RecordingState.Recording => Color.FromArgb(255, 92, 56),
+            RecordingState.Processing => Color.FromArgb(255, 214, 102),
+            RecordingState.Error => Color.FromArgb(255, 190, 80),
+            _ => Color.FromArgb(54, 213, 211)
+        };
+
+        using var bitmap = new Bitmap(32, 32);
+        using var graphics = Graphics.FromImage(bitmap);
+        graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        graphics.Clear(Color.Transparent);
+
+        using var glowBrush = new SolidBrush(Color.FromArgb(80, color));
+        graphics.FillEllipse(glowBrush, 3, 3, 26, 26);
+
+        using var fillBrush = new SolidBrush(Color.FromArgb(235, color));
+        graphics.FillEllipse(fillBrush, 8, 8, 16, 16);
+
+        using var shineBrush = new SolidBrush(Color.FromArgb(190, Color.White));
+        graphics.FillEllipse(shineBrush, 11, 10, 5, 5);
+
+        var handle = bitmap.GetHicon();
+        try
+        {
+            return (Icon)Icon.FromHandle(handle).Clone();
+        }
+        finally
+        {
+            DestroyIcon(handle);
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+    private static extern bool DestroyIcon(IntPtr hIcon);
 }
