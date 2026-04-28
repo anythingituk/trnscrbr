@@ -30,4 +30,13 @@ dotnet build .\Trnscrbr.sln
 
 ## Status
 
-WPF shell scaffold in progress. Current scaffold includes tray icon, global hotkey hook, floating glass button, quick panel, advanced settings window, local settings persistence, and stub recording/provider flow.
+WPF MVP in progress. Current build includes:
+
+- Dynamic tray icon and floating glass button with mic-level waveform states.
+- `Ctrl + Win + Space` push-to-talk/toggle, `Esc` cancel, and `Ctrl + Win + V` paste last transcript.
+- OpenAI bring-your-own-key transcription and cleanup.
+- Temporary clipboard insertion with clipboard restoration.
+- One-hour last transcript recovery from hotkey, tray menu, and floating-button menu.
+- Optional voice action command for deleting the last Trnscrbr insertion.
+- Advanced settings for provider, local model discovery, privacy/context, language, vocabulary, diagnostics, usage, and import/export.
+- Windows installer packaging script and GitHub Actions build artifact.

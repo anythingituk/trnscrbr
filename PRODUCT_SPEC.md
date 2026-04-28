@@ -36,9 +36,11 @@ The app always has a system tray icon while running.
 Tray/context menu:
 
 - Start Recording / Stop Recording
+- Paste Last Transcript
 - Show/Hide Floating Button
 - Microphone fly-out
 - Settings
+- Advanced Settings
 - Quit
 
 The tray icon also opens the slide-up quick panel from the system tray area.
@@ -54,6 +56,7 @@ Default behavior:
 - Auto-hides a few seconds after returning to idle.
 - Left-click toggles recording.
 - Right-click opens compact context menu.
+- Right-click menu includes recording, Paste Last Transcript, Settings, and Quit.
 
 Visual states:
 
@@ -238,7 +241,7 @@ First-run choices:
 MVP provider availability:
 
 - Bring your own API key is available.
-- Local mode is available if model downloaded/configured.
+- Local mode is planned; current implementation can detect candidate local model files/setups but does not run them.
 - Cloud managed by app is designed in the UI but should be disabled or marked as planned/future until backend/billing exists.
 
 Initial cloud provider:
@@ -424,12 +427,9 @@ Diagnostics UX:
 
 ## Open Engineering Decisions
 
-- WPF vs WinUI 3.
-- Exact OpenAI model choices for transcription and cleanup.
 - Local model repository and exact Small/Medium/Large preset mappings.
 - Clipboard restoration strategy for complex clipboard formats.
 - Reliable detection of paste success/failure.
 - Method for reading text around cursor when enabled.
 - Best approach for "delete that" across common Windows controls.
 - Packaging/update framework.
-
