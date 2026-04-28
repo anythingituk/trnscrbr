@@ -26,4 +26,4 @@ Output:
 artifacts\installer\Trnscrbr-Setup-0.1.0-win-x64.exe
 ```
 
-The installer writes the optional current-user startup entry only when the startup task is selected. API keys remain stored separately in Windows Credential Manager and are not packaged.
+The installer shows the current-user startup task checked by default and writes the startup entry only if that task remains selected. API keys remain stored separately in Windows Credential Manager and are not packaged.
