@@ -136,6 +136,30 @@ public partial class AdvancedSettingsWindow : Window
         Persist();
     }
 
+    private void CursorContext_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (!_state.Settings.CursorContextEnabled)
+        {
+            Persist();
+            return;
+        }
+
+        var choice = System.Windows.MessageBox.Show(
+            "Cursor context may read nearby text from the active app to improve correction. This can expose private content from the current window and may not work reliably in every app.\n\nEnable cursor context?",
+            "Trnscrbr Privacy Warning",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (choice != MessageBoxResult.Yes)
+        {
+            _state.Settings.CursorContextEnabled = false;
+            _state.RaiseSettingsChanged();
+            return;
+        }
+
+        Persist();
+    }
+
     private void DetectLocalModels_OnClick(object sender, RoutedEventArgs e)
     {
         RefreshLocalModels();
@@ -160,6 +184,11 @@ public partial class AdvancedSettingsWindow : Window
             """;
 
         System.Windows.Clipboard.SetText(diagnostics);
+    }
+
+    private void RefreshDiagnostics_OnClick(object sender, RoutedEventArgs e)
+    {
+        DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
     }
 
     private void RefreshUsage_OnClick(object sender, RoutedEventArgs e)

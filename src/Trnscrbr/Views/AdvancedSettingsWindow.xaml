@@ -74,7 +74,7 @@
                 <ScrollViewer>
                     <StackPanel Margin="16">
                         <CheckBox Content="Contextual correction" IsChecked="{Binding Settings.ContextualCorrectionEnabled}" Margin="0,4" Click="Settings_OnChanged" />
-                        <CheckBox Content="Use text around cursor as context" IsChecked="{Binding Settings.CursorContextEnabled}" Margin="0,4" Click="Settings_OnChanged" />
+                        <CheckBox Content="Use text around cursor as context" IsChecked="{Binding Settings.CursorContextEnabled}" Margin="0,4" Click="CursorContext_OnClick" />
                         <TextBlock Text="Reading text around the cursor may expose nearby content from another app and may be unreliable depending on the target application." TextWrapping="Wrap" Margin="24,4,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
                         <TextBlock Text="Capture startup buffer" FontWeight="SemiBold" Margin="0,14,0,6" />
                         <ComboBox SelectedValue="{Binding Settings.CaptureStartupBufferMilliseconds}" SelectedValuePath="Tag" SelectionChanged="CaptureBuffer_OnSelectionChanged">
@@ -168,7 +168,10 @@
                 <ScrollViewer>
                     <StackPanel Margin="16">
                         <TextBlock Text="Diagnostics never include transcript text, raw audio, or API keys." TextWrapping="Wrap" />
-                        <Button Content="Copy Diagnostics" Width="150" HorizontalAlignment="Left" Margin="0,14,0,18" Click="CopyDiagnostics_OnClick" />
+                        <StackPanel Orientation="Horizontal" Margin="0,14,0,18">
+                            <Button Content="Copy Diagnostics" Width="150" Click="CopyDiagnostics_OnClick" />
+                            <Button Content="Refresh Log" Width="110" Margin="8,0,0,0" Click="RefreshDiagnostics_OnClick" />
+                        </StackPanel>
                         <TextBox x:Name="DiagnosticsBox" IsReadOnly="True" MinHeight="260" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
                     </StackPanel>
                 </ScrollViewer>
