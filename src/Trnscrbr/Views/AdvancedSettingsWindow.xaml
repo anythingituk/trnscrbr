@@ -197,6 +197,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,14,0,18">
                             <Button Content="Copy Diagnostics" Width="150" Click="CopyDiagnostics_OnClick" />
                             <Button Content="Refresh Log" Width="110" Margin="8,0,0,0" Click="RefreshDiagnostics_OnClick" />
+                            <Button Content="Open Folder" Width="110" Margin="8,0,0,0" Click="OpenDiagnosticsFolder_OnClick" />
                         </StackPanel>
                         <TextBox x:Name="DiagnosticsBox" IsReadOnly="True" MinHeight="260" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
                     </StackPanel>

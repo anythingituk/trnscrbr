@@ -195,6 +195,11 @@ public partial class AdvancedSettingsWindow : Window
         DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
     }
 
+    private void OpenDiagnosticsFolder_OnClick(object sender, RoutedEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo(_diagnosticLog.LogDirectory) { UseShellExecute = true });
+    }
+
     private void RefreshUsage_OnClick(object sender, RoutedEventArgs e)
     {
         UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);

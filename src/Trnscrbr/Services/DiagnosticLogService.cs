@@ -13,8 +13,11 @@ public sealed class DiagnosticLogService
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "Trnscrbr");
         Directory.CreateDirectory(root);
+        LogDirectory = root;
         _logPath = Path.Combine(root, "diagnostics.log");
     }
+
+    public string LogDirectory { get; }
 
     public void Info(string message, IReadOnlyDictionary<string, string>? metadata = null)
     {
