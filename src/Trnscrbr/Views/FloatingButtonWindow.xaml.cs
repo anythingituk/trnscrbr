@@ -11,7 +11,7 @@ public partial class FloatingButtonWindow : Window
 {
     private readonly AppStateViewModel _state;
     private readonly DispatcherTimer _hideTimer = new() { Interval = TimeSpan.FromSeconds(4) };
-    private Point? _dragStart;
+    private System.Windows.Point? _dragStart;
     private bool _dragging;
 
     public FloatingButtonWindow(AppStateViewModel state)
@@ -90,28 +90,28 @@ public partial class FloatingButtonWindow : Window
                 Width = 132;
                 Shell.Width = 112;
                 Shell.CornerRadius = new CornerRadius(34);
-                Glow.Color = Color.FromRgb(255, 92, 56);
+                Glow.Color = System.Windows.Media.Color.FromRgb(255, 92, 56);
                 Glow.BlurRadius = 34;
                 break;
             case RecordingState.Processing:
                 Width = 132;
                 Shell.Width = 112;
                 Shell.CornerRadius = new CornerRadius(34);
-                Glow.Color = Color.FromRgb(255, 214, 102);
+                Glow.Color = System.Windows.Media.Color.FromRgb(255, 214, 102);
                 Glow.BlurRadius = 32;
                 break;
             case RecordingState.Error:
                 Width = 280;
                 Shell.Width = 68;
                 Shell.CornerRadius = new CornerRadius(34);
-                Glow.Color = Color.FromRgb(255, 214, 102);
+                Glow.Color = System.Windows.Media.Color.FromRgb(255, 214, 102);
                 Glow.BlurRadius = 22;
                 break;
             default:
                 Width = 104;
                 Shell.Width = 68;
                 Shell.CornerRadius = new CornerRadius(34);
-                Glow.Color = Color.FromRgb(54, 213, 211);
+                Glow.Color = System.Windows.Media.Color.FromRgb(54, 213, 211);
                 Glow.BlurRadius = 28;
                 break;
         }
@@ -124,7 +124,7 @@ public partial class FloatingButtonWindow : Window
         Root.CaptureMouse();
     }
 
-    private void Root_OnMouseMove(object sender, MouseEventArgs e)
+    private void Root_OnMouseMove(object sender, System.Windows.Input.MouseEventArgs e)
     {
         if (_dragStart is null || e.LeftButton != MouseButtonState.Pressed)
         {

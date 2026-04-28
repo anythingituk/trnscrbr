@@ -34,7 +34,7 @@ public partial class AdvancedSettingsWindow : Window
 
     private void TestConnection_OnClick(object sender, RoutedEventArgs e)
     {
-        MessageBox.Show("Provider test is not implemented yet. The key can be saved with a warning.", "Trnscrbr");
+        System.Windows.MessageBox.Show("Provider test is not implemented yet. The key can be saved with a warning.", "Trnscrbr");
     }
 
     private void SaveProvider_OnClick(object sender, RoutedEventArgs e)
@@ -42,7 +42,7 @@ public partial class AdvancedSettingsWindow : Window
         _state.Settings.ProviderMode = "Bring your own API key";
         _state.Settings.ActiveEngine = "OpenAI";
         Persist();
-        MessageBox.Show("Provider saved with warning. Secure API key storage is still to be implemented.", "Trnscrbr");
+        System.Windows.MessageBox.Show("Provider saved with warning. Secure API key storage is still to be implemented.", "Trnscrbr");
     }
 
     private void CopyDiagnostics_OnClick(object sender, RoutedEventArgs e)
@@ -60,7 +60,7 @@ public partial class AdvancedSettingsWindow : Window
             Raw audio: redacted
             """;
 
-        Clipboard.SetText(diagnostics);
+        System.Windows.Clipboard.SetText(diagnostics);
     }
 
     private void Hyperlink_OnRequestNavigate(object sender, RequestNavigateEventArgs e)

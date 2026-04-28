@@ -56,7 +56,7 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
-            <TabItem Header="Privacy & Context">
+            <TabItem Header="Privacy &amp; Context">
                 <ScrollViewer>
                     <StackPanel Margin="16">
                         <CheckBox Content="Contextual correction" IsChecked="{Binding Settings.ContextualCorrectionEnabled}" Margin="0,4" />
