@@ -1,6 +1,7 @@
 <Window x:Class="Trnscrbr.Views.AdvancedSettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:sys="clr-namespace:System;assembly=mscorlib"
         Title="Trnscrbr Settings"
         Width="720"
         Height="680"
@@ -15,7 +16,7 @@
                         <TextBlock Text="First Run" FontSize="18" FontWeight="SemiBold" />
                         <TextBlock Margin="0,8,0,12" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}"
                                    Text="Press Ctrl + Win + Space to dictate into the focused text field. Trnscrbr inserts text for review and never presses Enter. Cloud/API modes may use third-party services; local mode is free and private but needs model downloads." />
-                        <ComboBox SelectedValue="{Binding Settings.ProviderMode}" Margin="0,0,0,12">
+                        <ComboBox SelectedValue="{Binding Settings.ProviderMode}" SelectedValuePath="Content" Margin="0,0,0,12" SelectionChanged="Settings_OnChanged">
                             <ComboBoxItem Content="Not configured" />
                             <ComboBoxItem Content="Bring your own API key" />
                             <ComboBoxItem Content="Local mode" />
@@ -54,26 +55,42 @@
                             <ListViewItem Content="Medium - balanced" />
                             <ListViewItem Content="Large - best quality, slower, higher disk/RAM" />
                         </ListView>
-                        <CheckBox Content="Force CPU-only mode" IsChecked="{Binding Settings.ForceCpuOnly}" Margin="0,14,0,0" />
+                        <CheckBox Content="Force CPU-only mode" IsChecked="{Binding Settings.ForceCpuOnly}" Margin="0,14,0,0" Click="Settings_OnChanged" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
             <TabItem Header="Privacy &amp; Context">
                 <ScrollViewer>
                     <StackPanel Margin="16">
-                        <CheckBox Content="Contextual correction" IsChecked="{Binding Settings.ContextualCorrectionEnabled}" Margin="0,4" />
-                        <CheckBox Content="Use text around cursor as context" IsChecked="{Binding Settings.CursorContextEnabled}" Margin="0,4" />
+                        <CheckBox Content="Contextual correction" IsChecked="{Binding Settings.ContextualCorrectionEnabled}" Margin="0,4" Click="Settings_OnChanged" />
+                        <CheckBox Content="Use text around cursor as context" IsChecked="{Binding Settings.CursorContextEnabled}" Margin="0,4" Click="Settings_OnChanged" />
                         <TextBlock Text="Reading text around the cursor may expose nearby content from another app and may be unreliable depending on the target application." TextWrapping="Wrap" Margin="24,4,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
                         <TextBlock Text="Capture startup buffer" FontWeight="SemiBold" Margin="0,14,0,6" />
-                        <ComboBox SelectedValue="{Binding Settings.CaptureStartupBufferMilliseconds}" SelectionChanged="CaptureBuffer_OnSelectionChanged">
-                            <ComboBoxItem Content="Off" Tag="0" />
-                            <ComboBoxItem Content="250ms" Tag="250" />
-                            <ComboBoxItem Content="500ms" Tag="500" />
-                            <ComboBoxItem Content="750ms" Tag="750" />
+                        <ComboBox SelectedValue="{Binding Settings.CaptureStartupBufferMilliseconds}" SelectedValuePath="Tag" SelectionChanged="CaptureBuffer_OnSelectionChanged">
+                            <ComboBoxItem Content="Off">
+                                <ComboBoxItem.Tag>
+                                    <sys:Int32>0</sys:Int32>
+                                </ComboBoxItem.Tag>
+                            </ComboBoxItem>
+                            <ComboBoxItem Content="250ms">
+                                <ComboBoxItem.Tag>
+                                    <sys:Int32>250</sys:Int32>
+                                </ComboBoxItem.Tag>
+                            </ComboBoxItem>
+                            <ComboBoxItem Content="500ms">
+                                <ComboBoxItem.Tag>
+                                    <sys:Int32>500</sys:Int32>
+                                </ComboBoxItem.Tag>
+                            </ComboBoxItem>
+                            <ComboBoxItem Content="750ms">
+                                <ComboBoxItem.Tag>
+                                    <sys:Int32>750</sys:Int32>
+                                </ComboBoxItem.Tag>
+                            </ComboBoxItem>
                         </ComboBox>
                         <TextBlock Text="Keeps a short in-memory audio buffer while the app is running so the first word is less likely to be clipped. Audio is not saved unless recording starts." TextWrapping="Wrap" Margin="0,6,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
-                        <CheckBox Content="Voice action commands" IsChecked="{Binding Settings.VoiceActionCommandsEnabled}" Margin="0,4" />
-                        <CheckBox Content="Anonymous diagnostics" IsChecked="{Binding Settings.DiagnosticsEnabled}" Margin="0,4" />
+                        <CheckBox Content="Voice action commands" IsChecked="{Binding Settings.VoiceActionCommandsEnabled}" Margin="0,4" Click="Settings_OnChanged" />
+                        <CheckBox Content="Anonymous diagnostics" IsChecked="{Binding Settings.DiagnosticsEnabled}" Margin="0,4" Click="Settings_OnChanged" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

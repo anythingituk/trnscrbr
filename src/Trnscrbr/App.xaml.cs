@@ -50,11 +50,13 @@ public partial class App : System.Windows.Application
             onToggleRecording: () => _recording.ToggleRecording(),
             onToggleFloatingButton: ToggleFloatingButton,
             getMicrophones: () => _audioCapture.GetInputDevices(),
+            settingsStore: _settingsStore,
             onShowSettings: ShowTrayPanel,
             onShowAdvancedSettings: ShowAdvancedSettings,
             onQuit: Shutdown);
         _trayIcon.Start();
         _audioCapture.ApplyPreBufferSetting();
+        StartupService.Apply(settings);
 
         if (!settings.OnboardingCompleted)
         {
@@ -95,7 +97,12 @@ public partial class App : System.Windows.Application
             return;
         }
 
-        _trayPanel ??= new TrayPanelWindow(state, ShowAdvancedSettings);
+        if (_settingsStore is null)
+        {
+            return;
+        }
+
+        _trayPanel ??= new TrayPanelWindow(state, _settingsStore, ShowAdvancedSettings);
         _trayPanel.ShowFromSystemTray();
     }
 

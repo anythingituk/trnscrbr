@@ -13,6 +13,7 @@ public sealed class TrayIconService : IDisposable
     private readonly Action _onToggleRecording;
     private readonly Action _onToggleFloatingButton;
     private readonly Func<IReadOnlyList<AudioInputDevice>> _getMicrophones;
+    private readonly AppSettingsStore _settingsStore;
     private readonly Action _onShowSettings;
     private readonly Action _onShowAdvancedSettings;
     private readonly Action _onQuit;
@@ -24,6 +25,7 @@ public sealed class TrayIconService : IDisposable
         Action onToggleRecording,
         Action onToggleFloatingButton,
         Func<IReadOnlyList<AudioInputDevice>> getMicrophones,
+        AppSettingsStore settingsStore,
         Action onShowSettings,
         Action onShowAdvancedSettings,
         Action onQuit)
@@ -32,6 +34,7 @@ public sealed class TrayIconService : IDisposable
         _onToggleRecording = onToggleRecording;
         _onToggleFloatingButton = onToggleFloatingButton;
         _getMicrophones = getMicrophones;
+        _settingsStore = settingsStore;
         _onShowSettings = onShowSettings;
         _onShowAdvancedSettings = onShowAdvancedSettings;
         _onQuit = onQuit;
@@ -126,6 +129,7 @@ public sealed class TrayIconService : IDisposable
             var item = new ToolStripMenuItem(device.Name, null, (_, _) =>
             {
                 _state.Settings.MicrophoneName = device.Name;
+                _settingsStore.Save(_state.Settings);
                 _state.RaiseSettingsChanged();
             })
             {

@@ -28,14 +28,14 @@
             <TextBlock Text="{Binding ActiveEngineLabel}" Margin="0,3,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
 
             <TextBlock Text="Cleanup" FontWeight="SemiBold" />
-            <ComboBox SelectedValue="{Binding Settings.CleanupMode}" Margin="0,6,0,14">
+            <ComboBox SelectedValue="{Binding Settings.CleanupMode}" SelectedValuePath="Content" Margin="0,6,0,14" SelectionChanged="Settings_OnChanged">
                 <ComboBoxItem Content="Clean only" />
                 <ComboBoxItem Content="Rewrite" />
             </ComboBox>
 
-            <CheckBox Content="Show floating button" IsChecked="{Binding Settings.FloatingButtonEnabled}" Margin="0,4" />
-            <CheckBox Content="Launch on Windows startup" IsChecked="{Binding Settings.LaunchOnStartup}" Margin="0,4" />
-            <CheckBox Content="Add trailing space" IsChecked="{Binding Settings.AddTrailingSpace}" Margin="0,4" />
+            <CheckBox Content="Show floating button" IsChecked="{Binding Settings.FloatingButtonEnabled}" Margin="0,4" Click="Settings_OnChanged" />
+            <CheckBox Content="Launch on Windows startup" IsChecked="{Binding Settings.LaunchOnStartup}" Margin="0,4" Click="Settings_OnChanged" />
+            <CheckBox Content="Add trailing space" IsChecked="{Binding Settings.AddTrailingSpace}" Margin="0,4" Click="Settings_OnChanged" />
 
             <Button Content="Advanced Settings" Margin="0,22,0,0" Height="36" Click="Advanced_OnClick" />
         </StackPanel>

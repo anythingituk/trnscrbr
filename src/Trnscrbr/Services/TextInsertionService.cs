@@ -19,6 +19,8 @@ public sealed class TextInsertionService
     {
         var output = _state.Settings.AddTrailingSpace ? text.TrimEnd() + " " : text;
         System.Windows.IDataObject? previousClipboard = null;
+        _state.LastTranscript = text;
+        _state.LastTranscriptExpiresAt = DateTimeOffset.Now.AddHours(1);
 
         try
         {
@@ -30,11 +32,9 @@ public sealed class TextInsertionService
                 previousClipboard = System.Windows.Clipboard.GetDataObject();
             }
 
-            System.Windows.Clipboard.SetText(output);
+            System.Windows.Clipboard.SetDataObject(output, true);
             SendKeys.SendWait("^v");
-            System.Threading.Thread.Sleep(150);
-            _state.LastTranscript = text;
-            _state.LastTranscriptExpiresAt = DateTimeOffset.Now.AddHours(1);
+            System.Threading.Thread.Sleep(250);
         }
         catch (Exception ex)
         {
@@ -49,8 +49,9 @@ public sealed class TextInsertionService
                 {
                     System.Windows.Clipboard.SetDataObject(previousClipboard);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    _diagnosticLog.Error("Clipboard restore failed", ex);
                     // Clipboard restoration is best effort; complex clipboard formats can fail.
                 }
             }

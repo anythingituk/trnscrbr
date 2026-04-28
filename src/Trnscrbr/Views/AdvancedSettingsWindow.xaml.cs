@@ -103,17 +103,26 @@ public partial class AdvancedSettingsWindow : Window
 
     private void CaptureBuffer_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        if (sender is not System.Windows.Controls.ComboBox comboBox
-            || comboBox.SelectedItem is not System.Windows.Controls.ComboBoxItem item
-            || item.Tag is not string tag
-            || !int.TryParse(tag, out var milliseconds))
+        if (sender is not System.Windows.Controls.ComboBox comboBox)
         {
             return;
         }
 
+        var milliseconds = comboBox.SelectedValue switch
+        {
+            int intValue => intValue,
+            string stringValue when int.TryParse(stringValue, out var parsed) => parsed,
+            _ => _state.Settings.CaptureStartupBufferMilliseconds
+        };
+
         _state.Settings.CaptureStartupBufferMilliseconds = milliseconds;
         Persist();
         _audioCapture.ApplyPreBufferSetting();
+    }
+
+    private void Settings_OnChanged(object sender, RoutedEventArgs e)
+    {
+        Persist();
     }
 
     private void CopyDiagnostics_OnClick(object sender, RoutedEventArgs e)
@@ -149,6 +158,7 @@ public partial class AdvancedSettingsWindow : Window
             .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToList();
         _settingsStore.Save(_state.Settings);
+        StartupService.Apply(_state.Settings);
         _state.RaiseSettingsChanged();
     }
 
