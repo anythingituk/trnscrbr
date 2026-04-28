@@ -41,7 +41,7 @@
                       Margin="0,6,0,14"
                       SelectionChanged="Microphone_OnSelectionChanged" />
 
-            <CheckBox Content="Show floating button" IsChecked="{Binding Settings.FloatingButtonEnabled}" Margin="0,4" Click="Settings_OnChanged" />
+            <CheckBox Content="Show floating button" IsChecked="{Binding Settings.FloatingButtonEnabled}" Margin="0,4" Click="FloatingButton_OnClick" />
             <CheckBox Content="Launch on Windows startup" IsChecked="{Binding Settings.LaunchOnStartup}" Margin="0,4" Click="Settings_OnChanged" />
             <CheckBox Content="Add trailing space" IsChecked="{Binding Settings.AddTrailingSpace}" Margin="0,4" Click="Settings_OnChanged" />
 

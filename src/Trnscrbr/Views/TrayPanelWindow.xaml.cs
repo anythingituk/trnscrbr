@@ -12,6 +12,7 @@ public partial class TrayPanelWindow : Window
     private readonly AppSettingsStore _settingsStore;
     private readonly Func<IReadOnlyList<AudioInputDevice>> _getMicrophones;
     private readonly Action _toggleRecording;
+    private readonly Action<bool> _setFloatingButtonVisibility;
     private readonly Action _showAdvanced;
     private bool _loadingMicrophones;
 
@@ -20,6 +21,7 @@ public partial class TrayPanelWindow : Window
         AppSettingsStore settingsStore,
         Func<IReadOnlyList<AudioInputDevice>> getMicrophones,
         Action toggleRecording,
+        Action<bool> setFloatingButtonVisibility,
         Action showAdvanced)
     {
         InitializeComponent();
@@ -27,6 +29,7 @@ public partial class TrayPanelWindow : Window
         _settingsStore = settingsStore;
         _getMicrophones = getMicrophones;
         _toggleRecording = toggleRecording;
+        _setFloatingButtonVisibility = setFloatingButtonVisibility;
         DataContext = state;
         _showAdvanced = showAdvanced;
         _state.PropertyChanged += State_OnPropertyChanged;
@@ -68,6 +71,11 @@ public partial class TrayPanelWindow : Window
     private void Settings_OnChanged(object sender, RoutedEventArgs e)
     {
         Persist();
+    }
+
+    private void FloatingButton_OnClick(object sender, RoutedEventArgs e)
+    {
+        _setFloatingButtonVisibility(_state.Settings.FloatingButtonEnabled);
     }
 
     private void Microphone_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

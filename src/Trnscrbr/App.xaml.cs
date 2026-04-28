@@ -63,6 +63,10 @@ public partial class App : System.Windows.Application
         _trayIcon.Start();
         _audioCapture.ApplyPreBufferSetting();
         StartupService.Apply(settings);
+        if (settings.FloatingButtonEnabled)
+        {
+            _floatingButton.ShowNearTaskbar();
+        }
 
         if (!settings.OnboardingCompleted)
         {
@@ -89,10 +93,43 @@ public partial class App : System.Windows.Application
         if (_floatingButton.IsVisible)
         {
             _floatingButton.Hide();
+            if (_floatingButton.DataContext is AppStateViewModel hiddenState)
+            {
+                hiddenState.Settings.FloatingButtonEnabled = false;
+                _settingsStore?.Save(hiddenState.Settings);
+                hiddenState.RaiseSettingsChanged();
+            }
         }
         else
         {
             _floatingButton.ShowNearTaskbar();
+            if (_floatingButton.DataContext is AppStateViewModel shownState)
+            {
+                shownState.Settings.FloatingButtonEnabled = true;
+                _settingsStore?.Save(shownState.Settings);
+                shownState.RaiseSettingsChanged();
+            }
+        }
+    }
+
+    private void SetFloatingButtonVisibility(bool visible)
+    {
+        if (_floatingButton?.DataContext is not AppStateViewModel state)
+        {
+            return;
+        }
+
+        state.Settings.FloatingButtonEnabled = visible;
+        _settingsStore?.Save(state.Settings);
+        state.RaiseSettingsChanged();
+
+        if (visible)
+        {
+            _floatingButton.ShowNearTaskbar();
+        }
+        else
+        {
+            _floatingButton.Hide();
         }
     }
 
@@ -113,6 +150,7 @@ public partial class App : System.Windows.Application
             _settingsStore,
             () => _audioCapture?.GetInputDevices() ?? [],
             () => _recording?.ToggleRecording(),
+            SetFloatingButtonVisibility,
             ShowAdvancedSettings);
         _trayPanel.ShowFromSystemTray();
     }
