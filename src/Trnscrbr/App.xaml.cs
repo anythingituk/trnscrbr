@@ -18,6 +18,7 @@ public partial class App : System.Windows.Application
     private CredentialStore? _credentialStore;
     private OpenAiProviderService? _openAiProvider;
     private DiagnosticLogService? _diagnosticLog;
+    private EnvironmentDiagnosticsService? _environmentDiagnostics;
     private UsageStatsService? _usageStats;
     private SettingsImportExportService? _settingsImportExport;
     private RecordingCoordinator? _recording;
@@ -40,6 +41,8 @@ public partial class App : System.Windows.Application
         _credentialStore = new CredentialStore();
         _diagnosticLog = new DiagnosticLogService();
         RegisterExceptionHandlers(_diagnosticLog);
+        _environmentDiagnostics = new EnvironmentDiagnosticsService(_diagnosticLog);
+        _environmentDiagnostics.LogStartupSnapshot();
         _openAiProvider = new OpenAiProviderService(_diagnosticLog);
         _usageStats = new UsageStatsService();
         _settingsImportExport = new SettingsImportExportService();
