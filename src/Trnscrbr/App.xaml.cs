@@ -8,9 +8,8 @@ namespace Trnscrbr;
 
 public partial class App : System.Windows.Application
 {
-    private const string SingleInstanceMutexName = "Local\\Trnscrbr.App";
-
     private Mutex? _singleInstanceMutex;
+    private SingleInstanceService? _singleInstance;
     private AppSettingsStore? _settingsStore;
     private KeyboardHookService? _keyboardHook;
     private TrayIconService? _trayIcon;
@@ -30,9 +29,10 @@ public partial class App : System.Windows.Application
     {
         base.OnStartup(e);
 
-        _singleInstanceMutex = new Mutex(initiallyOwned: true, SingleInstanceMutexName, out var createdNew);
+        _singleInstanceMutex = new Mutex(initiallyOwned: true, SingleInstanceService.MutexName, out var createdNew);
         if (!createdNew)
         {
+            SingleInstanceService.NotifyExistingInstance();
             Shutdown();
             return;
         }
@@ -48,6 +48,8 @@ public partial class App : System.Windows.Application
         _settingsImportExport = new SettingsImportExportService();
         var settings = _settingsStore.Load();
         var appState = new AppStateViewModel(settings);
+        _singleInstance = new SingleInstanceService(() => Dispatcher.BeginInvoke(ShowTrayPanel));
+        _singleInstance.Start();
 
         _floatingButton = new FloatingButtonWindow(appState);
         _audioCapture = new AudioCaptureService(appState);
@@ -105,6 +107,7 @@ public partial class App : System.Windows.Application
             _keyboardHook?.Dispose();
             _audioCapture?.Dispose();
             _trayIcon?.Dispose();
+            _singleInstance?.Dispose();
 
             if (_settingsStore is not null && _floatingButton?.DataContext is AppStateViewModel state)
             {
