@@ -8,6 +8,9 @@ namespace Trnscrbr;
 
 public partial class App : System.Windows.Application
 {
+    private const string SingleInstanceMutexName = "Local\\Trnscrbr.App";
+
+    private Mutex? _singleInstanceMutex;
     private AppSettingsStore? _settingsStore;
     private KeyboardHookService? _keyboardHook;
     private TrayIconService? _trayIcon;
@@ -25,6 +28,13 @@ public partial class App : System.Windows.Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        _singleInstanceMutex = new Mutex(initiallyOwned: true, SingleInstanceMutexName, out var createdNew);
+        if (!createdNew)
+        {
+            Shutdown();
+            return;
+        }
 
         _settingsStore = new AppSettingsStore();
         _credentialStore = new CredentialStore();
@@ -88,6 +98,10 @@ public partial class App : System.Windows.Application
             {
                 _settingsStore.Save(state.Settings);
             }
+
+            _singleInstanceMutex?.ReleaseMutex();
+            _singleInstanceMutex?.Dispose();
+            _singleInstanceMutex = null;
         }
         catch (Exception ex)
         {
