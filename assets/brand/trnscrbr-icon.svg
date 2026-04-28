@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Trnscrbr icon</title>
+  <desc id="desc">A glassy blue voice waveform button with a soft teal glow.</desc>
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="46%" r="50%">
+      <stop offset="0%" stop-color="#36d5d3" stop-opacity="0.72"/>
+      <stop offset="58%" stop-color="#64e6c8" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#36d5d3" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="glass" x1="140" x2="372" y1="112" y2="400" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2fe4d3" stop-opacity="0.92"/>
+      <stop offset="52%" stop-color="#227c9d" stop-opacity="0.88"/>
+      <stop offset="100%" stop-color="#7c5cff" stop-opacity="0.86"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="176" x2="292" y1="150" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.82"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#12343f" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" fill="none"/>
+  <circle cx="256" cy="256" r="224" fill="url(#glow)"/>
+  <circle cx="256" cy="256" r="150" fill="url(#glass)" filter="url(#softShadow)"/>
+  <circle cx="256" cy="256" r="148" fill="none" stroke="#ffffff" stroke-opacity="0.42" stroke-width="8"/>
+  <ellipse cx="218" cy="190" rx="58" ry="38" fill="url(#shine)" transform="rotate(-28 218 190)"/>
+  <g fill="#f4ffff" opacity="0.95">
+    <rect x="176" y="226" width="24" height="60" rx="12"/>
+    <rect x="214" y="194" width="24" height="124" rx="12"/>
+    <rect x="252" y="216" width="24" height="80" rx="12"/>
+    <rect x="290" y="176" width="24" height="160" rx="12"/>
+    <rect x="328" y="232" width="24" height="48" rx="12"/>
+  </g>
+</svg>
