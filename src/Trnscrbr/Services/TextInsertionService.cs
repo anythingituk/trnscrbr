@@ -30,6 +30,7 @@ public sealed class TextInsertionService
 
             System.Windows.Clipboard.SetText(output);
             SendKeys.SendWait("^v");
+            System.Threading.Thread.Sleep(150);
             _state.LastTranscript = text;
             _state.LastTranscriptExpiresAt = DateTimeOffset.Now.AddHours(1);
         }
