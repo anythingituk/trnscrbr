@@ -45,7 +45,11 @@ public sealed class TextInsertionService
         }
         catch (Exception ex)
         {
-            _diagnosticLog.Error("Text insertion failed", ex);
+            _diagnosticLog.Error("Text insertion failed", ex, new Dictionary<string, string>
+            {
+                ["pasteMethod"] = _state.Settings.PasteMethod,
+                ["characters"] = output.Length.ToString()
+            });
             throw;
         }
         finally
@@ -58,7 +62,10 @@ public sealed class TextInsertionService
                 }
                 catch (Exception ex)
                 {
-                    _diagnosticLog.Error("Clipboard restore failed", ex);
+                    _diagnosticLog.Error("Clipboard restore failed", ex, new Dictionary<string, string>
+                    {
+                        ["pasteMethod"] = _state.Settings.PasteMethod
+                    });
                     // Clipboard restoration is best effort; complex clipboard formats can fail.
                 }
             }
