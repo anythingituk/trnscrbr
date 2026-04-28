@@ -179,6 +179,17 @@ public partial class AdvancedSettingsWindow : Window
             Active engine: {_state.Settings.ActiveEngine}
             API key present: {(_credentialStore.HasOpenAiApiKey() ? "yes" : "no")}
             Microphone: {_state.Settings.MicrophoneName}
+            Cleanup mode: {_state.Settings.CleanupMode}
+            Language mode: {_state.Settings.LanguageMode}
+            Paste method: {_state.Settings.PasteMethod}
+            Capture startup buffer: {_state.Settings.CaptureStartupBufferMilliseconds} ms
+            Contextual correction: {FormatBool(_state.Settings.ContextualCorrectionEnabled)}
+            Cursor context: {FormatBool(_state.Settings.CursorContextEnabled)}
+            Voice action commands: {FormatBool(_state.Settings.VoiceActionCommandsEnabled)}
+            Launch on startup: {FormatBool(_state.Settings.LaunchOnStartup)}
+            Floating button enabled: {FormatBool(_state.Settings.FloatingButtonEnabled)}
+            Add trailing space: {FormatBool(_state.Settings.AddTrailingSpace)}
+            Custom vocabulary entries: {_state.Settings.CustomVocabulary.Count}
             Hotkeys: Ctrl+Win+Space, Esc, Ctrl+Win+V
             Transcript content: redacted
             Raw audio: redacted
@@ -193,6 +204,11 @@ public partial class AdvancedSettingsWindow : Window
     private void RefreshDiagnostics_OnClick(object sender, RoutedEventArgs e)
     {
         DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
+    }
+
+    private static string FormatBool(bool value)
+    {
+        return value ? "yes" : "no";
     }
 
     private void OpenDiagnosticsFolder_OnClick(object sender, RoutedEventArgs e)
