@@ -7,10 +7,12 @@ namespace Trnscrbr.Services;
 public sealed class TextInsertionService
 {
     private readonly AppStateViewModel _state;
+    private readonly DiagnosticLogService _diagnosticLog;
 
-    public TextInsertionService(AppStateViewModel state)
+    public TextInsertionService(AppStateViewModel state, DiagnosticLogService diagnosticLog)
     {
         _state = state;
+        _diagnosticLog = diagnosticLog;
     }
 
     public void InsertText(string text)
@@ -33,6 +35,11 @@ public sealed class TextInsertionService
             System.Threading.Thread.Sleep(150);
             _state.LastTranscript = text;
             _state.LastTranscriptExpiresAt = DateTimeOffset.Now.AddHours(1);
+        }
+        catch (Exception ex)
+        {
+            _diagnosticLog.Error("Text insertion failed", ex);
+            throw;
         }
         finally
         {

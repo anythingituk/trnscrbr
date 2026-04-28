@@ -14,6 +14,7 @@ public sealed class RecordingCoordinator
     private readonly AudioCaptureService _audioCapture;
     private readonly CredentialStore _credentialStore;
     private readonly OpenAiProviderService _openAiProvider;
+    private readonly DiagnosticLogService _diagnosticLog;
     private readonly DispatcherTimer _timer;
     private readonly Dispatcher _dispatcher;
     private CancellationTokenSource? _processingCancellation;
@@ -26,7 +27,8 @@ public sealed class RecordingCoordinator
         FloatingButtonWindow floatingButton,
         AudioCaptureService audioCapture,
         CredentialStore credentialStore,
-        OpenAiProviderService openAiProvider)
+        OpenAiProviderService openAiProvider,
+        DiagnosticLogService diagnosticLog)
     {
         _state = state;
         _insertion = insertion;
@@ -34,6 +36,7 @@ public sealed class RecordingCoordinator
         _audioCapture = audioCapture;
         _credentialStore = credentialStore;
         _openAiProvider = openAiProvider;
+        _diagnosticLog = diagnosticLog;
         _dispatcher = Dispatcher.CurrentDispatcher;
         _audioCapture.InputLevelChanged += (_, level) =>
         {
@@ -143,6 +146,10 @@ public sealed class RecordingCoordinator
         }
         catch (Exception ex)
         {
+            _diagnosticLog.Error("Microphone start failed", ex, new Dictionary<string, string>
+            {
+                ["microphone"] = _state.Settings.MicrophoneName
+            });
             _state.RecordingState = RecordingState.Error;
             _state.StatusMessage = $"Microphone failed: {ex.Message}";
             _floatingButton.ShowTransient();
@@ -156,6 +163,10 @@ public sealed class RecordingCoordinator
         var recordedAudio = _audioCapture.Stop();
         if (recordedAudio is null)
         {
+            _diagnosticLog.Error("No microphone input recorded", metadata: new Dictionary<string, string>
+            {
+                ["microphone"] = _state.Settings.MicrophoneName
+            });
             _state.RecordingState = RecordingState.Error;
             _state.StatusMessage = "No microphone input recorded";
             _floatingButton.ShowTransient();
@@ -165,6 +176,7 @@ public sealed class RecordingCoordinator
         var apiKey = _credentialStore.ReadOpenAiApiKey();
         if (string.IsNullOrWhiteSpace(apiKey))
         {
+            _diagnosticLog.Error("OpenAI API key missing");
             _audioCapture.DeleteRecording(recordedAudio);
             _state.RecordingState = RecordingState.Error;
             _state.StatusMessage = "OpenAI API key required. Right-click for Settings.";
@@ -177,6 +189,14 @@ public sealed class RecordingCoordinator
         _state.RecordingState = RecordingState.Processing;
         _state.StatusMessage = "Transcribing";
         _floatingButton.ShowNearTaskbar();
+        _diagnosticLog.Info("Processing recording", new Dictionary<string, string>
+        {
+            ["duration"] = recordedAudio.Duration.TotalSeconds.ToString("0.00"),
+            ["sampleRate"] = recordedAudio.SampleRate.ToString(),
+            ["channels"] = recordedAudio.Channels.ToString(),
+            ["fileSize"] = recordedAudio.FileSizeBytes.ToString(),
+            ["microphone"] = recordedAudio.MicrophoneName
+        });
 
         try
         {
@@ -204,6 +224,11 @@ public sealed class RecordingCoordinator
         }
         catch (Exception ex)
         {
+            _diagnosticLog.Error("Transcription or insertion failed", ex, new Dictionary<string, string>
+            {
+                ["provider"] = _state.Settings.ProviderName,
+                ["engine"] = _state.Settings.ActiveEngine
+            });
             _state.RecordingState = RecordingState.Error;
             _state.StatusMessage = ex.Message;
             _floatingButton.ShowTransient();

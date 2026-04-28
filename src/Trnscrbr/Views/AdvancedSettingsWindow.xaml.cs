@@ -13,13 +13,15 @@ public partial class AdvancedSettingsWindow : Window
     private readonly CredentialStore _credentialStore;
     private readonly OpenAiProviderService _openAiProvider;
     private readonly AudioCaptureService _audioCapture;
+    private readonly DiagnosticLogService _diagnosticLog;
 
     public AdvancedSettingsWindow(
         AppStateViewModel state,
         AppSettingsStore settingsStore,
         CredentialStore credentialStore,
         OpenAiProviderService openAiProvider,
-        AudioCaptureService audioCapture)
+        AudioCaptureService audioCapture,
+        DiagnosticLogService diagnosticLog)
     {
         InitializeComponent();
         _state = state;
@@ -27,8 +29,10 @@ public partial class AdvancedSettingsWindow : Window
         _credentialStore = credentialStore;
         _openAiProvider = openAiProvider;
         _audioCapture = audioCapture;
+        _diagnosticLog = diagnosticLog;
         DataContext = state;
         VocabularyBox.Text = string.Join(Environment.NewLine, state.Settings.CustomVocabulary);
+        DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
         UpdateApiKeyStatus();
         Closing += (_, args) =>
         {
@@ -125,6 +129,9 @@ public partial class AdvancedSettingsWindow : Window
             Hotkeys: Ctrl+Win+Space, Esc, Ctrl+Win+V
             Transcript content: redacted
             Raw audio: redacted
+
+            Recent log:
+            {_diagnosticLog.ReadRecent()}
             """;
 
         System.Windows.Clipboard.SetText(diagnostics);

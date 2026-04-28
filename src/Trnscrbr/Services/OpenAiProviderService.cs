@@ -74,6 +74,7 @@ public sealed class OpenAiProviderService
         form.Add(fileContent, "file", Path.GetFileName(audio.FilePath));
         form.Add(new StringContent(TranscriptionModel), "model");
         form.Add(new StringContent("json"), "response_format");
+        form.Add(new StringContent("Preserve all intentionally spoken words, including opening words such as okay, so, well, right, and yes. Do not omit them as filler."), "prompt");
 
         if (!string.Equals(state.Settings.LanguageMode, "Auto", StringComparison.OrdinalIgnoreCase))
         {
@@ -142,6 +143,9 @@ public sealed class OpenAiProviderService
         return $"""
             You clean dictation transcripts for direct insertion into a focused text field.
             {mode}
+            Preserve intentional opening words and discourse markers such as "Okay", "So", "Well", "Right", and "Yes" when they introduce the user's sentence.
+            Do not remove "Okay" from the start of a sentence unless it is clearly repeated hesitation such as "okay okay um".
+            Remove only true hesitation filler, not meaningful conversational framing.
             Always apply contextual correction for obvious speech recognition mistakes unless doing so would change the likely meaning.
             Convert spoken punctuation/layout commands when context indicates they are commands: new line, full stop, question mark, comma.
             Do not add commentary, labels, markdown, or quotes. Return only the final text to insert.

@@ -92,7 +92,7 @@
                     <StackPanel Margin="16">
                         <TextBlock Text="Diagnostics never include transcript text, raw audio, or API keys." TextWrapping="Wrap" />
                         <Button Content="Copy Diagnostics" Width="150" HorizontalAlignment="Left" Margin="0,14,0,18" Click="CopyDiagnostics_OnClick" />
-                        <TextBox IsReadOnly="True" MinHeight="260" Text="No diagnostics yet." />
+                        <TextBox x:Name="DiagnosticsBox" IsReadOnly="True" MinHeight="260" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
