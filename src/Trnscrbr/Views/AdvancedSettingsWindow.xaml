@@ -214,6 +214,15 @@
                             </ComboBoxItem>
                         </ComboBox>
                         <TextBlock Text="Auto detect is recommended unless recognition repeatedly chooses the wrong language." TextWrapping="Wrap" Margin="0,6,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <TextBlock Text="English spelling" FontWeight="SemiBold" Margin="0,14,0,6" />
+                        <ComboBox SelectedValue="{Binding Settings.EnglishDialect}" SelectedValuePath="Content" SelectionChanged="Settings_OnChanged">
+                            <ComboBoxItem Content="Auto" />
+                            <ComboBoxItem Content="British English" />
+                            <ComboBoxItem Content="American English" />
+                            <ComboBoxItem Content="Canadian English" />
+                            <ComboBoxItem Content="Australian English" />
+                        </ComboBox>
+                        <TextBlock Text="Auto uses your Windows region to choose the English spelling convention for cleanup and rewrite." TextWrapping="Wrap" Margin="0,6,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
                         <CheckBox Content="Voice action commands" IsChecked="{Binding Settings.VoiceActionCommandsEnabled}" Margin="0,4" Click="Settings_OnChanged" />
                         <CheckBox Content="Anonymous diagnostics" IsChecked="{Binding Settings.DiagnosticsEnabled}" Margin="0,4" Click="Settings_OnChanged" />
                     </StackPanel>

@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.IO;
+using System.Globalization;
 using Trnscrbr.Models;
 using Trnscrbr.ViewModels;
 
@@ -177,6 +178,7 @@ public sealed class OpenAiProviderService
         var languageInstruction = string.Equals(state.Settings.LanguageMode, "Auto", StringComparison.OrdinalIgnoreCase)
             ? "Language mode: auto detect. Preserve the language used by the speaker."
             : $"Language mode: {state.Settings.LanguageMode}. Preserve that language unless the user clearly switches language.";
+        var englishDialectInstruction = GetEnglishDialectInstruction(state.Settings.EnglishDialect);
 
         var mode = rewrite
             ? $"Rewrite the transcript into cleaner text while preserving the user's meaning. {GetRewriteStyleInstruction(state.Settings.RewriteStyle)}"
@@ -195,6 +197,7 @@ public sealed class OpenAiProviderService
             You clean dictation transcripts for direct insertion into a focused text field.
             {mode}
             {languageInstruction}
+            {englishDialectInstruction}
             Preserve intentional opening words and discourse markers such as "Okay", "So", "Well", "Right", and "Yes" when they introduce the user's sentence.
             Do not remove "Okay" from the start of a sentence unless it is clearly repeated hesitation such as "okay okay um".
             Remove only true hesitation filler, not meaningful conversational framing.
@@ -279,6 +282,35 @@ public sealed class OpenAiProviderService
             "Concise" => "Make the result brief and direct. Remove unnecessary wording while preserving the core meaning.",
             "Native-level English" => "Make the English sound natural, fluent, and idiomatic, as a careful native speaker would write it.",
             _ => "Use plain, clear English. Avoid overly formal wording and avoid adding new ideas."
+        };
+    }
+
+    private static string GetEnglishDialectInstruction(string englishDialect)
+    {
+        var dialect = string.Equals(englishDialect, "Auto", StringComparison.OrdinalIgnoreCase)
+            ? DetectEnglishDialectFromCulture()
+            : englishDialect;
+
+        return dialect switch
+        {
+            "British English" => "For English output, use British English spelling and wording, such as colour, organise, centre, and favour. Do not translate non-English speech into English.",
+            "American English" => "For English output, use American English spelling and wording, such as color, organize, center, and favor. Do not translate non-English speech into English.",
+            "Canadian English" => "For English output, use Canadian English spelling and wording where appropriate. Do not translate non-English speech into English.",
+            "Australian English" => "For English output, use Australian English spelling and wording where appropriate. Do not translate non-English speech into English.",
+            _ => "For English output, preserve the speaker's likely English spelling convention. Do not translate non-English speech into English."
+        };
+    }
+
+    private static string DetectEnglishDialectFromCulture()
+    {
+        var region = RegionInfo.CurrentRegion.TwoLetterISORegionName.ToUpperInvariant();
+        return region switch
+        {
+            "GB" or "IE" => "British English",
+            "US" => "American English",
+            "CA" => "Canadian English",
+            "AU" or "NZ" => "Australian English",
+            _ => "British English"
         };
     }
 

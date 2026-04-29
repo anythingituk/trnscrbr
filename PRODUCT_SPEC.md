@@ -330,6 +330,8 @@ Model handling:
 - Design for multiple languages from the start.
 - Support automatic language detection.
 - Support manual language selection.
+- Support English spelling preference: Auto, British English, American English, Canadian English, and Australian English.
+- Auto English spelling should infer from the user's Windows region.
 - Automatic punctuation enabled.
 
 ## Onboarding

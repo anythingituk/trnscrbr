@@ -17,6 +17,7 @@ public sealed class AppSettings
     public string CleanupMode { get; set; } = "Clean only";
     public string RewriteStyle { get; set; } = "Plain English";
     public string LanguageMode { get; set; } = "Auto";
+    public string EnglishDialect { get; set; } = "Auto";
     public string PasteMethod { get; set; } = "Ctrl+V";
     public string MicrophoneName { get; set; } = "Windows default";
     public string ActiveEngine { get; set; } = "None";

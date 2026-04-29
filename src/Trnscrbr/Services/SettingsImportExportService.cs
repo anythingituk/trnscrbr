@@ -60,6 +60,7 @@ public sealed class SettingsImportExportService
             CleanupMode = settings.CleanupMode,
             RewriteStyle = settings.RewriteStyle,
             LanguageMode = settings.LanguageMode,
+            EnglishDialect = settings.EnglishDialect,
             PasteMethod = settings.PasteMethod,
             MicrophoneName = settings.MicrophoneName,
             ActiveEngine = settings.ActiveEngine,

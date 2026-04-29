@@ -185,6 +185,7 @@ public partial class AdvancedSettingsWindow : Window
             Transcription type: {_state.Settings.CleanupMode}
             Rewrite style: {_state.Settings.RewriteStyle}
             Language mode: {_state.Settings.LanguageMode}
+            English spelling: {_state.Settings.EnglishDialect}
             Paste method: {_state.Settings.PasteMethod}
             Capture startup buffer: {_state.Settings.CaptureStartupBufferMilliseconds} ms
             Contextual correction: {FormatBool(_state.Settings.ContextualCorrectionEnabled)}
@@ -375,6 +376,7 @@ public partial class AdvancedSettingsWindow : Window
         _state.Settings.CleanupMode = imported.CleanupMode;
         _state.Settings.RewriteStyle = imported.RewriteStyle;
         _state.Settings.LanguageMode = imported.LanguageMode;
+        _state.Settings.EnglishDialect = imported.EnglishDialect;
         _state.Settings.PasteMethod = imported.PasteMethod;
         _state.Settings.MicrophoneName = imported.MicrophoneName;
         _state.Settings.ActiveEngine = imported.ActiveEngine;

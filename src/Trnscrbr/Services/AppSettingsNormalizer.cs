@@ -33,6 +33,15 @@ public static class AppSettingsNormalizer
         "Native-level English"
     ];
 
+    private static readonly string[] EnglishDialects =
+    [
+        "Auto",
+        "British English",
+        "American English",
+        "Canadian English",
+        "Australian English"
+    ];
+
     public static AppSettings Normalize(AppSettings? settings)
     {
         settings ??= new AppSettings();
@@ -43,6 +52,7 @@ public static class AppSettingsNormalizer
         settings.CleanupMode = Pick(settings.CleanupMode, CleanupModes, defaults.CleanupMode);
         settings.RewriteStyle = Pick(settings.RewriteStyle, RewriteStyles, defaults.RewriteStyle);
         settings.LanguageMode = string.IsNullOrWhiteSpace(settings.LanguageMode) ? defaults.LanguageMode : settings.LanguageMode;
+        settings.EnglishDialect = Pick(settings.EnglishDialect, EnglishDialects, defaults.EnglishDialect);
         settings.PasteMethod = Pick(settings.PasteMethod, PasteMethods, defaults.PasteMethod);
         settings.MicrophoneName = string.IsNullOrWhiteSpace(settings.MicrophoneName) ? defaults.MicrophoneName : settings.MicrophoneName;
         settings.ActiveEngine = string.IsNullOrWhiteSpace(settings.ActiveEngine) ? defaults.ActiveEngine : settings.ActiveEngine;

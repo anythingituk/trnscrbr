@@ -56,6 +56,7 @@ Useful settings while testing:
 - Paste method: `Ctrl+V` by default, optional `Shift+Insert`.
 - Transcription type: `Clean only` or `Rewrite`.
 - Rewrite style: `Plain English`, `Professional`, `Friendly`, `Concise`, or `Native-level English`.
+- English spelling: `Auto`, `British English`, `American English`, `Canadian English`, or `Australian English`.
 - Capture startup buffer: helps avoid clipped first words.
 - Diagnostics: refresh/copy logs or open the diagnostics folder.
 - Local Models: detects candidate local models but does not use them.
