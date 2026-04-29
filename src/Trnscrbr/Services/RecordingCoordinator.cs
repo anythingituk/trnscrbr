@@ -189,7 +189,7 @@ public sealed class RecordingCoordinator
                 ["microphone"] = _state.Settings.MicrophoneName
             });
             _state.RecordingState = RecordingState.Error;
-            _state.StatusMessage = "No microphone input recorded";
+            _state.StatusMessage = $"No input from {_state.Settings.MicrophoneName}. Check the microphone menu.";
             _floatingButton.ShowTransient();
             return;
         }
