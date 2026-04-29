@@ -44,7 +44,7 @@
                         <StackPanel Margin="0,0,0,12">
                             <TextBlock Text="- Right-click the tray icon or glass button for Settings." TextWrapping="Wrap" />
                             <TextBlock Text="- Hold Ctrl + Win + Space to record, then release to transcribe." TextWrapping="Wrap" />
-                            <TextBlock Text="- Click the glass button to toggle recording without holding the hotkey." TextWrapping="Wrap" />
+                            <TextBlock Text="- Click the glass button to use manual recording controls." TextWrapping="Wrap" />
                             <TextBlock Text="- Press Esc to cancel recording or processing." TextWrapping="Wrap" />
                             <TextBlock Text="- Use the tray or glass button menu to recover the last transcript for up to one hour." TextWrapping="Wrap" />
                             <TextBlock Text="- Trnscrbr uses the clipboard temporarily, restores it afterwards, and does not save transcript history." TextWrapping="Wrap" />

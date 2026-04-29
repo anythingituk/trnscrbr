@@ -21,7 +21,7 @@
                        Foreground="{StaticResource MutedForegroundBrush}" />
 
             <StackPanel Margin="0,0,0,18">
-                <TextBlock Text="Ctrl + Win + Space starts dictation. Hold to record, or tap to toggle." TextWrapping="Wrap" Margin="0,0,0,8" />
+                <TextBlock Text="Hold Ctrl + Win + Space to record, then release to transcribe." TextWrapping="Wrap" Margin="0,0,0,8" />
                 <TextBlock Text="Trnscrbr inserts text for review and never presses Enter." TextWrapping="Wrap" Margin="0,0,0,8" />
                 <TextBlock Text="The tray icon and glass button open recording controls and settings." TextWrapping="Wrap" Margin="0,0,0,8" />
                 <TextBlock Text="Cloud/API modes may use third-party services. Local mode is planned and requires model downloads." TextWrapping="Wrap" Margin="0,0,0,8" />

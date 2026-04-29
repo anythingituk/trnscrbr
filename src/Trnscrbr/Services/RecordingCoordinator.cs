@@ -6,8 +6,6 @@ namespace Trnscrbr.Services;
 
 public sealed class RecordingCoordinator
 {
-    private static readonly TimeSpan TapToToggleThreshold = TimeSpan.FromMilliseconds(450);
-
     private readonly AppStateViewModel _state;
     private readonly TextInsertionService _insertion;
     private readonly FloatingButtonWindow _floatingButton;
@@ -19,9 +17,7 @@ public sealed class RecordingCoordinator
     private readonly DispatcherTimer _timer;
     private readonly Dispatcher _dispatcher;
     private CancellationTokenSource? _processingCancellation;
-    private DateTimeOffset? _pressStartedAt;
     private DateTimeOffset? _recordingStartedAt;
-    private bool _recordingWasActiveOnPress;
 
     public RecordingCoordinator(
         AppStateViewModel state,
@@ -52,9 +48,6 @@ public sealed class RecordingCoordinator
 
     public void HandlePushToTalkPressed()
     {
-        _pressStartedAt = DateTimeOffset.Now;
-        _recordingWasActiveOnPress = _state.RecordingState == RecordingState.Recording;
-
         if (!_state.IsProviderConfigured)
         {
             ShowProviderRequired();
@@ -69,24 +62,12 @@ public sealed class RecordingCoordinator
 
     public void HandlePushToTalkReleased()
     {
-        if (_pressStartedAt is null)
-        {
-            return;
-        }
-
-        var pressDuration = DateTimeOffset.Now - _pressStartedAt.Value;
-        var isTap = pressDuration <= TapToToggleThreshold;
-        var shouldStopRecording = _recordingWasActiveOnPress || !isTap;
-
-        _pressStartedAt = null;
-        _recordingWasActiveOnPress = false;
-
         if (!_state.IsProviderConfigured)
         {
             return;
         }
 
-        if (_state.RecordingState == RecordingState.Recording && shouldStopRecording)
+        if (_state.RecordingState == RecordingState.Recording)
         {
             StopAndProcess();
         }

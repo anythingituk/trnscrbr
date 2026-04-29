@@ -14,6 +14,13 @@ public partial class FloatingButtonWindow : Window
     private const int GWL_EXSTYLE = -20;
     private const int WS_EX_NOACTIVATE = 0x08000000;
     private const int WS_EX_TOOLWINDOW = 0x00000080;
+    private static readonly System.Windows.Media.Color IdleGlassColor = System.Windows.Media.Color.FromArgb(78, 54, 145, 255);
+    private static readonly System.Windows.Media.Color IdleShellColor = System.Windows.Media.Color.FromArgb(102, 24, 72, 132);
+    private static readonly System.Windows.Media.Color RecordingGlassColor = System.Windows.Media.Color.FromArgb(112, 255, 34, 68);
+    private static readonly System.Windows.Media.Color RecordingShellColor = System.Windows.Media.Color.FromArgb(112, 132, 20, 36);
+    private static readonly System.Windows.Media.Color ProcessingGlassColor = System.Windows.Media.Color.FromArgb(104, 36, 220, 108);
+    private static readonly System.Windows.Media.Color ProcessingShellColor = System.Windows.Media.Color.FromArgb(108, 20, 112, 58);
+    private static readonly System.Windows.Media.Color WarningGlassColor = System.Windows.Media.Color.FromArgb(86, 255, 214, 102);
 
     private readonly AppStateViewModel _state;
     private readonly DispatcherTimer _hideTimer = new() { Interval = TimeSpan.FromSeconds(4) };
@@ -95,66 +102,58 @@ public partial class FloatingButtonWindow : Window
                 Shell.Width = 46;
                 Shell.Height = 28;
                 Shell.CornerRadius = new CornerRadius(14);
+                Shell.Background = new SolidColorBrush(RecordingShellColor);
                 GlowHalo.Width = 52;
                 GlowHalo.Height = 34;
-                GlowHalo.Fill = new SolidColorBrush(GetRecordingDurationColor());
+                GlowHalo.Fill = new SolidColorBrush(RecordingGlassColor);
                 break;
             case RecordingState.Processing:
                 Width = 76;
                 Shell.Width = 46;
                 Shell.Height = 28;
                 Shell.CornerRadius = new CornerRadius(14);
+                Shell.Background = new SolidColorBrush(ProcessingShellColor);
                 GlowHalo.Width = 52;
                 GlowHalo.Height = 34;
-                GlowHalo.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(82, 255, 214, 102));
+                GlowHalo.Fill = new SolidColorBrush(ProcessingGlassColor);
                 break;
             case RecordingState.Error:
                 Width = 220;
                 Shell.Width = 28;
                 Shell.Height = 28;
                 Shell.CornerRadius = new CornerRadius(14);
+                Shell.Background = new SolidColorBrush(WarningGlassColor);
                 GlowHalo.Width = 40;
                 GlowHalo.Height = 34;
-                GlowHalo.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(74, 255, 214, 102));
+                GlowHalo.Fill = new SolidColorBrush(WarningGlassColor);
                 break;
             default:
                 Width = 76;
                 Shell.Width = 28;
                 Shell.Height = 28;
                 Shell.CornerRadius = new CornerRadius(14);
+                Shell.Background = new SolidColorBrush(IdleShellColor);
                 GlowHalo.Width = 40;
                 GlowHalo.Height = 34;
-                GlowHalo.Fill = new SolidColorBrush(System.Windows.Media.Color.FromArgb(78, 54, 213, 211));
+                GlowHalo.Fill = new SolidColorBrush(IdleGlassColor);
                 break;
         }
 
         AnimateWaveform();
     }
 
-    private System.Windows.Media.Color GetRecordingDurationColor()
-    {
-        if (_state.Elapsed >= TimeSpan.FromMinutes(3))
-        {
-            return System.Windows.Media.Color.FromArgb(104, 255, 55, 55);
-        }
-
-        if (_state.Elapsed >= TimeSpan.FromMinutes(2))
-        {
-            return System.Windows.Media.Color.FromArgb(98, 255, 95, 48);
-        }
-
-        if (_state.Elapsed >= TimeSpan.FromMinutes(1))
-        {
-            return System.Windows.Media.Color.FromArgb(92, 255, 132, 48);
-        }
-
-        return System.Windows.Media.Color.FromArgb(92, 255, 92, 56);
-    }
-
     private void AnimateWaveform()
     {
         _animationPhase += 0.22;
         _smoothedInputLevel = (_smoothedInputLevel * 0.72) + (_state.InputLevel * 0.28);
+
+        if (_state.RecordingState == RecordingState.Idle)
+        {
+            SetIdleLine();
+            var pulse = 0.52 + (Math.Sin(_animationPhase * 0.65) * 0.08);
+            GlowHalo.Opacity = pulse;
+            return;
+        }
 
         var activeLevel = _state.RecordingState == RecordingState.Recording
             ? Math.Max(0.18, Math.Min(1.0, _smoothedInputLevel * 2.4))
@@ -168,8 +167,16 @@ public partial class FloatingButtonWindow : Window
         SetBarHeight(Bar4, 5, 13, activeLevel, 2.9);
         SetBarHeight(Bar5, 4, 8, activeLevel, 3.8);
 
-        var pulse = 0.52 + (Math.Sin(_animationPhase * 0.65) * 0.08);
-        GlowHalo.Opacity = _state.RecordingState == RecordingState.Idle ? pulse : 0.68;
+        GlowHalo.Opacity = 0.68;
+    }
+
+    private void SetIdleLine()
+    {
+        Bar1.Height = 3;
+        Bar2.Height = 3;
+        Bar3.Height = 3;
+        Bar4.Height = 3;
+        Bar5.Height = 3;
     }
 
     private void SetBarHeight(FrameworkElement bar, double min, double range, double level, double offset)

@@ -15,6 +15,7 @@ public sealed class KeyboardHookService : IDisposable
 
     private readonly LowLevelKeyboardProc _proc;
     private SynchronizationContext? _context;
+    private System.Threading.Timer? _pushToTalkMonitor;
     private IntPtr _hookId;
     private bool _pushToTalkDown;
     private bool _suppressWinKey;
@@ -40,6 +41,9 @@ public sealed class KeyboardHookService : IDisposable
 
     public void Dispose()
     {
+        _pushToTalkMonitor?.Dispose();
+        _pushToTalkMonitor = null;
+
         if (_hookId != IntPtr.Zero)
         {
             UnhookWindowsHookEx(_hookId);
@@ -74,12 +78,12 @@ public sealed class KeyboardHookService : IDisposable
             if (isDown && !_pushToTalkDown)
             {
                 _pushToTalkDown = true;
+                StartPushToTalkMonitor();
                 PostEvent(PushToTalkPressed);
             }
             else if (isUp)
             {
-                _pushToTalkDown = false;
-                PostEvent(PushToTalkReleased);
+                ReleasePushToTalk();
             }
 
             return (IntPtr)1;
@@ -87,8 +91,7 @@ public sealed class KeyboardHookService : IDisposable
 
         if (_pushToTalkDown && isUp && IsPushToTalkChordKey(key))
         {
-            _pushToTalkDown = false;
-            PostEvent(PushToTalkReleased);
+            ReleasePushToTalk();
             return key == Keys.Space || IsWinKey(key)
                 ? (IntPtr)1
                 : CallNextHookEx(_hookId, nCode, wParam, lParam);
@@ -120,6 +123,38 @@ public sealed class KeyboardHookService : IDisposable
     private static bool IsWinKey(Keys key)
     {
         return key is Keys.LWin or Keys.RWin;
+    }
+
+    private static bool IsPushToTalkChordDown()
+    {
+        return (IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey))
+            && (IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin))
+            && IsKeyDown(Keys.Space);
+    }
+
+    private void StartPushToTalkMonitor()
+    {
+        _pushToTalkMonitor?.Dispose();
+        _pushToTalkMonitor = new System.Threading.Timer(_ =>
+        {
+            if (_pushToTalkDown && !IsPushToTalkChordDown())
+            {
+                ReleasePushToTalk();
+            }
+        }, null, TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(50));
+    }
+
+    private void ReleasePushToTalk()
+    {
+        if (!_pushToTalkDown)
+        {
+            return;
+        }
+
+        _pushToTalkDown = false;
+        _pushToTalkMonitor?.Dispose();
+        _pushToTalkMonitor = null;
+        PostEvent(PushToTalkReleased);
     }
 
     private void PostEvent(EventHandler? handler)
