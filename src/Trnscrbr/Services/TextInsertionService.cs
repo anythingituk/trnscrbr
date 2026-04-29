@@ -8,8 +8,8 @@ namespace Trnscrbr.Services;
 public sealed class TextInsertionService
 {
     private const int ClipboardBusyHResult = unchecked((int)0x800401D0);
-    private const int ClipboardRetryCount = 8;
-    private const int ClipboardRetryDelayMilliseconds = 60;
+    private const int ClipboardRetryCount = 24;
+    private const int ClipboardRetryDelayMilliseconds = 100;
     private const int ProcessQueryLimitedInformation = 0x1000;
     private const int TokenQuery = 0x0008;
     private const int TokenElevation = 20;
