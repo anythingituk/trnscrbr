@@ -20,6 +20,7 @@ public sealed class AudioCaptureService : IDisposable
     private bool _cancelled;
     private bool _isRecording;
     private int _preBufferBytes;
+    private int? _activeDeviceNumber;
     private WaveFormat _waveFormat = new(16000, 16, 1);
 
     public AudioCaptureService(AppStateViewModel state)
@@ -181,18 +182,25 @@ public sealed class AudioCaptureService : IDisposable
 
     private void EnsureCaptureStarted()
     {
+        var deviceNumber = ResolveDeviceNumber();
         if (_waveIn is not null)
         {
-            return;
+            if (_activeDeviceNumber == deviceNumber || _isRecording)
+            {
+                return;
+            }
+
+            StopCapture();
         }
 
         _waveIn = new WaveInEvent
         {
-            DeviceNumber = ResolveDeviceNumber(),
+            DeviceNumber = deviceNumber,
             WaveFormat = _waveFormat,
             BufferMilliseconds = 20,
             NumberOfBuffers = 3
         };
+        _activeDeviceNumber = deviceNumber;
 
         _waveIn.DataAvailable += OnDataAvailable;
         _waveIn.StartRecording();
@@ -223,6 +231,7 @@ public sealed class AudioCaptureService : IDisposable
 
         _waveIn?.Dispose();
         _waveIn = null;
+        _activeDeviceNumber = null;
 
         lock (_syncRoot)
         {
@@ -256,7 +265,7 @@ public sealed class AudioCaptureService : IDisposable
     {
         if (_state.Settings.MicrophoneName == "Windows default")
         {
-            return 0;
+            return -1;
         }
 
         for (var i = 0; i < WaveIn.DeviceCount; i++)
