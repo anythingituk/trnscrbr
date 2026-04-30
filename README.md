@@ -66,7 +66,7 @@ Useful settings while testing:
 WPF MVP in progress. Current build includes:
 
 - Dynamic tray icon and floating glass button with mic-level waveform states.
-- `Ctrl + Win + Space` push-to-talk/toggle and `Esc` cancel.
+- `Ctrl + Win + Space` hold-to-record and `Esc` cancel.
 - Lightweight first-run onboarding.
 - Compact tray panel with usage estimate, monitor-aware placement, and Windows light/dark theme support.
 - OpenAI bring-your-own-key transcription processing.

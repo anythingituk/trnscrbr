@@ -170,10 +170,10 @@ public sealed class TrayIconService : IDisposable
 
         var color = state switch
         {
-            RecordingState.Recording => Color.FromArgb(255, 92, 56),
-            RecordingState.Processing => Color.FromArgb(255, 214, 102),
+            RecordingState.Recording => Color.FromArgb(255, 34, 68),
+            RecordingState.Processing => Color.FromArgb(36, 220, 108),
             RecordingState.Error => Color.FromArgb(255, 190, 80),
-            _ => Color.FromArgb(54, 213, 211)
+            _ => Color.FromArgb(54, 145, 255)
         };
 
         using var bitmap = new Bitmap(32, 32);

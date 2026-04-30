@@ -12,7 +12,7 @@ The MVP is Windows-first using .NET with WPF or WinUI. Mac support should be con
 2. User presses `Ctrl + Win + Space`.
 3. Floating glass button appears near bottom-center above the taskbar.
 4. Recording starts.
-5. User releases the hotkey for hold-to-talk, or taps the hotkey/button again for toggle mode.
+5. User releases the hotkey to stop recording and begin transcription, or uses tray/glass manual controls.
 6. App transcribes and cleans the text.
 7. App inserts the result into the focused text field using temporary clipboard paste.
 8. App restores the previous clipboard contents.
@@ -54,7 +54,7 @@ Default behavior:
 - Defaults to bottom-center above the Windows taskbar.
 - User can move it.
 - Auto-hides a few seconds after returning to idle.
-- Left-click toggles recording.
+- Left-click toggles manual recording.
 - Right-click opens compact context menu.
 - Right-click menu includes recording, Paste Last Transcript, Settings, and Quit.
 
@@ -62,7 +62,7 @@ Visual states:
 
 - Idle: smaller glass button with fixed blue/green/purple glow.
 - Recording: larger button/pill with red/orange glow.
-- Processing/transcribing: distinct third state, such as amber/white pulse or shimmer.
+- Processing/transcribing: distinct third state, currently green so it is clearly different from recording.
 
 Recording animation:
 
@@ -123,8 +123,8 @@ Defaults:
 Push-to-talk behavior:
 
 - Holding `Ctrl + Win + Space` records while held and stops/transcribes on release.
-- Quick tapping `Ctrl + Win + Space` toggles recording start/stop.
-- Tap/hold timing threshold is fixed for MVP.
+- Quick tapping `Ctrl + Win + Space` no longer toggles recording; release always ends recording.
+- Manual start/stop remains available from the tray and floating glass button controls.
 
 All hotkeys should be configurable later through settings where practical.
 

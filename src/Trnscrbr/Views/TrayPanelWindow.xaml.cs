@@ -88,11 +88,13 @@ public partial class TrayPanelWindow : Window
     private void Settings_OnChanged(object sender, RoutedEventArgs e)
     {
         Persist();
+        RefreshUsageBadge();
     }
 
     private void FloatingButton_OnClick(object sender, RoutedEventArgs e)
     {
         _setFloatingButtonVisibility(_state.Settings.FloatingButtonEnabled);
+        RefreshUsageBadge();
     }
 
     private void Microphone_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -134,6 +136,12 @@ public partial class TrayPanelWindow : Window
         }
 
         if (e.PropertyName == nameof(AppStateViewModel.StatusMessage))
+        {
+            Dispatcher.Invoke(RefreshUsageBadge);
+        }
+
+        if (e.PropertyName == nameof(AppStateViewModel.Settings)
+            || e.PropertyName == nameof(AppStateViewModel.ActiveEngineLabel))
         {
             Dispatcher.Invoke(RefreshUsageBadge);
         }
