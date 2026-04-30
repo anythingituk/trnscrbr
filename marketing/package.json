@@ -1,0 +1,24 @@
+{
+  "name": "trnscrbr-marketing",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "site": "npx serve site -l 4173",
+    "video": "remotion studio video/src/index.tsx",
+    "render": "remotion render video/src/index.tsx TrnscrbrIntro dist/trnscrbr-intro.mp4",
+    "still": "remotion still video/src/index.tsx TrnscrbrIntro dist/trnscrbr-intro-frame.png --frame=120 --scale=0.25"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.374",
+    "remotion": "^4.0.374",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "serve": "^14.2.5"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.17",
+    "@types/react-dom": "^19.1.11",
+    "typescript": "^5.9.3"
+  }
+}
