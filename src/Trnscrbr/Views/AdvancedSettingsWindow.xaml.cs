@@ -44,6 +44,7 @@ public partial class AdvancedSettingsWindow : Window
         DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
         UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
         CurrentVersionText.Text = $"Current version: {AppInfo.Version}";
+        RefreshOverview();
         RefreshLocalModels();
         UpdateApiKeyStatus();
         UpdateProviderModeStatus();
@@ -101,6 +102,7 @@ public partial class AdvancedSettingsWindow : Window
         _state.Settings.ProviderMode = "Bring your own API key";
         _state.Settings.ActiveEngine = "OpenAI";
         Persist();
+        RefreshOverview();
         UpdateProviderModeStatus();
         ApiKeyStatusText.Text = result.IsSuccess
             ? "OpenAI key saved in Windows Credential Manager."
@@ -114,6 +116,7 @@ public partial class AdvancedSettingsWindow : Window
         _state.Settings.ProviderMode = "Not configured";
         _state.Settings.ActiveEngine = "None";
         Persist();
+        RefreshOverview();
         UpdateApiKeyStatus();
         UpdateProviderModeStatus();
     }
@@ -140,6 +143,7 @@ public partial class AdvancedSettingsWindow : Window
     private void Settings_OnChanged(object sender, RoutedEventArgs e)
     {
         Persist();
+        RefreshOverview();
         UpdateProviderModeStatus();
     }
 
@@ -223,6 +227,7 @@ public partial class AdvancedSettingsWindow : Window
 
     private void RefreshUsage_OnClick(object sender, RoutedEventArgs e)
     {
+        RefreshOverview();
         UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
     }
 
@@ -253,6 +258,7 @@ public partial class AdvancedSettingsWindow : Window
         {
             _state.Settings.MonthlyCostWarning = warning;
             Persist();
+            RefreshOverview();
             UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
         }
         else
@@ -313,6 +319,7 @@ public partial class AdvancedSettingsWindow : Window
             }
 
             Persist();
+            RefreshOverview();
             _audioCapture.ApplyPreBufferSetting();
             ImportExportStatusText.Text = "Settings imported. API keys were not imported.";
         }
@@ -337,6 +344,19 @@ public partial class AdvancedSettingsWindow : Window
         _settingsStore.Save(_state.Settings);
         StartupService.Apply(_state.Settings);
         _state.RaiseSettingsChanged();
+    }
+
+    private void RefreshOverview()
+    {
+        var month = _usageStats.GetCurrentMonth();
+        var threshold = _state.Settings.MonthlyCostWarning;
+        var cost = month.EstimatedCostUsd;
+
+        OverviewProviderText.Text = _state.Settings.ProviderMode;
+        OverviewEngineText.Text = _state.ActiveEngineLabel;
+        OverviewUsageText.Text = threshold > 0 && cost >= (double)threshold
+            ? $"{month.Recordings} dictations, ${cost:0.00} of ${threshold:0.00}"
+            : $"{month.Recordings} dictations, est. ${cost:0.00}";
     }
 
     private void UpdateProviderModeStatus()

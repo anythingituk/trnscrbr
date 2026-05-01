@@ -13,9 +13,7 @@ public partial class TrayPanelWindow : Window
 {
     private readonly AppStateViewModel _state;
     private readonly AppSettingsStore _settingsStore;
-    private readonly UsageStatsService _usageStats;
     private readonly Func<IReadOnlyList<AudioInputDevice>> _getMicrophones;
-    private readonly Action _toggleRecording;
     private readonly Action<bool> _setFloatingButtonVisibility;
     private readonly Action _showAdvanced;
     private bool _loadingMicrophones;
@@ -25,16 +23,13 @@ public partial class TrayPanelWindow : Window
         AppSettingsStore settingsStore,
         UsageStatsService usageStats,
         Func<IReadOnlyList<AudioInputDevice>> getMicrophones,
-        Action toggleRecording,
         Action<bool> setFloatingButtonVisibility,
         Action showAdvanced)
     {
         InitializeComponent();
         _state = state;
         _settingsStore = settingsStore;
-        _usageStats = usageStats;
         _getMicrophones = getMicrophones;
-        _toggleRecording = toggleRecording;
         _setFloatingButtonVisibility = setFloatingButtonVisibility;
         DataContext = state;
         _showAdvanced = showAdvanced;
@@ -49,13 +44,11 @@ public partial class TrayPanelWindow : Window
         const double bottomOffset = 72;
 
         RefreshMicrophones();
-        RefreshRecordButton();
-        RefreshUsageBadge();
         Left = Math.Max(area.Left + 8, area.Right - Width - trayOverflowAvoidanceWidth);
         Top = Math.Max(area.Top + 8, area.Bottom - Height - bottomOffset);
         Show();
         Activate();
-        RecordButton.Focus();
+        AdvancedButton.Focus();
     }
 
     protected override void OnClosed(EventArgs e)
@@ -79,22 +72,14 @@ public partial class TrayPanelWindow : Window
         }
     }
 
-    private void Record_OnClick(object sender, RoutedEventArgs e)
-    {
-        _toggleRecording();
-        RefreshRecordButton();
-    }
-
     private void Settings_OnChanged(object sender, RoutedEventArgs e)
     {
         Persist();
-        RefreshUsageBadge();
     }
 
     private void FloatingButton_OnClick(object sender, RoutedEventArgs e)
     {
         _setFloatingButtonVisibility(_state.Settings.FloatingButtonEnabled);
-        RefreshUsageBadge();
     }
 
     private void Microphone_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -121,6 +106,11 @@ public partial class TrayPanelWindow : Window
                 : devices.FirstOrDefault(device => device.IsDefault)?.Name ?? devices.FirstOrDefault()?.Name;
 
             MicrophoneBox.SelectedValue = selected;
+            if (!string.IsNullOrWhiteSpace(selected) && selected != _state.Settings.MicrophoneName)
+            {
+                _state.Settings.MicrophoneName = selected;
+                Persist();
+            }
         }
         finally
         {
@@ -130,39 +120,6 @@ public partial class TrayPanelWindow : Window
 
     private void State_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(AppStateViewModel.RecordingState))
-        {
-            Dispatcher.Invoke(RefreshRecordButton);
-        }
-
-        if (e.PropertyName == nameof(AppStateViewModel.StatusMessage))
-        {
-            Dispatcher.Invoke(RefreshUsageBadge);
-        }
-
-        if (e.PropertyName == nameof(AppStateViewModel.Settings)
-            || e.PropertyName == nameof(AppStateViewModel.ActiveEngineLabel))
-        {
-            Dispatcher.Invoke(RefreshUsageBadge);
-        }
-    }
-
-    private void RefreshRecordButton()
-    {
-        var isRecording = _state.RecordingState == RecordingState.Recording;
-        RecordButton.ToolTip = isRecording ? "Stop Recording" : "Start Recording";
-        RecordButton.IsEnabled = _state.RecordingState is RecordingState.Idle or RecordingState.Recording or RecordingState.Error;
-    }
-
-    private void RefreshUsageBadge()
-    {
-        var month = _usageStats.GetCurrentMonth();
-        var threshold = _state.Settings.MonthlyCostWarning;
-        var cost = month.EstimatedCostUsd;
-
-        UsageText.Text = threshold > 0 && cost >= (double)threshold
-            ? $"Usage warning: ${cost:0.00} of ${threshold:0.00}"
-            : $"This month: {month.Recordings} dictations, est. ${cost:0.00}";
     }
 
     private void Persist()

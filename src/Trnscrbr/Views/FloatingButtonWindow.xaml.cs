@@ -55,7 +55,7 @@ public partial class FloatingButtonWindow : Window
 
     public void ShowNearTaskbar()
     {
-        var area = GetTargetScreenWorkArea();
+        var area = GetTargetScreenWorkAreaSafe();
         Left = area.Left + (area.Width - Width) / 2;
         Top = area.Bottom - Height - 12;
         Show();
@@ -257,6 +257,18 @@ public partial class FloatingButtonWindow : Window
         var handle = new WindowInteropHelper(this).Handle;
         var style = GetWindowLong(handle, GWL_EXSTYLE);
         SetWindowLong(handle, GWL_EXSTYLE, style | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
+    }
+
+    private Rect GetTargetScreenWorkAreaSafe()
+    {
+        try
+        {
+            return GetTargetScreenWorkArea();
+        }
+        catch
+        {
+            return DeviceRectToWindowRect(System.Windows.Forms.Screen.FromPoint(System.Windows.Forms.Cursor.Position).WorkingArea);
+        }
     }
 
     private Rect GetTargetScreenWorkArea()

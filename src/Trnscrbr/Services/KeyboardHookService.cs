@@ -19,6 +19,9 @@ public sealed class KeyboardHookService : IDisposable
     private IntPtr _hookId;
     private bool _pushToTalkDown;
     private bool _suppressWinKey;
+    private bool _ctrlDown;
+    private bool _winDown;
+    private bool _spaceDown;
 
     public KeyboardHookService()
     {
@@ -63,6 +66,7 @@ public sealed class KeyboardHookService : IDisposable
         var isUp = wParam == WM_KEYUP || wParam == WM_SYSKEYUP;
         var ctrl = IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey);
         var win = IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin);
+        TrackChordKeyState(key, isDown, isUp, ctrl, win);
 
         if (IsWinKey(key) && (isDown || isUp))
         {
@@ -73,17 +77,13 @@ public sealed class KeyboardHookService : IDisposable
             }
         }
 
-        if (ctrl && win && key == Keys.Space)
+        if (isDown && IsPushToTalkChordKey(key) && IsPushToTalkChordDown())
         {
-            if (isDown && !_pushToTalkDown)
+            if (!_pushToTalkDown)
             {
                 _pushToTalkDown = true;
                 StartPushToTalkMonitor();
                 PostEvent(PushToTalkPressed);
-            }
-            else if (isUp)
-            {
-                ReleasePushToTalk();
             }
 
             return (IntPtr)1;
@@ -132,6 +132,42 @@ public sealed class KeyboardHookService : IDisposable
             && IsKeyDown(Keys.Space);
     }
 
+    private void TrackChordKeyState(Keys key, bool isDown, bool isUp, bool ctrl, bool win)
+    {
+        if (isDown)
+        {
+            if (key is Keys.LControlKey or Keys.RControlKey or Keys.ControlKey)
+            {
+                _ctrlDown = true;
+            }
+            else if (IsWinKey(key))
+            {
+                _winDown = true;
+            }
+            else if (key == Keys.Space)
+            {
+                _spaceDown = true;
+                _ctrlDown = _ctrlDown || ctrl;
+                _winDown = _winDown || win;
+            }
+        }
+        else if (isUp)
+        {
+            if (key is Keys.LControlKey or Keys.RControlKey or Keys.ControlKey)
+            {
+                _ctrlDown = IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey);
+            }
+            else if (IsWinKey(key))
+            {
+                _winDown = IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin);
+            }
+            else if (key == Keys.Space)
+            {
+                _spaceDown = false;
+            }
+        }
+    }
+
     private void StartPushToTalkMonitor()
     {
         _pushToTalkMonitor?.Dispose();
@@ -139,7 +175,10 @@ public sealed class KeyboardHookService : IDisposable
         {
             if (_pushToTalkDown && !IsPushToTalkChordDown())
             {
-                ReleasePushToTalk();
+                if (!_ctrlDown && !_winDown && !_spaceDown)
+                {
+                    ReleasePushToTalk();
+                }
             }
         }, null, TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(50));
     }
@@ -152,6 +191,9 @@ public sealed class KeyboardHookService : IDisposable
         }
 
         _pushToTalkDown = false;
+        _ctrlDown = IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey);
+        _winDown = IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin);
+        _spaceDown = IsKeyDown(Keys.Space);
         _pushToTalkMonitor?.Dispose();
         _pushToTalkMonitor = null;
         PostEvent(PushToTalkReleased);

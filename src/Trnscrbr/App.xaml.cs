@@ -239,8 +239,15 @@ public partial class App : System.Windows.Application
         }
 
         state.RecordingState = RecordingState.Error;
-        state.StatusMessage = "Trnscrbr recovered from an error. See Diagnostics.";
-        _floatingButton.ShowTransient();
+        state.StatusMessage = $"Recovered from error: {exception.Message}";
+        try
+        {
+            _floatingButton.ShowTransient();
+        }
+        catch (Exception showException)
+        {
+            _diagnosticLog?.Error("Floating button error display failed", showException);
+        }
     }
 
     private void ToggleFloatingButton()
@@ -310,7 +317,6 @@ public partial class App : System.Windows.Application
             _settingsStore,
             _usageStats,
             () => _audioCapture?.GetInputDevices() ?? [],
-            () => _recording?.ToggleRecording(),
             SetFloatingButtonVisibility,
             ShowAdvancedSettings);
         _trayPanel.ShowFromSystemTray();

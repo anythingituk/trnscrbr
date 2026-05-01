@@ -94,7 +94,7 @@ public sealed class OpenAiProviderService
         form.Add(fileContent, "file", Path.GetFileName(audio.FilePath));
         form.Add(new StringContent(TranscriptionModel), "model");
         form.Add(new StringContent("json"), "response_format");
-        form.Add(new StringContent("Preserve all intentionally spoken words, including opening words such as okay, so, well, right, and yes. Do not omit them as filler."), "prompt");
+        form.Add(new StringContent("Transcribe the user's speech accurately. Do not invent missing words when the audio is too quiet, clipped, or unclear."), "prompt");
 
         if (!string.Equals(state.Settings.LanguageMode, "Auto", StringComparison.OrdinalIgnoreCase))
         {
@@ -200,6 +200,7 @@ public sealed class OpenAiProviderService
             {englishDialectInstruction}
             Preserve intentional opening words and discourse markers such as "Okay", "So", "Well", "Right", and "Yes" when they introduce the user's sentence.
             Do not remove "Okay" from the start of a sentence unless it is clearly repeated hesitation such as "okay okay um".
+            If the transcript contains only hesitation or discourse markers, such as "okay", "so", "well", "right", "um", "uh", "er", "like", or short combinations of those words, return exactly {DiscardCurrentTranscriptAction}.
             Remove only true hesitation filler, not meaningful conversational framing.
             {contextInstruction}
             Convert spoken punctuation/layout commands when context indicates they are commands: new line, full stop, question mark, comma.

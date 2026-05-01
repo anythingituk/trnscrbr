@@ -128,13 +128,13 @@ public sealed class TextInsertionService
         SendKeys.SendWait(shortcut);
     }
 
-    private static void WaitForHotkeyKeysReleased()
+    private void WaitForHotkeyKeysReleased()
     {
-        const int maxWaitMilliseconds = 3000;
+        const int maxWaitMilliseconds = 700;
         const int pollMilliseconds = 20;
         var waited = 0;
 
-        while (waited < maxWaitMilliseconds && IsAnyHotkeyKeyDown())
+        while (waited < maxWaitMilliseconds && IsSpaceDown())
         {
             Thread.Sleep(pollMilliseconds);
             waited += pollMilliseconds;
@@ -142,7 +142,11 @@ public sealed class TextInsertionService
 
         if (IsAnyHotkeyKeyDown())
         {
-            throw new InvalidOperationException("Hotkey keys are still held. Release Ctrl, Win, and Space before text insertion.");
+            _diagnosticLog.Info("Proceeding with paste while hotkey state still appears active", new Dictionary<string, string>
+            {
+                ["keys"] = GetActiveHotkeyKeys(),
+                ["waitedMilliseconds"] = waited.ToString()
+            });
         }
     }
 
@@ -154,6 +158,32 @@ public sealed class TextInsertionService
             || IsKeyDown(Keys.LWin)
             || IsKeyDown(Keys.RWin)
             || IsKeyDown(Keys.Space);
+    }
+
+    private static bool IsSpaceDown()
+    {
+        return IsKeyDown(Keys.Space);
+    }
+
+    private static string GetActiveHotkeyKeys()
+    {
+        var keys = new List<string>();
+        if (IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey))
+        {
+            keys.Add("Ctrl");
+        }
+
+        if (IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin))
+        {
+            keys.Add("Win");
+        }
+
+        if (IsKeyDown(Keys.Space))
+        {
+            keys.Add("Space");
+        }
+
+        return keys.Count == 0 ? "none" : string.Join("+", keys);
     }
 
     private static bool IsKeyDown(Keys key)

@@ -31,6 +31,39 @@
                 <TextBlock Text="Configure provider, transcription behaviour, privacy, diagnostics, and packaging support."
                            Margin="0,4,0,0"
                            Foreground="{StaticResource MutedForegroundBrush}" />
+                <Border Background="{StaticResource StatusBackgroundBrush}"
+                        CornerRadius="8"
+                        Padding="12"
+                        Margin="0,14,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,14,0">
+                            <TextBlock Text="Provider" FontWeight="SemiBold" />
+                            <TextBlock x:Name="OverviewProviderText"
+                                       TextWrapping="Wrap"
+                                       Foreground="{StaticResource MutedForegroundBrush}"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Margin="0,0,14,0">
+                            <TextBlock Text="Active engine" FontWeight="SemiBold" />
+                            <TextBlock x:Name="OverviewEngineText"
+                                       TextWrapping="Wrap"
+                                       Foreground="{StaticResource MutedForegroundBrush}"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="This month" FontWeight="SemiBold" />
+                            <TextBlock x:Name="OverviewUsageText"
+                                       TextWrapping="Wrap"
+                                       Foreground="{StaticResource AccentBrush}"
+                                       Margin="0,4,0,0" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
             </StackPanel>
         </Border>
 

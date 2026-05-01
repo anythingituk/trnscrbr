@@ -18,6 +18,7 @@ public sealed class RecordingCoordinator
     private readonly Dispatcher _dispatcher;
     private CancellationTokenSource? _processingCancellation;
     private DateTimeOffset? _recordingStartedAt;
+    private bool _pushToTalkActive;
 
     public RecordingCoordinator(
         AppStateViewModel state,
@@ -50,13 +51,39 @@ public sealed class RecordingCoordinator
     {
         if (!_state.IsProviderConfigured)
         {
+            _diagnosticLog.Info("Push-to-talk ignored", new Dictionary<string, string>
+            {
+                ["reason"] = "provider-not-configured",
+                ["state"] = _state.RecordingState.ToString()
+            });
             ShowProviderRequired();
             return;
         }
 
+        if (_pushToTalkActive)
+        {
+            _diagnosticLog.Info("Push-to-talk ignored", new Dictionary<string, string>
+            {
+                ["reason"] = "already-active",
+                ["state"] = _state.RecordingState.ToString()
+            });
+            return;
+        }
+
+        _pushToTalkActive = true;
+
         if (_state.RecordingState == RecordingState.Idle)
         {
+            _diagnosticLog.Info("Push-to-talk start accepted");
             StartRecording();
+        }
+        else
+        {
+            _diagnosticLog.Info("Push-to-talk ignored", new Dictionary<string, string>
+            {
+                ["reason"] = "not-idle",
+                ["state"] = _state.RecordingState.ToString()
+            });
         }
     }
 
@@ -64,13 +91,24 @@ public sealed class RecordingCoordinator
     {
         if (!_state.IsProviderConfigured)
         {
+            _pushToTalkActive = false;
             return;
         }
 
         if (_state.RecordingState == RecordingState.Recording)
         {
+            _diagnosticLog.Info("Push-to-talk release accepted");
             StopAndProcess();
         }
+        else
+        {
+            _diagnosticLog.Info("Push-to-talk release ignored", new Dictionary<string, string>
+            {
+                ["state"] = _state.RecordingState.ToString()
+            });
+        }
+
+        _pushToTalkActive = false;
     }
 
     public void ToggleRecording()
@@ -162,12 +200,19 @@ public sealed class RecordingCoordinator
     {
         _timer.Stop();
         _state.InputLevel = 0;
+        _recordingStartedAt = null;
         var recordedAudio = _audioCapture.Stop();
         if (recordedAudio is null)
         {
+            var summary = _audioCapture.LastCaptureSummary;
             _diagnosticLog.Error("No microphone input recorded", metadata: new Dictionary<string, string>
             {
-                ["microphone"] = _state.Settings.MicrophoneName
+                ["microphone"] = _state.Settings.MicrophoneName,
+                ["duration"] = summary.Duration.TotalSeconds.ToString("0.00"),
+                ["callbacks"] = summary.CallbackCount.ToString(),
+                ["recordedBytes"] = summary.RecordedBytes.ToString(),
+                ["audioBytes"] = summary.AudioBytes.ToString(),
+                ["peakLevel"] = summary.PeakLevel.ToString("0.000")
             });
             _state.RecordingState = RecordingState.Error;
             _state.StatusMessage = $"No input from {_state.Settings.MicrophoneName}. Check the microphone menu.";
@@ -222,7 +267,8 @@ public sealed class RecordingCoordinator
                 cleanedTranscript,
                 OpenAiProviderService.DiscardCurrentTranscriptAction,
                 StringComparison.Ordinal);
-            var isVoiceAction = isDeleteAction || isDiscardAction;
+            var isFillerOnlyTranscript = IsFillerOnlyTranscript(cleanedTranscript);
+            var isVoiceAction = isDeleteAction || isDiscardAction || isFillerOnlyTranscript;
 
             if (isDeleteAction)
             {
@@ -234,6 +280,10 @@ public sealed class RecordingCoordinator
             else if (isDiscardAction)
             {
                 _state.StatusMessage = "Discarded dictation";
+            }
+            else if (isFillerOnlyTranscript)
+            {
+                _state.StatusMessage = "Discarded unclear dictation";
             }
             else
             {
@@ -292,9 +342,40 @@ public sealed class RecordingCoordinator
 
     private void UpdateElapsed()
     {
-        if (_recordingStartedAt is not null)
+        if (_state.RecordingState == RecordingState.Recording && _recordingStartedAt is not null)
         {
             _state.Elapsed = DateTimeOffset.Now - _recordingStartedAt.Value;
         }
+    }
+
+    private static bool IsFillerOnlyTranscript(string transcript)
+    {
+        var words = transcript
+            .Split([' ', '\t', '\r', '\n', ',', '.', '!', '?', ';', ':', '-', '"', '\''], StringSplitOptions.RemoveEmptyEntries)
+            .Select(word => word.Trim().ToLowerInvariant())
+            .ToArray();
+
+        if (words.Length == 0 || words.Length > 6)
+        {
+            return false;
+        }
+
+        var fillerWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "okay",
+            "ok",
+            "so",
+            "well",
+            "right",
+            "um",
+            "uh",
+            "er",
+            "erm",
+            "like",
+            "yeah",
+            "yes"
+        };
+
+        return words.All(fillerWords.Contains);
     }
 }
