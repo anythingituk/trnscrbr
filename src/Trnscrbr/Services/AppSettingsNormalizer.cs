@@ -62,6 +62,9 @@ public static class AppSettingsNormalizer
             ? defaults.LocalLlmEndpoint
             : settings.LocalLlmEndpoint.Trim();
         settings.LocalLlmModel = settings.LocalLlmModel?.Trim() ?? string.Empty;
+        settings.LocalWhisperCliVersion = settings.LocalWhisperCliVersion?.Trim() ?? string.Empty;
+        settings.LocalWhisperModelPresetId = settings.LocalWhisperModelPresetId?.Trim() ?? string.Empty;
+        settings.LocalSetupSource = settings.LocalSetupSource?.Trim() ?? string.Empty;
         settings.MonthlyCostWarning = settings.MonthlyCostWarning < 0 ? defaults.MonthlyCostWarning : settings.MonthlyCostWarning;
         settings.CaptureStartupBufferMilliseconds = settings.CaptureStartupBufferMilliseconds switch
         {

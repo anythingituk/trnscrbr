@@ -54,7 +54,7 @@ public sealed class LocalProviderService
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or UriFormatException)
         {
             _diagnosticLog?.Error("Local LLM test failed", ex);
-            return ProviderTestResult.Fail($"Whisper is configured, but Ollama cleanup could not be reached: {ex.Message}");
+            return ProviderTestResult.Fail($"Whisper is configured, but Ollama cleanup could not be reached: {LocalSetupErrorFormatter.GetUserMessage(ex)}");
         }
     }
 
@@ -88,12 +88,12 @@ public sealed class LocalProviderService
 
             return string.IsNullOrWhiteSpace(transcript)
                 ? ProviderTestResult.Success("Whisper runtime test passed. The generated test audio produced no transcript, which is expected.")
-                : ProviderTestResult.Success($"Whisper runtime test passed. Output: {transcript}");
+                : ProviderTestResult.Success("Whisper runtime test passed. Generated test audio produced a short transcript, which can happen and is not a quality check.");
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
         {
             _diagnosticLog?.Error("Local Whisper smoke test failed", ex);
-            return ProviderTestResult.Fail($"Whisper runtime test failed: {ex.Message}");
+            return ProviderTestResult.Fail(LocalSetupErrorFormatter.Format("Whisper runtime test failed", ex));
         }
         finally
         {
@@ -159,6 +159,19 @@ public sealed class LocalProviderService
             EstimateTokens(rawTranscript),
             EstimateTokens(cleanedTranscript),
             0);
+    }
+
+    public async Task<string> TranscribeOnlyAsync(
+        RecordedAudio audio,
+        AppStateViewModel state,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsConfigured(state))
+        {
+            throw new InvalidOperationException("Local mode requires a whisper.cpp executable path and model path in Settings.");
+        }
+
+        return await TranscribeAsync(audio, state, cancellationToken);
     }
 
     private async Task<string> TranscribeAsync(

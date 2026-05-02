@@ -47,7 +47,47 @@ public sealed class LocalModelDownloadService
         "Trnscrbr",
         "Models");
 
-    public async Task<string> DownloadAsync(
+    public async Task<LocalModelInstallResult?> TryUseExistingAsync(
+        LocalModelPreset preset,
+        CancellationToken cancellationToken = default)
+    {
+        var targetPath = Path.Combine(ModelsDirectory, preset.FileName);
+        return File.Exists(targetPath) && await VerifySha1Async(targetPath, preset.Sha1, cancellationToken)
+            ? new LocalModelInstallResult(targetPath, preset.Id)
+            : null;
+    }
+
+    public async Task<bool> VerifyPresetAsync(
+        string path,
+        LocalModelPreset preset,
+        CancellationToken cancellationToken = default)
+    {
+        return File.Exists(path) && await VerifySha1Async(path, preset.Sha1, cancellationToken);
+    }
+
+    public LocalModelPreset? FindPreset(string path, string presetId)
+    {
+        if (!string.IsNullOrWhiteSpace(presetId))
+        {
+            var byId = Presets.FirstOrDefault(candidate =>
+                string.Equals(candidate.Id, presetId, StringComparison.OrdinalIgnoreCase));
+            if (byId is not null)
+            {
+                return byId;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        var fileName = Path.GetFileName(path);
+        return Presets.FirstOrDefault(candidate =>
+            string.Equals(candidate.FileName, fileName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public async Task<LocalModelInstallResult> DownloadAsync(
         LocalModelPreset preset,
         IProgress<double>? progress = null,
         CancellationToken cancellationToken = default)
@@ -58,7 +98,7 @@ public sealed class LocalModelDownloadService
         if (File.Exists(targetPath) && await VerifySha1Async(targetPath, preset.Sha1, cancellationToken))
         {
             progress?.Report(1);
-            return targetPath;
+            return new LocalModelInstallResult(targetPath, preset.Id);
         }
 
         var partialPath = targetPath + ".download";
@@ -126,7 +166,7 @@ public sealed class LocalModelDownloadService
 
         File.Move(partialPath, targetPath);
         progress?.Report(1);
-        return targetPath;
+        return new LocalModelInstallResult(targetPath, preset.Id);
     }
 
     private static async Task<bool> VerifySha1Async(
@@ -140,3 +180,5 @@ public sealed class LocalModelDownloadService
         return string.Equals(actual, expectedSha1, StringComparison.OrdinalIgnoreCase);
     }
 }
+
+public sealed record LocalModelInstallResult(string ModelPath, string PresetId);

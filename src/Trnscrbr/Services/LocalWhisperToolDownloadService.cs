@@ -22,7 +22,70 @@ public sealed class LocalWhisperToolDownloadService
         "Tools",
         "whisper.cpp");
 
-    public async Task<string> DownloadLatestX64Async(
+    public async Task<LocalWhisperToolInstallResult?> TryUseExistingLatestX64Async(
+        CancellationToken cancellationToken = default)
+    {
+        var release = await GetLatestReleaseAsync(cancellationToken);
+        var releaseDirectory = Path.Combine(ToolsDirectory, release.TagName);
+        var existingCliPath = FindWhisperCli(releaseDirectory);
+        return existingCliPath is null
+            ? null
+            : new LocalWhisperToolInstallResult(existingCliPath, release.TagName);
+    }
+
+    public async Task<LocalWhisperToolUpdateResult> CheckLatestX64Async(
+        string installedVersion,
+        CancellationToken cancellationToken = default)
+    {
+        var release = await GetLatestReleaseAsync(cancellationToken);
+        var hasX64Asset = release.Assets.Any(candidate =>
+            string.Equals(candidate.Name, "whisper-bin-x64.zip", StringComparison.OrdinalIgnoreCase));
+
+        if (!hasX64Asset)
+        {
+            return new LocalWhisperToolUpdateResult(
+                false,
+                installedVersion,
+                release.TagName,
+                "The latest whisper.cpp release does not include a Windows x64 CLI asset.");
+        }
+
+        if (string.IsNullOrWhiteSpace(installedVersion))
+        {
+            return new LocalWhisperToolUpdateResult(
+                true,
+                installedVersion,
+                release.TagName,
+                $"whisper.cpp {release.TagName} is available. Click Install Whisper CLI to install it.");
+        }
+
+        if (!TryParseVersion(installedVersion, out var installed)
+            || !TryParseVersion(release.TagName, out var latest))
+        {
+            var isDifferent = !string.Equals(installedVersion, release.TagName, StringComparison.OrdinalIgnoreCase);
+            return new LocalWhisperToolUpdateResult(
+                isDifferent,
+                installedVersion,
+                release.TagName,
+                isDifferent
+                    ? $"Installed: {installedVersion}. Latest: {release.TagName}. Click Install Whisper CLI to update."
+                    : $"Installed whisper.cpp CLI is current: {release.TagName}.");
+        }
+
+        return latest > installed
+            ? new LocalWhisperToolUpdateResult(
+                true,
+                installedVersion,
+                release.TagName,
+                $"whisper.cpp CLI update available: {release.TagName}. Click Install Whisper CLI to update.")
+            : new LocalWhisperToolUpdateResult(
+                false,
+                installedVersion,
+                release.TagName,
+                $"Installed whisper.cpp CLI is current: {installedVersion}.");
+    }
+
+    public async Task<LocalWhisperToolInstallResult> DownloadLatestX64Async(
         IProgress<double>? progress = null,
         CancellationToken cancellationToken = default)
     {
@@ -41,7 +104,7 @@ public sealed class LocalWhisperToolDownloadService
         if (existingCliPath is not null)
         {
             progress?.Report(1);
-            return existingCliPath;
+            return new LocalWhisperToolInstallResult(existingCliPath, release.TagName);
         }
 
         var zipPath = Path.Combine(ToolsDirectory, asset.Name);
@@ -70,7 +133,7 @@ public sealed class LocalWhisperToolDownloadService
         }
 
         progress?.Report(1);
-        return discoveredCliPath;
+        return new LocalWhisperToolInstallResult(discoveredCliPath, release.TagName);
     }
 
     private async Task<WhisperRelease> GetLatestReleaseAsync(CancellationToken cancellationToken)
@@ -168,7 +231,21 @@ public sealed class LocalWhisperToolDownloadService
             : null;
     }
 
+    private static bool TryParseVersion(string value, out Version version)
+    {
+        var clean = value.Trim().TrimStart('v', 'V');
+        return Version.TryParse(clean, out version!);
+    }
+
     private sealed record WhisperRelease(string TagName, IReadOnlyList<WhisperReleaseAsset> Assets);
 
     private sealed record WhisperReleaseAsset(string Name, string DownloadUrl, string Sha256);
 }
+
+public sealed record LocalWhisperToolInstallResult(string ExecutablePath, string Version);
+
+public sealed record LocalWhisperToolUpdateResult(
+    bool IsUpdateAvailable,
+    string InstalledVersion,
+    string LatestVersion,
+    string Message);

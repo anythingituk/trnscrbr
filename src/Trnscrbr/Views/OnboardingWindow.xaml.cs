@@ -8,17 +8,17 @@ public partial class OnboardingWindow : Window
 {
     private readonly AppStateViewModel _state;
     private readonly AppSettingsStore _settingsStore;
-    private readonly Action _showAdvancedSettings;
+    private readonly Action _showLocalSetup;
 
     public OnboardingWindow(
         AppStateViewModel state,
         AppSettingsStore settingsStore,
-        Action showAdvancedSettings)
+        Action showLocalSetup)
     {
         InitializeComponent();
         _state = state;
         _settingsStore = settingsStore;
-        _showAdvancedSettings = showAdvancedSettings;
+        _showLocalSetup = showLocalSetup;
         DataContext = state;
     }
 
@@ -35,7 +35,7 @@ public partial class OnboardingWindow : Window
         _state.Settings.ActiveEngine = "Local Whisper";
         CompleteOnboarding();
         Close();
-        _showAdvancedSettings();
+        _showLocalSetup();
     }
 
     private void CompleteOnboarding()

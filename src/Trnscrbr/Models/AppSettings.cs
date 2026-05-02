@@ -25,6 +25,10 @@ public sealed class AppSettings
     public string LocalWhisperModelPath { get; set; } = string.Empty;
     public string LocalLlmEndpoint { get; set; } = "http://localhost:11434/api/chat";
     public string LocalLlmModel { get; set; } = string.Empty;
+    public string LocalWhisperCliVersion { get; set; } = string.Empty;
+    public string LocalWhisperModelPresetId { get; set; } = string.Empty;
+    public string LocalSetupSource { get; set; } = string.Empty;
+    public DateTimeOffset? LocalSetupCompletedAt { get; set; }
     public decimal MonthlyCostWarning { get; set; } = 5.00m;
     public List<string> CustomVocabulary { get; set; } = [];
 }

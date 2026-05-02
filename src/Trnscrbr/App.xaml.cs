@@ -334,7 +334,7 @@ public partial class App : System.Windows.Application
 
         if (_onboarding is null)
         {
-            _onboarding = new OnboardingWindow(state, _settingsStore, ShowAdvancedSettings);
+            _onboarding = new OnboardingWindow(state, _settingsStore, ShowLocalSetup);
             _onboarding.Closed += (_, _) => _onboarding = null;
         }
 
@@ -367,5 +367,11 @@ public partial class App : System.Windows.Application
             _settingsImportExport);
         _advancedSettings.Show();
         _advancedSettings.Activate();
+    }
+
+    private void ShowLocalSetup()
+    {
+        ShowAdvancedSettings();
+        _advancedSettings?.SelectLocalModelsTab();
     }
 }
