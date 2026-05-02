@@ -160,7 +160,7 @@ public sealed class OpenAiProviderService
         return new CleanupResult(cleaned, inputTokens, outputTokens);
     }
 
-    private static string BuildCleanupInstructions(AppStateViewModel state, string cursorContext)
+    public static string BuildCleanupInstructions(AppStateViewModel state, string cursorContext)
     {
         var rewrite = string.Equals(state.Settings.CleanupMode, "Rewrite", StringComparison.OrdinalIgnoreCase);
         var vocabulary = state.Settings.CustomVocabulary.Count == 0

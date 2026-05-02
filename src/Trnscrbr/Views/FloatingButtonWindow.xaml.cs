@@ -86,6 +86,8 @@ public partial class FloatingButtonWindow : Window
 
     private void ApplyState()
     {
+        Root.ToolTip = GetTooltipText();
+
         TimerText.Visibility = _state.Elapsed >= TimeSpan.FromMinutes(1)
             ? Visibility.Visible
             : Visibility.Collapsed;
@@ -140,6 +142,17 @@ public partial class FloatingButtonWindow : Window
         }
 
         AnimateWaveform();
+    }
+
+    private string GetTooltipText()
+    {
+        return _state.RecordingState switch
+        {
+            RecordingState.Recording => "Recording",
+            RecordingState.Processing => "Transcribing",
+            RecordingState.Error => _state.StatusMessage,
+            _ => "Start recording"
+        };
     }
 
     private void AnimateWaveform()

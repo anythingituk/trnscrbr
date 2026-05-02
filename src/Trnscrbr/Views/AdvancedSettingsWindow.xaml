@@ -122,17 +122,29 @@
                     <StackPanel Margin="18">
                         <TextBlock Text="Local Mode" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock Margin="0,8,0,12" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}"
-                                   Text="Local mode sends no audio or transcript text to cloud services. The MVP can detect local model candidates, but local transcription/cleanup execution is not enabled yet." />
+                                   Text="Local mode sends no audio or transcript text to cloud services. Point Trnscrbr at a whisper.cpp-compatible executable and model file. Optional cleanup/rewrite can use a local Ollama chat model." />
                         <ListView>
                             <ListViewItem Content="Small - fastest, lowest disk/RAM" />
                             <ListViewItem Content="Medium - balanced" />
                             <ListViewItem Content="Large - best quality, slower, higher disk/RAM" />
                         </ListView>
+                        <TextBlock Text="Whisper executable" FontWeight="SemiBold" Margin="0,14,0,6" />
+                        <TextBox Text="{Binding Settings.LocalWhisperExecutablePath, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Text="Example: C:\Tools\whisper.cpp\whisper-cli.exe" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
+                        <TextBlock Text="Whisper model" FontWeight="SemiBold" Margin="0,6,0,6" />
+                        <TextBox Text="{Binding Settings.LocalWhisperModelPath, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Text="Example: C:\Models\ggml-small.en.bin" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
+                        <TextBlock Text="Ollama cleanup endpoint" FontWeight="SemiBold" Margin="0,6,0,6" />
+                        <TextBox Text="{Binding Settings.LocalLlmEndpoint, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Text="Default: http://localhost:11434/api/chat" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
+                        <TextBlock Text="Ollama cleanup model" FontWeight="SemiBold" Margin="0,6,0,6" />
+                        <TextBox Text="{Binding Settings.LocalLlmModel, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock Text="Leave blank to insert the raw local Whisper transcript without LLM cleanup." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
                         <Button Content="Detect Local Models" Width="150" HorizontalAlignment="Left" Margin="0,14,0,8" Click="DetectLocalModels_OnClick" />
-                        <TextBlock Text="Detected models are suggestions only and are not used automatically." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,0,0,8" />
+                        <TextBlock Text="Detected models are suggestions. Paste the executable and model path above to enable local dictation." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,0,0,8" />
                         <TextBox x:Name="LocalModelsBox" IsReadOnly="True" MinHeight="120" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
                         <CheckBox Content="Force CPU-only mode" IsChecked="{Binding Settings.ForceCpuOnly}" Margin="0,14,0,0" Click="Settings_OnChanged" />
-                        <TextBlock Text="Local transcription may be slow on some hardware. Managed downloads, checksum verification, GPU detection, and model removal are planned before local mode is enabled." TextWrapping="Wrap" Margin="0,8,0,0" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <TextBlock Text="Local transcription may be slow on some hardware. Managed downloads, checksum verification, GPU detection, and model removal are still planned." TextWrapping="Wrap" Margin="0,8,0,0" Foreground="{StaticResource MutedForegroundBrush}" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

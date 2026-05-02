@@ -18,6 +18,7 @@ public partial class App : System.Windows.Application
     private AudioCaptureService? _audioCapture;
     private CredentialStore? _credentialStore;
     private OpenAiProviderService? _openAiProvider;
+    private LocalProviderService? _localProvider;
     private DiagnosticLogService? _diagnosticLog;
     private EnvironmentDiagnosticsService? _environmentDiagnostics;
     private UsageStatsService? _usageStats;
@@ -50,6 +51,7 @@ public partial class App : System.Windows.Application
         _environmentDiagnostics = new EnvironmentDiagnosticsService(_diagnosticLog);
         _environmentDiagnostics.LogStartupSnapshot();
         _openAiProvider = new OpenAiProviderService(_diagnosticLog);
+        _localProvider = new LocalProviderService(_diagnosticLog);
         _usageStats = new UsageStatsService();
         _settingsImportExport = new SettingsImportExportService();
         var settings = _settingsStore.Load();
@@ -61,7 +63,7 @@ public partial class App : System.Windows.Application
         _floatingButton = new FloatingButtonWindow(appState);
         _audioCapture = new AudioCaptureService(appState);
         var insertion = new TextInsertionService(appState, _diagnosticLog);
-        _recording = new RecordingCoordinator(appState, insertion, _floatingButton, _audioCapture, _credentialStore, _openAiProvider, _diagnosticLog, _usageStats);
+        _recording = new RecordingCoordinator(appState, insertion, _floatingButton, _audioCapture, _credentialStore, _openAiProvider, _localProvider, _diagnosticLog, _usageStats);
         _floatingButton.ToggleRecordingRequested += (_, _) => _recording.ToggleRecording();
         _floatingButton.PasteLastTranscriptRequested += (_, _) => _recording.PasteLastTranscript();
         _floatingButton.SettingsRequested += (_, _) => ShowTrayPanel();

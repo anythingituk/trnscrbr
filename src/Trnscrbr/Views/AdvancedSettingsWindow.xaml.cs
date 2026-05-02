@@ -142,6 +142,22 @@ public partial class AdvancedSettingsWindow : Window
 
     private void Settings_OnChanged(object sender, RoutedEventArgs e)
     {
+        if (_state.Settings.ProviderMode == "Local mode")
+        {
+            _state.Settings.ProviderName = "Local";
+            _state.Settings.ActiveEngine = "Local Whisper";
+        }
+        else if (_state.Settings.ProviderMode == "Bring your own API key")
+        {
+            _state.Settings.ProviderName = "OpenAI";
+            _state.Settings.ActiveEngine = "OpenAI";
+        }
+        else if (_state.Settings.ProviderMode == "Not configured")
+        {
+            _state.Settings.ProviderName = "OpenAI";
+            _state.Settings.ActiveEngine = "None";
+        }
+
         Persist();
         RefreshOverview();
         UpdateProviderModeStatus();
@@ -184,6 +200,10 @@ public partial class AdvancedSettingsWindow : Window
             Provider: {_state.Settings.ProviderName}
             Provider mode: {_state.Settings.ProviderMode}
             Active engine: {_state.Settings.ActiveEngine}
+            Local Whisper executable: {RedactPath(_state.Settings.LocalWhisperExecutablePath)}
+            Local Whisper model: {RedactPath(_state.Settings.LocalWhisperModelPath)}
+            Local LLM endpoint: {_state.Settings.LocalLlmEndpoint}
+            Local LLM model: {_state.Settings.LocalLlmModel}
             API key present: {(_credentialStore.HasOpenAiApiKey() ? "yes" : "no")}
             Microphone: {_state.Settings.MicrophoneName}
             Transcription type: {_state.Settings.CleanupMode}
@@ -366,7 +386,9 @@ public partial class AdvancedSettingsWindow : Window
             "Bring your own API key" => _credentialStore.HasOpenAiApiKey()
                 ? "OpenAI API key is stored. Trnscrbr can transcribe using your API account."
                 : "Add an OpenAI API key on the Provider tab before dictation will work.",
-            "Local mode" => "Local mode is planned for this MVP track. Detected models are shown on the Local Models tab, but they are not used automatically.",
+            "Local mode" => IsLocalModeConfigured()
+                ? "Local mode is configured. Trnscrbr will use local Whisper transcription and optional local LLM cleanup."
+                : "Local mode needs a whisper.cpp executable path and model path on the Local Models tab.",
             "Cloud managed by app (planned)" => "Cloud managed by app is planned for a later paid/free-tier model and is not available yet.",
             _ => "Choose a provider now or skip and configure one later."
         };
@@ -400,8 +422,23 @@ public partial class AdvancedSettingsWindow : Window
         _state.Settings.PasteMethod = imported.PasteMethod;
         _state.Settings.MicrophoneName = imported.MicrophoneName;
         _state.Settings.ActiveEngine = imported.ActiveEngine;
+        _state.Settings.LocalWhisperExecutablePath = imported.LocalWhisperExecutablePath;
+        _state.Settings.LocalWhisperModelPath = imported.LocalWhisperModelPath;
+        _state.Settings.LocalLlmEndpoint = imported.LocalLlmEndpoint;
+        _state.Settings.LocalLlmModel = imported.LocalLlmModel;
         _state.Settings.MonthlyCostWarning = imported.MonthlyCostWarning;
         _state.Settings.CustomVocabulary = imported.CustomVocabulary.ToList();
         VocabularyBox.Text = string.Join(Environment.NewLine, _state.Settings.CustomVocabulary);
+    }
+
+    private bool IsLocalModeConfigured()
+    {
+        return System.IO.File.Exists(_state.Settings.LocalWhisperExecutablePath)
+            && System.IO.File.Exists(_state.Settings.LocalWhisperModelPath);
+    }
+
+    private static string RedactPath(string path)
+    {
+        return string.IsNullOrWhiteSpace(path) ? "not set" : System.IO.Path.GetFileName(path);
     }
 }

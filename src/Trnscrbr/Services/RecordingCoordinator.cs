@@ -12,6 +12,7 @@ public sealed class RecordingCoordinator
     private readonly AudioCaptureService _audioCapture;
     private readonly CredentialStore _credentialStore;
     private readonly OpenAiProviderService _openAiProvider;
+    private readonly LocalProviderService _localProvider;
     private readonly DiagnosticLogService _diagnosticLog;
     private readonly UsageStatsService _usageStats;
     private readonly DispatcherTimer _timer;
@@ -27,6 +28,7 @@ public sealed class RecordingCoordinator
         AudioCaptureService audioCapture,
         CredentialStore credentialStore,
         OpenAiProviderService openAiProvider,
+        LocalProviderService localProvider,
         DiagnosticLogService diagnosticLog,
         UsageStatsService usageStats)
     {
@@ -36,6 +38,7 @@ public sealed class RecordingCoordinator
         _audioCapture = audioCapture;
         _credentialStore = credentialStore;
         _openAiProvider = openAiProvider;
+        _localProvider = localProvider;
         _diagnosticLog = diagnosticLog;
         _usageStats = usageStats;
         _dispatcher = Dispatcher.CurrentDispatcher;
@@ -220,8 +223,9 @@ public sealed class RecordingCoordinator
             return;
         }
 
-        var apiKey = _credentialStore.ReadOpenAiApiKey();
-        if (string.IsNullOrWhiteSpace(apiKey))
+        var useLocalMode = string.Equals(_state.Settings.ProviderMode, "Local mode", StringComparison.OrdinalIgnoreCase);
+        var apiKey = useLocalMode ? null : _credentialStore.ReadOpenAiApiKey();
+        if (!useLocalMode && string.IsNullOrWhiteSpace(apiKey))
         {
             _diagnosticLog.Error("OpenAI API key missing");
             _audioCapture.DeleteRecording(recordedAudio);
@@ -247,11 +251,16 @@ public sealed class RecordingCoordinator
 
         try
         {
-            var result = await _openAiProvider.TranscribeAndCleanAsync(
-                apiKey,
-                recordedAudio,
-                _state,
-                _processingCancellation.Token);
+            var result = useLocalMode
+                ? await _localProvider.TranscribeAndCleanAsync(
+                    recordedAudio,
+                    _state,
+                    _processingCancellation.Token)
+                : await _openAiProvider.TranscribeAndCleanAsync(
+                    apiKey!,
+                    recordedAudio,
+                    _state,
+                    _processingCancellation.Token);
 
             if (_state.RecordingState != RecordingState.Processing)
             {

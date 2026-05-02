@@ -49,7 +49,7 @@ public sealed class TrayIconService : IDisposable
         _notifyIcon = new NotifyIcon
         {
             Icon = CreateStateIcon(_state.RecordingState),
-            Text = "Trnscrbr",
+            Text = GetTooltipText(),
             Visible = true,
             ContextMenuStrip = BuildMenu()
         };
@@ -97,7 +97,13 @@ public sealed class TrayIconService : IDisposable
         var previous = _currentIcon;
         _currentIcon = CreateStateIcon(_state.RecordingState);
         _notifyIcon.Icon = _currentIcon;
+        _notifyIcon.Text = GetTooltipText();
         previous?.Dispose();
+    }
+
+    private static string GetTooltipText()
+    {
+        return $"Trnscrbr {AppInfo.Version}";
     }
 
     private ContextMenuStrip BuildMenu()

@@ -56,6 +56,12 @@ public static class AppSettingsNormalizer
         settings.PasteMethod = Pick(settings.PasteMethod, PasteMethods, defaults.PasteMethod);
         settings.MicrophoneName = string.IsNullOrWhiteSpace(settings.MicrophoneName) ? defaults.MicrophoneName : settings.MicrophoneName;
         settings.ActiveEngine = string.IsNullOrWhiteSpace(settings.ActiveEngine) ? defaults.ActiveEngine : settings.ActiveEngine;
+        settings.LocalWhisperExecutablePath = settings.LocalWhisperExecutablePath?.Trim() ?? string.Empty;
+        settings.LocalWhisperModelPath = settings.LocalWhisperModelPath?.Trim() ?? string.Empty;
+        settings.LocalLlmEndpoint = string.IsNullOrWhiteSpace(settings.LocalLlmEndpoint)
+            ? defaults.LocalLlmEndpoint
+            : settings.LocalLlmEndpoint.Trim();
+        settings.LocalLlmModel = settings.LocalLlmModel?.Trim() ?? string.Empty;
         settings.MonthlyCostWarning = settings.MonthlyCostWarning < 0 ? defaults.MonthlyCostWarning : settings.MonthlyCostWarning;
         settings.CaptureStartupBufferMilliseconds = settings.CaptureStartupBufferMilliseconds switch
         {

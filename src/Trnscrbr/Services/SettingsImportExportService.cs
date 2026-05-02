@@ -64,6 +64,10 @@ public sealed class SettingsImportExportService
             PasteMethod = settings.PasteMethod,
             MicrophoneName = settings.MicrophoneName,
             ActiveEngine = settings.ActiveEngine,
+            LocalWhisperExecutablePath = settings.LocalWhisperExecutablePath,
+            LocalWhisperModelPath = settings.LocalWhisperModelPath,
+            LocalLlmEndpoint = settings.LocalLlmEndpoint,
+            LocalLlmModel = settings.LocalLlmModel,
             MonthlyCostWarning = settings.MonthlyCostWarning,
             CustomVocabulary = settings.CustomVocabulary.ToList()
         };

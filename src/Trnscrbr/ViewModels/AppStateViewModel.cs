@@ -58,8 +58,8 @@ public sealed class AppStateViewModel : INotifyPropertyChanged
         set => SetField(ref _elapsed, value);
     }
 
-    public bool IsProviderConfigured => Settings.ProviderMode != "Not configured"
-        && Settings.ActiveEngine != "None";
+    public bool IsProviderConfigured => Settings.ProviderMode == "Local mode"
+        || (Settings.ProviderMode != "Not configured" && Settings.ActiveEngine != "None");
 
     public string ActiveEngineLabel => Settings.ActiveEngine == "None"
         ? "No engine configured"

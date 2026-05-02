@@ -21,6 +21,10 @@ public sealed class AppSettings
     public string PasteMethod { get; set; } = "Ctrl+V";
     public string MicrophoneName { get; set; } = "Windows default";
     public string ActiveEngine { get; set; } = "None";
+    public string LocalWhisperExecutablePath { get; set; } = string.Empty;
+    public string LocalWhisperModelPath { get; set; } = string.Empty;
+    public string LocalLlmEndpoint { get; set; } = "http://localhost:11434/api/chat";
+    public string LocalLlmModel { get; set; } = string.Empty;
     public decimal MonthlyCostWarning { get; set; } = 5.00m;
     public List<string> CustomVocabulary { get; set; } = [];
 }
