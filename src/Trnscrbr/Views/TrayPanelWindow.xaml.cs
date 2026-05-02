@@ -16,6 +16,7 @@ public partial class TrayPanelWindow : Window
     private readonly AppSettingsStore _settingsStore;
     private readonly AudioCaptureService _audioCapture;
     private readonly LocalProviderService _localProvider;
+    private readonly LocalTestPhraseService _localTestPhrase;
     private readonly DiagnosticLogService _diagnosticLog;
     private readonly LocalModelDownloadService _localModelDownload = new();
     private readonly LocalWhisperToolDownloadService _localWhisperToolDownload = new();
@@ -42,6 +43,7 @@ public partial class TrayPanelWindow : Window
         _settingsStore = settingsStore;
         _audioCapture = audioCapture;
         _localProvider = localProvider;
+        _localTestPhrase = new LocalTestPhraseService(audioCapture, localProvider);
         _diagnosticLog = diagnosticLog;
         _getMicrophones = getMicrophones;
         _setFloatingButtonVisibility = setFloatingButtonVisibility;
@@ -143,41 +145,20 @@ public partial class TrayPanelWindow : Window
 
         SetLocalTestControlsEnabled(false);
         LocalTestResultText.Text = "Recording test phrase. Speak now for 5 seconds...";
-        RecordedAudio? recordedAudio = null;
         using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(3));
 
         try
         {
-            _state.RecordingState = RecordingState.Recording;
-            _state.StatusMessage = "Recording test phrase";
-            _audioCapture.Start();
-
-            for (var remaining = 5; remaining > 0; remaining--)
-            {
-                LocalTestResultText.Text = $"Recording test phrase. Speak now: {remaining}s";
-                await Task.Delay(TimeSpan.FromSeconds(1), timeout.Token);
-            }
-
-            recordedAudio = _audioCapture.Stop();
-            _state.RecordingState = RecordingState.Processing;
-            _state.StatusMessage = "Transcribing test phrase";
-
-            if (recordedAudio is null)
-            {
-                var summary = _audioCapture.LastCaptureSummary;
-                LocalTestResultText.Text = $"No microphone input captured from {_state.Settings.MicrophoneName}. Peak level: {summary.PeakLevel:0.000}.";
-                _state.RecordingState = RecordingState.Error;
-                _state.StatusMessage = $"No input from {_state.Settings.MicrophoneName}. Choose another microphone.";
-                return;
-            }
-
-            LocalTestResultText.Text = "Transcribing local test phrase...";
-            var transcript = await _localProvider.TranscribeOnlyAsync(recordedAudio, _state, timeout.Token);
-            LocalTestResultText.Text = string.IsNullOrWhiteSpace(transcript)
-                ? "Local test completed, but Whisper returned an empty transcript. Try speaking louder or choose a larger model."
-                : $"Local test transcript: {transcript.Trim()}";
-            _state.StatusMessage = "Local test completed";
-            _state.RecordingState = RecordingState.Idle;
+            var result = await _localTestPhrase.RunAsync(_state, message => LocalTestResultText.Text = message, timeout.Token);
+            LocalTestResultText.Text = string.IsNullOrWhiteSpace(result.Transcript)
+                ? result.Message
+                : $"Local test transcript: {result.Transcript.Trim()}";
+            _state.StatusMessage = result.NoInputCaptured
+                ? $"No input from {_state.Settings.MicrophoneName}. Choose another microphone."
+                : "Local test completed";
+            _state.RecordingState = result.NoInputCaptured
+                ? RecordingState.Error
+                : RecordingState.Idle;
         }
         catch (OperationCanceledException)
         {
@@ -194,14 +175,6 @@ public partial class TrayPanelWindow : Window
         }
         finally
         {
-            if (_state.RecordingState is RecordingState.Recording)
-            {
-                _audioCapture.StopAndDelete();
-            }
-
-            _audioCapture.DeleteRecording(recordedAudio);
-            _state.InputLevel = 0;
-            _state.Elapsed = TimeSpan.Zero;
             SetLocalTestControlsEnabled(true);
         }
     }

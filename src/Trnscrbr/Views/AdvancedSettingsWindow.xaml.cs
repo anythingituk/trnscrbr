@@ -24,6 +24,7 @@ public partial class AdvancedSettingsWindow : Window
     private readonly LocalModelDownloadService _localModelDownload = new();
     private readonly LocalWhisperToolDownloadService _localWhisperToolDownload = new();
     private readonly LocalModeRepairService _localModeRepair;
+    private readonly LocalTestPhraseService _localTestPhrase;
     private readonly UpdateCheckService _updateCheck = new();
     private CancellationTokenSource? _modelDownloadCancellation;
     private bool _localOperationActive;
@@ -40,6 +41,7 @@ public partial class AdvancedSettingsWindow : Window
     {
         InitializeComponent();
         _localModeRepair = new LocalModeRepairService(_localWhisperToolDownload, _localModelDownload);
+        _localTestPhrase = new LocalTestPhraseService(audioCapture, _localProvider);
         _state = state;
         _settingsStore = settingsStore;
         _credentialStore = credentialStore;
@@ -813,38 +815,15 @@ public partial class AdvancedSettingsWindow : Window
         }
 
         LocalTestTranscriptBox.Text = string.Empty;
-        RecordedAudio? recordedAudio = null;
         using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(3));
 
         try
         {
-            _state.RecordingState = RecordingState.Recording;
-            _state.StatusMessage = "Recording local test phrase";
-            SetLocalTestStatus("Recording test phrase. Speak now for 5 seconds...");
-            _audioCapture.Start();
-
-            for (var remaining = 5; remaining > 0; remaining--)
-            {
-                SetLocalTestStatus($"Recording test phrase. Speak now: {remaining}s");
-                await Task.Delay(TimeSpan.FromSeconds(1), timeout.Token);
-            }
-
-            recordedAudio = _audioCapture.Stop();
-            _state.RecordingState = RecordingState.Processing;
-
-            if (recordedAudio is null)
-            {
-                var summary = _audioCapture.LastCaptureSummary;
-                SetLocalTestStatus($"No microphone input captured. Peak level: {summary.PeakLevel:0.000}. Check the selected microphone.");
-                return;
-            }
-
-            SetLocalTestStatus("Transcribing local test phrase...");
-            var transcript = await _localProvider.TranscribeOnlyAsync(recordedAudio, _state, timeout.Token);
-            LocalTestTranscriptBox.Text = transcript;
-            SetLocalTestStatus(string.IsNullOrWhiteSpace(transcript)
-                ? "Local test completed, but Whisper returned an empty transcript. Try speaking louder or choosing a larger model."
-                : "Local test completed. Transcript shown below; nothing was pasted.");
+            var result = await _localTestPhrase.RunAsync(_state, SetLocalTestStatus, timeout.Token);
+            LocalTestTranscriptBox.Text = result.Transcript;
+            SetLocalTestStatus(result.NoInputCaptured
+                ? $"{result.Message} Check the selected microphone."
+                : result.Message);
         }
         catch (OperationCanceledException)
         {
@@ -857,20 +836,8 @@ public partial class AdvancedSettingsWindow : Window
         }
         finally
         {
-            if (_state.RecordingState is RecordingState.Recording)
-            {
-                _audioCapture.StopAndDelete();
-            }
-
-            if (recordedAudio is not null)
-            {
-                _audioCapture.DeleteRecording(recordedAudio);
-            }
-
             _state.RecordingState = RecordingState.Idle;
             _state.StatusMessage = "Ready";
-            _state.InputLevel = 0;
-            _state.Elapsed = TimeSpan.Zero;
             EndLocalOperation();
         }
     }

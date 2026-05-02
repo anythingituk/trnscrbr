@@ -103,7 +103,7 @@ public sealed class TrayIconService : IDisposable
 
     private static string GetTooltipText()
     {
-        return $"Trnscrbr {AppInfo.Version}";
+        return $"Trnscrbr {AppInfo.DisplayVersion}";
     }
 
     private ContextMenuStrip BuildMenu()

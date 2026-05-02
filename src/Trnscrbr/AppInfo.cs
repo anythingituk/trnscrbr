@@ -10,4 +10,6 @@ public static class AppInfo
         typeof(AppInfo).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
         ?? typeof(AppInfo).Assembly.GetName().Version?.ToString()
         ?? "unknown";
+
+    public static string DisplayVersion { get; } = Version.Split('+')[0];
 }

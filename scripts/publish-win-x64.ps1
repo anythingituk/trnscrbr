@@ -86,9 +86,9 @@ Invoke-Checked $dotnetPath @(
 
 Assert-PublishedExeContains @(
     "Ctrl + Alt + R",
+    "Ctrl+Shift+R",
     "Try Test Phrase",
     "Repair Local Mode",
-    "Local mode repaired",
     "Free Quick Setup"
 )
 
