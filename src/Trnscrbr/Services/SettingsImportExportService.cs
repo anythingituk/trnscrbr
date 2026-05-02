@@ -74,6 +74,7 @@ public sealed class SettingsImportExportService
             LocalWhisperModelPresetId = settings.LocalWhisperModelPresetId,
             LocalSetupSource = settings.LocalSetupSource,
             LocalSetupCompletedAt = settings.LocalSetupCompletedAt,
+            LastNotifiedUpdateVersion = settings.LastNotifiedUpdateVersion,
             MonthlyCostWarning = settings.MonthlyCostWarning,
             CustomVocabulary = settings.CustomVocabulary.ToList()
         };

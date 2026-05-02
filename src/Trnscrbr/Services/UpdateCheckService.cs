@@ -38,9 +38,9 @@ public sealed class UpdateCheckService
                 ? urlElement.GetString() ?? string.Empty
                 : string.Empty;
 
-            if (!TryParseVersion(tag, out var latest) || !TryParseVersion(AppInfo.Version, out var current))
+            if (!TryParseVersion(tag, out var latest) || !TryParseVersion(AppInfo.DisplayVersion, out var current))
             {
-                return UpdateCheckResult.Failed($"Latest release: {tag}. Current version: {AppInfo.Version}.");
+                return UpdateCheckResult.Failed($"Latest release: {tag}. Current version: {AppInfo.DisplayVersion}.");
             }
 
             return latest > current
@@ -60,17 +60,17 @@ public sealed class UpdateCheckService
     }
 }
 
-public sealed record UpdateCheckResult(bool IsSuccess, bool IsUpdateAvailable, string Message, string ReleaseUrl)
+public sealed record UpdateCheckResult(bool IsSuccess, bool IsUpdateAvailable, string LatestVersion, string Message, string ReleaseUrl)
 {
     public static UpdateCheckResult UpToDate(string tag, string releaseUrl) =>
-        new(true, false, $"You are up to date. Latest release: {tag}.", releaseUrl);
+        new(true, false, tag, $"You are up to date. Latest release: {tag}.", releaseUrl);
 
     public static UpdateCheckResult UpdateAvailable(string tag, string releaseUrl) =>
-        new(true, true, $"Update available: {tag}. Open releases to download the installer.", releaseUrl);
+        new(true, true, tag, $"Update available: {tag}. Open releases to download the installer.", releaseUrl);
 
     public static UpdateCheckResult NoRelease(string message) =>
-        new(true, false, message, string.Empty);
+        new(true, false, string.Empty, message, string.Empty);
 
     public static UpdateCheckResult Failed(string message) =>
-        new(false, false, message, string.Empty);
+        new(false, false, string.Empty, message, string.Empty);
 }

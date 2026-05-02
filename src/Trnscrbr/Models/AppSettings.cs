@@ -31,6 +31,7 @@ public sealed class AppSettings
     public string LocalWhisperModelPresetId { get; set; } = string.Empty;
     public string LocalSetupSource { get; set; } = string.Empty;
     public DateTimeOffset? LocalSetupCompletedAt { get; set; }
+    public string LastNotifiedUpdateVersion { get; set; } = string.Empty;
     public decimal MonthlyCostWarning { get; set; } = 5.00m;
     public List<string> CustomVocabulary { get; set; } = [];
 }

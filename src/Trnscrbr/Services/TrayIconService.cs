@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows.Forms;
 using System.Windows.Threading;
 using Trnscrbr.Models;
@@ -21,6 +22,7 @@ public sealed class TrayIconService : IDisposable
     private readonly Action _onQuit;
     private NotifyIcon? _notifyIcon;
     private Icon? _currentIcon;
+    private UpdateCheckResult? _availableUpdate;
 
     public TrayIconService(
         AppStateViewModel state,
@@ -63,6 +65,7 @@ public sealed class TrayIconService : IDisposable
                 Dispatcher.CurrentDispatcher.BeginInvoke(_onShowSettings, DispatcherPriority.ApplicationIdle);
             }
         };
+        _notifyIcon.BalloonTipClicked += (_, _) => OpenAvailableUpdate();
     }
 
     public void Dispose()
@@ -112,17 +115,23 @@ public sealed class TrayIconService : IDisposable
         var recordItem = new ToolStripMenuItem("Start Recording", null, (_, _) => _onToggleRecording());
         var showItem = new ToolStripMenuItem("Show/Hide Floating Button", null, (_, _) => _onToggleFloatingButton());
         var pasteItem = new ToolStripMenuItem("Paste Last Transcript", null, (_, _) => _onPasteLastTranscript());
+        var updateItem = new ToolStripMenuItem("Update Available", null, (_, _) => OpenAvailableUpdate()) { Visible = false };
         var micMenu = new ToolStripMenuItem("Microphone");
 
         menu.Opening += (_, _) =>
         {
             recordItem.Text = _state.RecordingState == RecordingState.Recording ? "Stop Recording" : "Start Recording";
             pasteItem.Enabled = HasRecoverableTranscript();
+            updateItem.Visible = _availableUpdate is { IsUpdateAvailable: true };
+            updateItem.Text = _availableUpdate is { IsUpdateAvailable: true } update
+                ? $"Update Available: {update.LatestVersion}"
+                : "Update Available";
             RebuildMicrophoneMenu(micMenu);
         };
 
         menu.Items.Add(recordItem);
         menu.Items.Add(pasteItem);
+        menu.Items.Add(updateItem);
         menu.Items.Add(showItem);
         menu.Items.Add(micMenu);
         menu.Items.Add(new ToolStripSeparator());
@@ -131,6 +140,35 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(new ToolStripMenuItem("Quit", null, (_, _) => _onQuit()));
         return menu;
+    }
+
+    public void ShowUpdateAvailable(UpdateCheckResult result)
+    {
+        if (_notifyIcon is null || !result.IsUpdateAvailable)
+        {
+            return;
+        }
+
+        _availableUpdate = result;
+        _notifyIcon.BalloonTipTitle = "Trnscrbr update available";
+        _notifyIcon.BalloonTipText = $"Version {result.LatestVersion} is available. Click to open releases.";
+        _notifyIcon.ShowBalloonTip(10000);
+    }
+
+    private void OpenAvailableUpdate()
+    {
+        var url = string.IsNullOrWhiteSpace(_availableUpdate?.ReleaseUrl)
+            ? AppInfo.ReleasesUrl
+            : _availableUpdate.ReleaseUrl;
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch
+        {
+            _onShowAdvancedSettings();
+        }
     }
 
     private bool HasRecoverableTranscript()

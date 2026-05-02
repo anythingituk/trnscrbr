@@ -23,6 +23,7 @@ public partial class App : System.Windows.Application
     private EnvironmentDiagnosticsService? _environmentDiagnostics;
     private UsageStatsService? _usageStats;
     private SettingsImportExportService? _settingsImportExport;
+    private UpdateCheckService? _updateCheck;
     private RecordingCoordinator? _recording;
     private DispatcherTimer? _lastTranscriptTimer;
     private FloatingButtonWindow? _floatingButton;
@@ -54,6 +55,7 @@ public partial class App : System.Windows.Application
         _localProvider = new LocalProviderService(_diagnosticLog);
         _usageStats = new UsageStatsService();
         _settingsImportExport = new SettingsImportExportService();
+        _updateCheck = new UpdateCheckService();
         var settings = _settingsStore.Load();
         var appState = new AppStateViewModel(settings);
         StartLastTranscriptExpiryTimer(appState);
@@ -96,6 +98,7 @@ public partial class App : System.Windows.Application
             onShowAdvancedSettings: ShowAdvancedSettings,
             onQuit: Shutdown);
         _trayIcon.Start();
+        StartUpdateNotificationCheck(appState);
         _audioCapture.ApplyPreBufferSetting();
         StartupService.Apply(settings);
         if (settings.FloatingButtonEnabled)
@@ -232,6 +235,36 @@ public partial class App : System.Windows.Application
             }
         };
         _lastTranscriptTimer.Start();
+    }
+
+    private void StartUpdateNotificationCheck(AppStateViewModel state)
+    {
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(12) };
+        timer.Tick += async (_, _) =>
+        {
+            timer.Stop();
+            if (_updateCheck is null || _trayIcon is null || _settingsStore is null)
+            {
+                return;
+            }
+
+            var result = await _updateCheck.CheckLatestReleaseAsync();
+            if (!result.IsUpdateAvailable || string.IsNullOrWhiteSpace(result.LatestVersion))
+            {
+                return;
+            }
+
+            if (string.Equals(state.Settings.LastNotifiedUpdateVersion, result.LatestVersion, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            state.Settings.LastNotifiedUpdateVersion = result.LatestVersion;
+            _settingsStore.Save(state.Settings);
+            state.RaiseSettingsChanged();
+            _trayIcon.ShowUpdateAvailable(result);
+        };
+        timer.Start();
     }
 
     private void ShowRecoverableError(Exception exception)
