@@ -1,6 +1,7 @@
 param(
     [string]$Runtime = "win-x64",
-    [switch]$SkipInstallSmokeTest
+    [switch]$SkipInstallSmokeTest,
+    [switch]$SkipLaunchSmokeTest
 )
 
 $ErrorActionPreference = "Stop"
@@ -66,6 +67,24 @@ try {
 
     Write-Host "Installed-app smoke test passed: $installedExe"
     Write-Host "Installed version: $installedVersion"
+
+    if ($SkipLaunchSmokeTest) {
+        Write-Host "Installed-app launch smoke test skipped."
+    }
+    elseif (Get-Process -Name "Trnscrbr" -ErrorAction SilentlyContinue) {
+        Write-Host "Installed-app launch smoke test skipped because Trnscrbr is already running."
+    }
+    else {
+        $launched = Start-Process -FilePath $installedExe -PassThru
+        Start-Sleep -Seconds 2
+        if ($launched.HasExited) {
+            throw "Installed executable exited during launch smoke test with code $($launched.ExitCode)."
+        }
+
+        Stop-Process -Id $launched.Id -Force
+        $launched.WaitForExit(5000) | Out-Null
+        Write-Host "Installed-app launch smoke test passed."
+    }
 }
 finally {
     $uninstaller = Get-ChildItem -Path $installDir -Filter "unins*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1

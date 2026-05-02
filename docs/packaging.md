@@ -36,10 +36,16 @@ Run:
 .\scripts\test-package.ps1
 ```
 
-This publishes the app, verifies that the published executable contains current local-mode and hotkey UX text, builds the installer, verifies that the expected installer executable exists and is non-empty, silently installs it to a temporary folder, checks the installed executable version, and uninstalls it.
+This publishes the app, verifies that the published executable contains current local-mode and hotkey UX text, builds the installer, verifies that the expected installer executable exists and is non-empty, silently installs it to a temporary folder, checks the installed executable version, launches the installed app when no other Trnscrbr instance is running, and uninstalls it.
 
 To skip the temporary install/uninstall check:
 
 ```powershell
 .\scripts\test-package.ps1 -SkipInstallSmokeTest
+```
+
+To keep install/version verification but skip launch:
+
+```powershell
+.\scripts\test-package.ps1 -SkipLaunchSmokeTest
 ```

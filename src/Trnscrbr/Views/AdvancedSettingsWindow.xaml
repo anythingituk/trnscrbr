@@ -179,6 +179,7 @@
                                     <Button x:Name="VerifyModelButton" Content="Verify Model" Width="130" Margin="0,0,8,8" Click="VerifyModel_OnClick" />
                                     <Button x:Name="UseLocalModeButton" Content="Use Local Mode" Width="140" Margin="0,0,8,8" Click="SaveLocalMode_OnClick" />
                                     <Button x:Name="RepairLocalModeButton" Content="Repair Local Mode" Width="150" Margin="0,0,8,8" Click="RepairLocalMode_OnClick" />
+                                    <Button x:Name="CancelLocalRepairButton" Content="Cancel Repair" Width="130" Margin="0,0,8,8" Click="CancelModelDownload_OnClick" />
                                 </WrapPanel>
                             </StackPanel>
                         </Border>

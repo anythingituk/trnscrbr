@@ -24,6 +24,8 @@ public partial class TrayPanelWindow : Window
     private readonly Func<IReadOnlyList<AudioInputDevice>> _getMicrophones;
     private readonly Action<bool> _setFloatingButtonVisibility;
     private readonly Action _showAdvanced;
+    private CancellationTokenSource? _repairCancellation;
+    private bool _repairInProgress;
     private bool _loadingMicrophones;
 
     public TrayPanelWindow(
@@ -83,6 +85,13 @@ public partial class TrayPanelWindow : Window
 
     private async void LocalReadinessAction_OnClick(object sender, RoutedEventArgs e)
     {
+        if (_repairInProgress)
+        {
+            _repairCancellation?.Cancel();
+            LocalTestResultText.Text = "Cancelling local mode repair...";
+            return;
+        }
+
         if (IsLocalModeReady())
         {
             Persist();
@@ -91,7 +100,11 @@ public partial class TrayPanelWindow : Window
         }
 
         SetLocalTestControlsEnabled(false);
-        LocalReadinessActionButton.Content = "Repairing";
+        _repairCancellation?.Dispose();
+        _repairCancellation = new CancellationTokenSource();
+        _repairInProgress = true;
+        LocalReadinessActionButton.IsEnabled = true;
+        LocalReadinessActionButton.Content = "Cancel";
         LocalTestResultText.Text = "Repairing local mode...";
 
         try
@@ -109,12 +122,18 @@ public partial class TrayPanelWindow : Window
             var result = await _localModeRepair.RepairAsync(
                 _state.Settings,
                 progress,
-                downloadProgress);
+                downloadProgress,
+                _repairCancellation.Token);
 
             Persist();
             RefreshLocalReadiness();
             LocalTestResultText.Text = $"{FormatRepairResult(result)} Click Test to confirm it works.";
             _state.StatusMessage = "Local mode repaired";
+        }
+        catch (OperationCanceledException)
+        {
+            LocalTestResultText.Text = "Local mode repair cancelled. Partial downloads were kept so they can resume later.";
+            _state.StatusMessage = "Local mode repair cancelled";
         }
         catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or IOException or InvalidOperationException or System.Text.Json.JsonException)
         {
@@ -124,6 +143,9 @@ public partial class TrayPanelWindow : Window
         }
         finally
         {
+            _repairInProgress = false;
+            _repairCancellation?.Dispose();
+            _repairCancellation = null;
             SetLocalTestControlsEnabled(true);
             RefreshLocalReadiness();
         }
@@ -295,7 +317,7 @@ public partial class TrayPanelWindow : Window
 
     private void SetLocalTestControlsEnabled(bool enabled)
     {
-        LocalReadinessActionButton.IsEnabled = enabled;
+        LocalReadinessActionButton.IsEnabled = enabled || _repairInProgress;
         LocalReadinessTestButton.IsEnabled = enabled && IsLocalModeReady();
         MicrophoneBox.IsEnabled = enabled;
     }

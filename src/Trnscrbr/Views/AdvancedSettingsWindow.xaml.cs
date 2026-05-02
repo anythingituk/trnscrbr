@@ -120,6 +120,7 @@ public partial class AdvancedSettingsWindow : Window
         InstallWhisperCliButton.IsEnabled = enabled;
         CheckWhisperCliUpdateButton.IsEnabled = enabled;
         RepairLocalModeButton.IsEnabled = enabled;
+        CancelLocalRepairButton.IsEnabled = false;
         BrowseWhisperExecutableButton.IsEnabled = enabled;
         BrowseWhisperModelButton.IsEnabled = enabled;
         UseLocalModeButton.IsEnabled = enabled;
@@ -411,6 +412,7 @@ public partial class AdvancedSettingsWindow : Window
 
         try
         {
+            CancelLocalRepairButton.IsEnabled = true;
             var progress = new Progress<string>(message =>
             {
                 LocalModeStatusText.Text = message;
@@ -439,6 +441,7 @@ public partial class AdvancedSettingsWindow : Window
         catch (OperationCanceledException)
         {
             LocalModeStatusText.Text = "Local mode repair cancelled. Partial downloads were kept so they can resume later.";
+            LocalTestStatusText.Text = LocalModeStatusText.Text;
         }
         catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or IOException or InvalidOperationException or System.Text.Json.JsonException)
         {
@@ -447,6 +450,7 @@ public partial class AdvancedSettingsWindow : Window
         }
         finally
         {
+            CancelLocalRepairButton.IsEnabled = false;
             EndLocalOperation();
         }
     }
