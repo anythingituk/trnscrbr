@@ -122,17 +122,45 @@
                     <StackPanel Margin="18">
                         <TextBlock Text="Local Mode" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock Margin="0,8,0,12" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}"
-                                   Text="Local mode sends no audio or transcript text to cloud services. Point Trnscrbr at a whisper.cpp-compatible executable and model file. Optional cleanup/rewrite can use a local Ollama chat model." />
-                        <ListView>
-                            <ListViewItem Content="Small - fastest, lowest disk/RAM" />
-                            <ListViewItem Content="Medium - balanced" />
-                            <ListViewItem Content="Large - best quality, slower, higher disk/RAM" />
-                        </ListView>
+                                   Text="Local mode is free to use and sends no audio or transcript text to cloud services. Point Trnscrbr at a whisper.cpp-compatible executable and model file. Optional cleanup/rewrite can use a local Ollama chat model." />
+                        <Button Content="Free Quick Setup" Width="150" HorizontalAlignment="Left" Margin="0,0,0,14" Click="QuickSetupLocal_OnClick" />
+                        <TextBlock Text="Download a Whisper model" FontWeight="SemiBold" Margin="0,6,0,6" />
+                        <ComboBox x:Name="ModelPresetComboBox"
+                                  DisplayMemberPath="DisplayName"
+                                  SelectionChanged="ModelPreset_OnSelectionChanged" />
+                        <TextBlock x:Name="ModelPresetDescriptionText"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource MutedForegroundBrush}"
+                                   Margin="0,4,0,8" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Button Content="Download Model" Width="140" Click="DownloadModel_OnClick" />
+                            <Button Content="Cancel Download" Width="140" Margin="8,0,0,0" Click="CancelModelDownload_OnClick" />
+                            <Button Content="Remove Model" Width="130" Margin="8,0,0,0" Click="RemoveModel_OnClick" />
+                            <Button Content="Open Folder" Width="120" Margin="8,0,0,0" Click="OpenModelsFolder_OnClick" />
+                        </StackPanel>
                         <TextBlock Text="Whisper executable" FontWeight="SemiBold" Margin="0,14,0,6" />
-                        <TextBox Text="{Binding Settings.LocalWhisperExecutablePath, UpdateSourceTrigger=PropertyChanged}" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <Button Content="Install Whisper CLI" Width="150" Click="InstallWhisperCli_OnClick" />
+                            <Button Content="Open Tools Folder" Width="150" Margin="8,0,0,0" Click="OpenWhisperToolsFolder_OnClick" />
+                        </StackPanel>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="96" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Text="{Binding Settings.LocalWhisperExecutablePath, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Grid.Column="1" Content="Browse" Margin="8,0,0,0" Click="BrowseWhisperExecutable_OnClick" />
+                        </Grid>
                         <TextBlock Text="Example: C:\Tools\whisper.cpp\whisper-cli.exe" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
                         <TextBlock Text="Whisper model" FontWeight="SemiBold" Margin="0,6,0,6" />
-                        <TextBox Text="{Binding Settings.LocalWhisperModelPath, UpdateSourceTrigger=PropertyChanged}" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="96" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox Text="{Binding Settings.LocalWhisperModelPath, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Grid.Column="1" Content="Browse" Margin="8,0,0,0" Click="BrowseWhisperModel_OnClick" />
+                        </Grid>
                         <TextBlock Text="Example: C:\Models\ggml-small.en.bin" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
                         <TextBlock Text="Ollama cleanup endpoint" FontWeight="SemiBold" Margin="0,6,0,6" />
                         <TextBox Text="{Binding Settings.LocalLlmEndpoint, UpdateSourceTrigger=PropertyChanged}" />
@@ -140,7 +168,14 @@
                         <TextBlock Text="Ollama cleanup model" FontWeight="SemiBold" Margin="0,6,0,6" />
                         <TextBox Text="{Binding Settings.LocalLlmModel, UpdateSourceTrigger=PropertyChanged}" />
                         <TextBlock Text="Leave blank to insert the raw local Whisper transcript without LLM cleanup." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
-                        <Button Content="Detect Local Models" Width="150" HorizontalAlignment="Left" Margin="0,14,0,8" Click="DetectLocalModels_OnClick" />
+                        <StackPanel Orientation="Horizontal" Margin="0,14,0,8">
+                            <Button Content="Use Local Mode" Width="140" Click="SaveLocalMode_OnClick" />
+                            <Button Content="Test Local Setup" Width="140" Margin="8,0,0,0" Click="TestLocalSetup_OnClick" />
+                            <Button Content="Run Smoke Test" Width="140" Margin="8,0,0,0" Click="RunLocalSmokeTest_OnClick" />
+                            <Button Content="Detect Local Models" Width="150" Margin="8,0,0,0" Click="DetectLocalModels_OnClick" />
+                            <Button Content="Detect Ollama Models" Width="160" Margin="8,0,0,0" Click="DetectOllamaModels_OnClick" />
+                        </StackPanel>
+                        <TextBlock x:Name="LocalModeStatusText" TextWrapping="Wrap" Margin="0,0,0,8" Foreground="{StaticResource MutedForegroundBrush}" />
                         <TextBlock Text="Detected models are suggestions. Paste the executable and model path above to enable local dictation." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,0,0,8" />
                         <TextBox x:Name="LocalModelsBox" IsReadOnly="True" MinHeight="120" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
                         <CheckBox Content="Force CPU-only mode" IsChecked="{Binding Settings.ForceCpuOnly}" Margin="0,14,0,0" Click="Settings_OnChanged" />

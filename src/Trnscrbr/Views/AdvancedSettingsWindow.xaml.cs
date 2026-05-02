@@ -1,7 +1,9 @@
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Navigation;
 using Microsoft.Win32;
+using Trnscrbr.Models;
 using Trnscrbr.Services;
 using Trnscrbr.ViewModels;
 
@@ -18,7 +20,11 @@ public partial class AdvancedSettingsWindow : Window
     private readonly UsageStatsService _usageStats;
     private readonly SettingsImportExportService _settingsImportExport;
     private readonly LocalModelDiscoveryService _localModelDiscovery = new();
+    private readonly LocalProviderService _localProvider = new();
+    private readonly LocalModelDownloadService _localModelDownload = new();
+    private readonly LocalWhisperToolDownloadService _localWhisperToolDownload = new();
     private readonly UpdateCheckService _updateCheck = new();
+    private CancellationTokenSource? _modelDownloadCancellation;
 
     public AdvancedSettingsWindow(
         AppStateViewModel state,
@@ -40,12 +46,15 @@ public partial class AdvancedSettingsWindow : Window
         _usageStats = usageStats;
         _settingsImportExport = settingsImportExport;
         DataContext = state;
+        ModelPresetComboBox.ItemsSource = LocalModelDownloadService.Presets;
+        ModelPresetComboBox.SelectedIndex = 0;
         VocabularyBox.Text = string.Join(Environment.NewLine, state.Settings.CustomVocabulary);
         DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
         UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
         CurrentVersionText.Text = $"Current version: {AppInfo.Version}";
         RefreshOverview();
         RefreshLocalModels();
+        RefreshLocalModeStatus();
         UpdateApiKeyStatus();
         UpdateProviderModeStatus();
         Closing += (_, args) =>
@@ -100,10 +109,12 @@ public partial class AdvancedSettingsWindow : Window
         _credentialStore.SaveOpenAiApiKey(apiKey);
         ApiKeyBox.Clear();
         _state.Settings.ProviderMode = "Bring your own API key";
+        _state.Settings.ProviderName = "OpenAI";
         _state.Settings.ActiveEngine = "OpenAI";
         Persist();
         RefreshOverview();
         UpdateProviderModeStatus();
+        RefreshLocalModeStatus();
         ApiKeyStatusText.Text = result.IsSuccess
             ? "OpenAI key saved in Windows Credential Manager."
             : "OpenAI key saved with warning in Windows Credential Manager.";
@@ -119,6 +130,7 @@ public partial class AdvancedSettingsWindow : Window
         RefreshOverview();
         UpdateApiKeyStatus();
         UpdateProviderModeStatus();
+        RefreshLocalModeStatus();
     }
 
     private void CaptureBuffer_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -161,6 +173,7 @@ public partial class AdvancedSettingsWindow : Window
         Persist();
         RefreshOverview();
         UpdateProviderModeStatus();
+        RefreshLocalModeStatus();
     }
 
     private void CursorContext_OnClick(object sender, RoutedEventArgs e)
@@ -190,6 +203,329 @@ public partial class AdvancedSettingsWindow : Window
     private void DetectLocalModels_OnClick(object sender, RoutedEventArgs e)
     {
         RefreshLocalModels();
+    }
+
+    private void ModelPreset_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (ModelPresetComboBox.SelectedItem is not LocalModelPreset preset)
+        {
+            ModelPresetDescriptionText.Text = string.Empty;
+            return;
+        }
+
+        ModelPresetDescriptionText.Text = $"{preset.Description} Download: {preset.DiskSize}. Recommended: {preset.RamRecommendation}.";
+    }
+
+    private async void QuickSetupLocal_OnClick(object sender, RoutedEventArgs e)
+    {
+        var preset = LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
+        var choice = System.Windows.MessageBox.Show(
+            $"Free quick setup will install the official x64 whisper.cpp CPU CLI and download {preset.DisplayName} ({preset.DiskSize}).\n\nContinue?",
+            "Trnscrbr",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Information);
+
+        if (choice != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        _modelDownloadCancellation?.Cancel();
+        _modelDownloadCancellation?.Dispose();
+        _modelDownloadCancellation = new CancellationTokenSource();
+
+        try
+        {
+            LocalModeStatusText.Text = "Installing whisper.cpp CLI...";
+            var cliPath = await _localWhisperToolDownload.DownloadLatestX64Async(
+                new Progress<double>(value => LocalModeStatusText.Text = $"Installing whisper.cpp CLI: {value:P0}"),
+                _modelDownloadCancellation.Token);
+
+            LocalModeStatusText.Text = $"Downloading {preset.DisplayName}...";
+            var modelPath = await _localModelDownload.DownloadAsync(
+                preset,
+                new Progress<double>(value => LocalModeStatusText.Text = $"Downloading {preset.DisplayName}: {value:P0}"),
+                _modelDownloadCancellation.Token);
+
+            _state.Settings.LocalWhisperExecutablePath = cliPath;
+            _state.Settings.LocalWhisperModelPath = modelPath;
+            _state.Settings.ProviderMode = "Local mode";
+            _state.Settings.ProviderName = "Local";
+            _state.Settings.ActiveEngine = "Local Whisper";
+            Persist();
+            RefreshOverview();
+            RefreshLocalModels();
+            RefreshLocalModeStatus();
+            UpdateProviderModeStatus();
+            LocalModeStatusText.Text = "Free local mode is ready. Ollama cleanup remains optional.";
+        }
+        catch (OperationCanceledException)
+        {
+            LocalModeStatusText.Text = "Free quick setup cancelled. Partial model download was kept so it can resume later.";
+        }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or System.IO.IOException or InvalidOperationException or System.Text.Json.JsonException)
+        {
+            LocalModeStatusText.Text = $"Free quick setup failed: {ex.Message}";
+            _diagnosticLog.Error("Free local quick setup failed", ex);
+        }
+    }
+
+    private async void DownloadModel_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (ModelPresetComboBox.SelectedItem is not LocalModelPreset preset)
+        {
+            LocalModeStatusText.Text = "Choose a model preset first.";
+            return;
+        }
+
+        _modelDownloadCancellation?.Cancel();
+        _modelDownloadCancellation?.Dispose();
+        _modelDownloadCancellation = new CancellationTokenSource();
+
+        LocalModeStatusText.Text = $"Downloading {preset.DisplayName}...";
+        var progress = new Progress<double>(value =>
+        {
+            LocalModeStatusText.Text = $"Downloading {preset.DisplayName}: {value:P0}";
+        });
+
+        try
+        {
+            var modelPath = await _localModelDownload.DownloadAsync(
+                preset,
+                progress,
+                _modelDownloadCancellation.Token);
+
+            _state.Settings.LocalWhisperModelPath = modelPath;
+            Persist();
+            RefreshOverview();
+            RefreshLocalModels();
+            RefreshLocalModeStatus();
+            UpdateProviderModeStatus();
+            LocalModeStatusText.Text = $"Downloaded and verified {preset.DisplayName}.";
+        }
+        catch (OperationCanceledException)
+        {
+            LocalModeStatusText.Text = "Model download cancelled. Partial download was kept so it can resume later.";
+        }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or System.IO.IOException or InvalidOperationException)
+        {
+            LocalModeStatusText.Text = $"Model download failed: {ex.Message}";
+            _diagnosticLog.Error("Local model download failed", ex, new Dictionary<string, string>
+            {
+                ["preset"] = preset.Id,
+                ["fileName"] = preset.FileName
+            });
+        }
+    }
+
+    private void CancelModelDownload_OnClick(object sender, RoutedEventArgs e)
+    {
+        _modelDownloadCancellation?.Cancel();
+    }
+
+    private void OpenModelsFolder_OnClick(object sender, RoutedEventArgs e)
+    {
+        Directory.CreateDirectory(_localModelDownload.ModelsDirectory);
+        Process.Start(new ProcessStartInfo(_localModelDownload.ModelsDirectory) { UseShellExecute = true });
+    }
+
+    private async void InstallWhisperCli_OnClick(object sender, RoutedEventArgs e)
+    {
+        LocalModeStatusText.Text = "Downloading whisper.cpp CLI...";
+        var progress = new Progress<double>(value =>
+        {
+            LocalModeStatusText.Text = $"Downloading whisper.cpp CLI: {value:P0}";
+        });
+
+        try
+        {
+            var cliPath = await _localWhisperToolDownload.DownloadLatestX64Async(progress);
+            _state.Settings.LocalWhisperExecutablePath = cliPath;
+            Persist();
+            RefreshOverview();
+            RefreshLocalModels();
+            RefreshLocalModeStatus();
+            UpdateProviderModeStatus();
+            LocalModeStatusText.Text = "Installed and verified whisper.cpp CLI.";
+        }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or System.IO.IOException or InvalidOperationException or System.Text.Json.JsonException)
+        {
+            LocalModeStatusText.Text = $"Could not install whisper.cpp CLI: {ex.Message}";
+            _diagnosticLog.Error("Whisper CLI install failed", ex);
+        }
+    }
+
+    private void OpenWhisperToolsFolder_OnClick(object sender, RoutedEventArgs e)
+    {
+        Directory.CreateDirectory(_localWhisperToolDownload.ToolsDirectory);
+        Process.Start(new ProcessStartInfo(_localWhisperToolDownload.ToolsDirectory) { UseShellExecute = true });
+    }
+
+    private void RemoveModel_OnClick(object sender, RoutedEventArgs e)
+    {
+        var modelPath = _state.Settings.LocalWhisperModelPath;
+        if (string.IsNullOrWhiteSpace(modelPath) || !File.Exists(modelPath))
+        {
+            LocalModeStatusText.Text = "No configured local model file to remove.";
+            return;
+        }
+
+        var managedRoot = Path.GetFullPath(_localModelDownload.ModelsDirectory)
+            .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            + Path.DirectorySeparatorChar;
+        var fullPath = Path.GetFullPath(modelPath);
+        if (!fullPath.StartsWith(managedRoot, StringComparison.OrdinalIgnoreCase))
+        {
+            LocalModeStatusText.Text = "Only models downloaded into Trnscrbr's managed model folder can be removed here.";
+            return;
+        }
+
+        var choice = System.Windows.MessageBox.Show(
+            $"Remove {Path.GetFileName(fullPath)}?",
+            "Trnscrbr",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+
+        if (choice != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            File.Delete(fullPath);
+            _state.Settings.LocalWhisperModelPath = string.Empty;
+            if (_state.Settings.ProviderMode == "Local mode")
+            {
+                _state.Settings.ProviderMode = "Not configured";
+                _state.Settings.ActiveEngine = "None";
+            }
+
+            Persist();
+            RefreshOverview();
+            RefreshLocalModels();
+            RefreshLocalModeStatus();
+            UpdateProviderModeStatus();
+            LocalModeStatusText.Text = "Removed downloaded model.";
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.IO.IOException)
+        {
+            LocalModeStatusText.Text = $"Could not remove model: {ex.Message}";
+            _diagnosticLog.Error("Local model removal failed", ex);
+        }
+    }
+
+    private async void DetectOllamaModels_OnClick(object sender, RoutedEventArgs e)
+    {
+        LocalModeStatusText.Text = "Checking Ollama models...";
+
+        try
+        {
+            var models = await _localProvider.ListLocalLlmModelsAsync(_state.Settings.LocalLlmEndpoint);
+            if (models.Count == 0)
+            {
+                LocalModeStatusText.Text = "Ollama is reachable, but no chat models were found. Pull a model or leave cleanup model blank.";
+                return;
+            }
+
+            LocalModeStatusText.Text = $"Ollama models: {string.Join(", ", models)}";
+            if (string.IsNullOrWhiteSpace(_state.Settings.LocalLlmModel))
+            {
+                _state.Settings.LocalLlmModel = models[0];
+                Persist();
+                RefreshOverview();
+            }
+        }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
+        {
+            LocalModeStatusText.Text = $"Could not reach Ollama at {_state.Settings.LocalLlmEndpoint}: {ex.Message}";
+        }
+    }
+
+    private void BrowseWhisperExecutable_OnClick(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Choose whisper.cpp executable",
+            Filter = "Executable files (*.exe)|*.exe|All files (*.*)|*.*",
+            FileName = string.IsNullOrWhiteSpace(_state.Settings.LocalWhisperExecutablePath)
+                ? "whisper-cli.exe"
+                : System.IO.Path.GetFileName(_state.Settings.LocalWhisperExecutablePath)
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        _state.Settings.LocalWhisperExecutablePath = dialog.FileName;
+        Persist();
+        RefreshOverview();
+        RefreshLocalModeStatus();
+        UpdateProviderModeStatus();
+    }
+
+    private void BrowseWhisperModel_OnClick(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Choose Whisper model",
+            Filter = "Whisper model files (*.bin;*.gguf)|*.bin;*.gguf|All files (*.*)|*.*"
+        };
+
+        if (dialog.ShowDialog(this) != true)
+        {
+            return;
+        }
+
+        _state.Settings.LocalWhisperModelPath = dialog.FileName;
+        Persist();
+        RefreshOverview();
+        RefreshLocalModeStatus();
+        UpdateProviderModeStatus();
+    }
+
+    private async void TestLocalSetup_OnClick(object sender, RoutedEventArgs e)
+    {
+        LocalModeStatusText.Text = "Testing local setup...";
+        var result = await _localProvider.TestLocalConfigurationAsync(_state);
+        LocalModeStatusText.Text = result.Message;
+    }
+
+    private async void RunLocalSmokeTest_OnClick(object sender, RoutedEventArgs e)
+    {
+        LocalModeStatusText.Text = "Running Whisper runtime smoke test...";
+        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+        try
+        {
+            var result = await _localProvider.RunWhisperSmokeTestAsync(_state, timeout.Token);
+            LocalModeStatusText.Text = result.Message;
+        }
+        catch (OperationCanceledException)
+        {
+            LocalModeStatusText.Text = "Whisper runtime smoke test timed out after 2 minutes.";
+        }
+    }
+
+    private async void SaveLocalMode_OnClick(object sender, RoutedEventArgs e)
+    {
+        var result = await _localProvider.TestLocalConfigurationAsync(_state);
+        if (!result.IsSuccess)
+        {
+            LocalModeStatusText.Text = result.Message;
+            return;
+        }
+
+        _state.Settings.ProviderMode = "Local mode";
+        _state.Settings.ProviderName = "Local";
+        _state.Settings.ActiveEngine = "Local Whisper";
+        Persist();
+        RefreshOverview();
+        RefreshLocalModeStatus();
+        UpdateProviderModeStatus();
+        LocalModeStatusText.Text = string.IsNullOrWhiteSpace(_state.Settings.LocalLlmModel)
+            ? "Local mode saved. Dictation will use local Whisper without LLM cleanup."
+            : "Local mode saved. Dictation will use local Whisper with Ollama cleanup.";
     }
 
     private void CopyDiagnostics_OnClick(object sender, RoutedEventArgs e)
@@ -263,13 +599,26 @@ public partial class AdvancedSettingsWindow : Window
         var candidates = _localModelDiscovery.Discover();
         if (candidates.Count == 0)
         {
-            LocalModelsBox.Text = "No local model candidates found in Trnscrbr, Hugging Face, or Whisper cache folders.";
+            LocalModelsBox.Text = "No local candidates found in common Trnscrbr, Downloads, Documents, Models, Tools, Hugging Face, or Whisper cache folders.";
             return;
         }
 
         LocalModelsBox.Text = string.Join(
             Environment.NewLine + Environment.NewLine,
-            candidates.Select(candidate => $"{candidate.Name}{Environment.NewLine}{candidate.Path}"));
+            candidates.Select(candidate => $"{candidate.Kind}: {candidate.Name}{Environment.NewLine}{candidate.Path}"));
+    }
+
+    private void RefreshLocalModeStatus()
+    {
+        if (IsLocalModeConfigured())
+        {
+            LocalModeStatusText.Text = _state.Settings.ProviderMode == "Local mode"
+                ? "Local mode is active."
+                : "Local Whisper is configured. Click Use Local Mode to make it active.";
+            return;
+        }
+
+        LocalModeStatusText.Text = "Choose a whisper.cpp executable and Whisper model file to enable free local dictation.";
     }
 
     private void MonthlyWarning_OnLostFocus(object sender, RoutedEventArgs e)

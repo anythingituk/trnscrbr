@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
 using Trnscrbr.Models;
 
@@ -59,7 +60,8 @@ public sealed class AppStateViewModel : INotifyPropertyChanged
     }
 
     public bool IsProviderConfigured => Settings.ProviderMode == "Local mode"
-        || (Settings.ProviderMode != "Not configured" && Settings.ActiveEngine != "None");
+        ? File.Exists(Settings.LocalWhisperExecutablePath) && File.Exists(Settings.LocalWhisperModelPath)
+        : Settings.ProviderMode != "Not configured" && Settings.ActiveEngine != "None";
 
     public string ActiveEngineLabel => Settings.ActiveEngine == "None"
         ? "No engine configured"

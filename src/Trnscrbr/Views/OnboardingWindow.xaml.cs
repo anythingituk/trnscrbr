@@ -30,7 +30,9 @@ public partial class OnboardingWindow : Window
 
     private void Setup_OnClick(object sender, RoutedEventArgs e)
     {
-        _state.Settings.ProviderMode = "Bring your own API key";
+        _state.Settings.ProviderMode = "Local mode";
+        _state.Settings.ProviderName = "Local";
+        _state.Settings.ActiveEngine = "Local Whisper";
         CompleteOnboarding();
         Close();
         _showAdvancedSettings();

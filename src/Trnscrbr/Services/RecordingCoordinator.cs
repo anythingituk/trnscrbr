@@ -345,7 +345,9 @@ public sealed class RecordingCoordinator
     private void ShowProviderRequired()
     {
         _state.RecordingState = RecordingState.Error;
-        _state.StatusMessage = "Provider required. Right-click for Settings.";
+        _state.StatusMessage = string.Equals(_state.Settings.ProviderMode, "Local mode", StringComparison.OrdinalIgnoreCase)
+            ? "Local Whisper setup required. Right-click for Settings."
+            : "Provider required. Right-click for Settings.";
         _floatingButton.ShowNearTaskbar();
     }
 

@@ -356,5 +356,7 @@ public sealed record ProviderTestResult(bool IsSuccess, string Message)
 {
     public static ProviderTestResult Success() => new(true, "Connection successful.");
 
+    public static ProviderTestResult Success(string message) => new(true, message);
+
     public static ProviderTestResult Fail(string message) => new(false, message);
 }

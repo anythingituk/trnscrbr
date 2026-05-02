@@ -25,6 +25,116 @@ public sealed class LocalProviderService
             && File.Exists(state.Settings.LocalWhisperModelPath);
     }
 
+    public async Task<ProviderTestResult> TestLocalConfigurationAsync(
+        AppStateViewModel state,
+        CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(state.Settings.LocalWhisperExecutablePath))
+        {
+            return ProviderTestResult.Fail("Choose a whisper.cpp executable before using local mode.");
+        }
+
+        if (!File.Exists(state.Settings.LocalWhisperModelPath))
+        {
+            return ProviderTestResult.Fail("Choose a Whisper model file before using local mode.");
+        }
+
+        if (string.IsNullOrWhiteSpace(state.Settings.LocalLlmModel))
+        {
+            return ProviderTestResult.Success();
+        }
+
+        try
+        {
+            var models = await ListLocalLlmModelsAsync(state.Settings.LocalLlmEndpoint, cancellationToken);
+            return models.Any(model => string.Equals(model, state.Settings.LocalLlmModel, StringComparison.OrdinalIgnoreCase))
+                ? ProviderTestResult.Success()
+                : ProviderTestResult.Fail("Whisper is configured, but the selected Ollama cleanup model was not found.");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or UriFormatException)
+        {
+            _diagnosticLog?.Error("Local LLM test failed", ex);
+            return ProviderTestResult.Fail($"Whisper is configured, but Ollama cleanup could not be reached: {ex.Message}");
+        }
+    }
+
+    public async Task<ProviderTestResult> RunWhisperSmokeTestAsync(
+        AppStateViewModel state,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsConfigured(state))
+        {
+            return ProviderTestResult.Fail("Choose a whisper.cpp executable and Whisper model before running the smoke test.");
+        }
+
+        var audioPath = Path.Combine(
+            Path.GetTempPath(),
+            $"trnscrbr-smoke-{Guid.NewGuid():N}.wav");
+
+        try
+        {
+            WriteSmokeTestWav(audioPath);
+            var transcript = await TranscribeAsync(
+                new RecordedAudio(
+                    audioPath,
+                    TimeSpan.FromSeconds(1),
+                    16000,
+                    1,
+                    new FileInfo(audioPath).Length,
+                    "Smoke test"),
+                state,
+                cancellationToken,
+                allowEmptyTranscript: true);
+
+            return string.IsNullOrWhiteSpace(transcript)
+                ? ProviderTestResult.Success("Whisper runtime test passed. The generated test audio produced no transcript, which is expected.")
+                : ProviderTestResult.Success($"Whisper runtime test passed. Output: {transcript}");
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            _diagnosticLog?.Error("Local Whisper smoke test failed", ex);
+            return ProviderTestResult.Fail($"Whisper runtime test failed: {ex.Message}");
+        }
+        finally
+        {
+            TryDelete(audioPath);
+        }
+    }
+
+    public async Task<IReadOnlyList<string>> ListLocalLlmModelsAsync(
+        string endpoint,
+        CancellationToken cancellationToken = default)
+    {
+        var tagsUri = BuildOllamaTagsUri(endpoint);
+        using var response = await _httpClient.GetAsync(tagsUri, cancellationToken);
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            _diagnosticLog?.Error("Ollama model discovery failed", metadata: new Dictionary<string, string>
+            {
+                ["statusCode"] = ((int)response.StatusCode).ToString(),
+                ["reason"] = response.ReasonPhrase ?? string.Empty,
+                ["response"] = TrimForLog(json)
+            });
+            return [];
+        }
+
+        using var document = JsonDocument.Parse(json);
+        if (!document.RootElement.TryGetProperty("models", out var models)
+            || models.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        return models
+            .EnumerateArray()
+            .Select(model => model.TryGetProperty("name", out var name) ? name.GetString() : null)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name!)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
     public async Task<TranscriptionResult> TranscribeAndCleanAsync(
         RecordedAudio audio,
         AppStateViewModel state,
@@ -54,7 +164,8 @@ public sealed class LocalProviderService
     private async Task<string> TranscribeAsync(
         RecordedAudio audio,
         AppStateViewModel state,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool allowEmptyTranscript = false)
     {
         var outputBase = Path.Combine(
             Path.GetTempPath(),
@@ -122,9 +233,16 @@ public sealed class LocalProviderService
                 throw new InvalidOperationException($"Local Whisper failed with exit code {process.ExitCode}.");
             }
 
-            return File.Exists(outputTextPath)
+            var transcript = File.Exists(outputTextPath)
                 ? File.ReadAllText(outputTextPath).Trim()
                 : stdout.Trim();
+
+            if (!allowEmptyTranscript && string.IsNullOrWhiteSpace(transcript))
+            {
+                throw new InvalidOperationException("Local transcription returned an empty transcript.");
+            }
+
+            return transcript;
         }
         finally
         {
@@ -209,6 +327,23 @@ public sealed class LocalProviderService
         return string.Empty;
     }
 
+    private static Uri BuildOllamaTagsUri(string endpoint)
+    {
+        var fallback = new Uri("http://localhost:11434/api/tags");
+        if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri))
+        {
+            return fallback;
+        }
+
+        var builder = new UriBuilder(uri)
+        {
+            Path = "/api/tags",
+            Query = string.Empty,
+            Fragment = string.Empty
+        };
+        return builder.Uri;
+    }
+
     private static string BasicClean(string transcript)
     {
         return transcript.Trim();
@@ -228,6 +363,33 @@ public sealed class LocalProviderService
 
         var trimmed = value.Trim();
         return trimmed.Length <= 600 ? trimmed : trimmed[..600];
+    }
+
+    private static void WriteSmokeTestWav(string path)
+    {
+        const int sampleRate = 16000;
+        const short bitsPerSample = 16;
+        const short channels = 1;
+        const int durationSeconds = 1;
+        var dataLength = sampleRate * channels * bitsPerSample / 8 * durationSeconds;
+
+        using var stream = File.Create(path);
+        using var writer = new BinaryWriter(stream, Encoding.ASCII, leaveOpen: false);
+
+        writer.Write("RIFF"u8);
+        writer.Write(36 + dataLength);
+        writer.Write("WAVE"u8);
+        writer.Write("fmt "u8);
+        writer.Write(16);
+        writer.Write((short)1);
+        writer.Write(channels);
+        writer.Write(sampleRate);
+        writer.Write(sampleRate * channels * bitsPerSample / 8);
+        writer.Write((short)(channels * bitsPerSample / 8));
+        writer.Write(bitsPerSample);
+        writer.Write("data"u8);
+        writer.Write(dataLength);
+        writer.Write(new byte[dataLength]);
     }
 
     private static void TryDelete(string path)

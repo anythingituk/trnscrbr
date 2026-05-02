@@ -249,7 +249,7 @@ First-run choices:
 MVP provider availability:
 
 - Bring your own API key is available.
-- Local mode is planned; current implementation can detect candidate local model files/setups but does not run them.
+- Local mode is available with the official x64 whisper.cpp CLI release and local Whisper model files, including managed Whisper model downloads from the official whisper.cpp Hugging Face repository. Optional cleanup/rewrite can use a local Ollama chat model.
 - Cloud managed by app is designed in the UI but should be disabled or marked as planned/future until backend/billing exists.
 
 Initial cloud provider:
@@ -307,7 +307,8 @@ Model handling:
 
 - Detect installed local AI/model setups and suggest them.
 - Offer detected models but do not use them by default.
-- Provide managed downloads from official model repositories only.
+- Provide managed downloads from official model repositories for Whisper model files.
+- Provide managed installation for the official x64 whisper.cpp CLI release.
 - Show estimated download size, disk usage, and RAM recommendation.
 - Downloads must be cancellable and resumable.
 - Verify checksums/signatures before use.

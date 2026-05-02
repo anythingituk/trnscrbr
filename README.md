@@ -14,7 +14,7 @@ See [PRODUCT_SPEC.md](PRODUCT_SPEC.md) for the current MVP specification.
 - Default cancel: `Esc`.
 - Paste Last Transcript is available from the tray and glass button menus.
 - OpenAI bring-your-own-key transcription processing.
-- Local model detection only. Local transcription processing is not enabled yet.
+- Free local transcription through user-installed whisper.cpp and local Whisper model files, with optional Ollama cleanup.
 
 ## Build Prerequisites
 
@@ -59,7 +59,7 @@ Useful settings while testing:
 - English spelling: `Auto`, `British English`, `American English`, `Canadian English`, or `Australian English`.
 - Capture startup buffer: helps avoid clipped first words.
 - Diagnostics: refresh/copy logs or open the diagnostics folder.
-- Local Models: detects candidate local models but does not use them.
+- Local Models: run a free quick setup, install the official x64 whisper.cpp CLI, download/remove a verified Whisper model, browse for existing local files, detect common local candidates, and optionally use Ollama cleanup.
 
 ## Status
 
@@ -80,7 +80,7 @@ WPF MVP in progress. Current build includes:
 
 ## Known MVP Limits
 
-- Local mode cannot transcribe yet.
+- GPU-accelerated whisper.cpp builds are not auto-selected yet; the built-in installer uses the official x64 CPU CLI.
 - Hotkeys are fixed for now.
 - Elevated/admin target windows are detected but not supported yet.
 - Text insertion depends on the target app accepting clipboard paste.
