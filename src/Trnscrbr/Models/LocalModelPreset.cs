@@ -8,4 +8,10 @@ public sealed record LocalModelPreset(
     string Sha1,
     string DiskSize,
     string RamRecommendation,
-    string Description);
+    string Description)
+{
+    public override string ToString()
+    {
+        return DisplayName;
+    }
+}
