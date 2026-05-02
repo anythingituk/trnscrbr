@@ -24,6 +24,22 @@ public static class AppSettingsNormalizer
         "Shift+Insert"
     ];
 
+    private static readonly string[] ToggleRecordingHotkeys =
+    [
+        "Ctrl+Alt+R",
+        "Ctrl+Shift+R",
+        "Ctrl+Alt+D",
+        "F9"
+    ];
+
+    private static readonly string[] PushToTalkHotkeys =
+    [
+        "Ctrl+Alt+Space",
+        "Ctrl+Shift+Space",
+        "Ctrl+Win+Space",
+        "F10"
+    ];
+
     private static readonly string[] RewriteStyles =
     [
         "Plain English",
@@ -54,6 +70,8 @@ public static class AppSettingsNormalizer
         settings.LanguageMode = string.IsNullOrWhiteSpace(settings.LanguageMode) ? defaults.LanguageMode : settings.LanguageMode;
         settings.EnglishDialect = Pick(settings.EnglishDialect, EnglishDialects, defaults.EnglishDialect);
         settings.PasteMethod = Pick(settings.PasteMethod, PasteMethods, defaults.PasteMethod);
+        settings.ToggleRecordingHotkey = Pick(settings.ToggleRecordingHotkey, ToggleRecordingHotkeys, defaults.ToggleRecordingHotkey);
+        settings.PushToTalkHotkey = Pick(settings.PushToTalkHotkey, PushToTalkHotkeys, defaults.PushToTalkHotkey);
         settings.MicrophoneName = string.IsNullOrWhiteSpace(settings.MicrophoneName) ? defaults.MicrophoneName : settings.MicrophoneName;
         settings.ActiveEngine = string.IsNullOrWhiteSpace(settings.ActiveEngine) ? defaults.ActiveEngine : settings.ActiveEngine;
         settings.LocalWhisperExecutablePath = settings.LocalWhisperExecutablePath?.Trim() ?? string.Empty;

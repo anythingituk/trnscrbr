@@ -403,7 +403,7 @@ public partial class AdvancedSettingsWindow : Window
             RefreshLocalModels();
             RefreshLocalModeStatus();
             UpdateProviderModeStatus();
-            LocalModeStatusText.Text = $"{result.Message} Next, click Try Test Phrase to confirm it works.";
+            LocalModeStatusText.Text = $"{FormatRepairResult(result)} Next, click Try Test Phrase to confirm it works.";
             LocalTestStatusText.Text = LocalModeStatusText.Text;
             QuickSetupNextStepText.Text = "Repair complete. Click Try Test Phrase, speak for 5 seconds, then check the transcript below.";
         }
@@ -481,6 +481,14 @@ public partial class AdvancedSettingsWindow : Window
         {
             EndLocalOperation();
         }
+    }
+
+    private static string FormatRepairResult(LocalModeRepairResult result)
+    {
+        var details = string.Join(" ", result.Steps.Select(step => $"{step.Name}: {step.Detail}"));
+        return string.IsNullOrWhiteSpace(details)
+            ? result.Message
+            : $"{result.Message} {details}";
     }
 
     private void CancelModelDownload_OnClick(object sender, RoutedEventArgs e)
@@ -919,7 +927,7 @@ public partial class AdvancedSettingsWindow : Window
             Floating button enabled: {FormatBool(_state.Settings.FloatingButtonEnabled)}
             Add trailing space: {FormatBool(_state.Settings.AddTrailingSpace)}
             Custom vocabulary entries: {_state.Settings.CustomVocabulary.Count}
-            Hotkeys: Ctrl+Alt+R, Ctrl+Alt+Space or Ctrl+Win+Space, Esc
+            Hotkeys: toggle {_state.Settings.ToggleRecordingHotkey}, push-to-talk {_state.Settings.PushToTalkHotkey}, Esc
             Transcript content: redacted
             Raw audio: redacted
 

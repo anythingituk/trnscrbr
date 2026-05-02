@@ -1,5 +1,6 @@
 param(
-    [string]$Runtime = "win-x64"
+    [string]$Runtime = "win-x64",
+    [switch]$SkipInstallSmokeTest
 )
 
 $ErrorActionPreference = "Stop"
@@ -31,3 +32,55 @@ if ($installer.Length -le 0) {
 
 Write-Host "Package smoke test passed: $expectedInstaller"
 Write-Host "Size: $([Math]::Round($installer.Length / 1MB, 2)) MB"
+
+if ($SkipInstallSmokeTest) {
+    Write-Host "Installed-app smoke test skipped."
+    return
+}
+
+$installDir = Join-Path $env:TEMP "Trnscrbr-package-smoke-$([Guid]::NewGuid().ToString('N'))"
+$installedExe = Join-Path $installDir "Trnscrbr.exe"
+
+try {
+    $install = Start-Process -FilePath $expectedInstaller -ArgumentList @(
+        "/VERYSILENT",
+        "/SUPPRESSMSGBOXES",
+        "/NORESTART",
+        "/NOICONS",
+        "/DIR=$installDir",
+        "/TASKS="
+    ) -Wait -PassThru
+
+    if ($install.ExitCode -ne 0) {
+        throw "Installer failed with exit code $($install.ExitCode)"
+    }
+
+    if (-not (Test-Path $installedExe)) {
+        throw "Installed executable was not found: $installedExe"
+    }
+
+    $installedVersion = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($installedExe).ProductVersion
+    if (-not $installedVersion.StartsWith($version, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Installed executable version mismatch. Expected $version, got $installedVersion."
+    }
+
+    Write-Host "Installed-app smoke test passed: $installedExe"
+    Write-Host "Installed version: $installedVersion"
+}
+finally {
+    $uninstaller = Get-ChildItem -Path $installDir -Filter "unins*.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($uninstaller) {
+        $uninstall = Start-Process -FilePath $uninstaller.FullName -ArgumentList @(
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART"
+        ) -Wait -PassThru
+        if ($uninstall.ExitCode -ne 0) {
+            Write-Warning "Uninstaller failed with exit code $($uninstall.ExitCode): $($uninstaller.FullName)"
+        }
+    }
+
+    if (Test-Path $installDir) {
+        Remove-Item -Recurse -Force $installDir -ErrorAction SilentlyContinue
+    }
+}

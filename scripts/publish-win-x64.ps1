@@ -10,6 +10,8 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $project = Join-Path $repoRoot "src\Trnscrbr\Trnscrbr.csproj"
 $publishDir = Join-Path $repoRoot "artifacts\publish\$Runtime"
 $publishedExe = Join-Path $publishDir "Trnscrbr.exe"
+$projectXml = [xml](Get-Content $project)
+$version = $projectXml.Project.PropertyGroup.Version | Select-Object -First 1
 
 function Resolve-DotNet {
     $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
@@ -108,7 +110,9 @@ if ($BuildInstaller) {
         throw "Inno Setup compiler (iscc.exe) was not found. Install Inno Setup or run without -BuildInstaller."
     }
 
-    Invoke-Checked $isccPath @((Join-Path $repoRoot "installer\Trnscrbr.iss"))
+    Invoke-Checked $isccPath @(
+        "/DMyAppVersion=$version",
+        (Join-Path $repoRoot "installer\Trnscrbr.iss"))
 }
 
 Write-Host "Published to $publishDir"

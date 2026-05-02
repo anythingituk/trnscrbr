@@ -408,9 +408,19 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <TextBlock Text="Toggle recording" FontWeight="SemiBold" Margin="0,0,12,8" />
-                            <TextBlock Grid.Column="1" Text="Ctrl + Alt + R" Margin="0,0,0,8" />
+                            <ComboBox Grid.Column="1" SelectedValue="{Binding Settings.ToggleRecordingHotkey}" SelectedValuePath="Content" Margin="0,0,0,8" SelectionChanged="Settings_OnChanged">
+                                <ComboBoxItem Content="Ctrl+Alt+R" />
+                                <ComboBoxItem Content="Ctrl+Shift+R" />
+                                <ComboBoxItem Content="Ctrl+Alt+D" />
+                                <ComboBoxItem Content="F9" />
+                            </ComboBox>
                             <TextBlock Grid.Row="1" Text="Push-to-talk" FontWeight="SemiBold" Margin="0,0,12,8" />
-                            <TextBlock Grid.Row="1" Grid.Column="1" Text="Hold Ctrl + Alt + Space or Ctrl + Win + Space" Margin="0,0,0,8" />
+                            <ComboBox Grid.Row="1" Grid.Column="1" SelectedValue="{Binding Settings.PushToTalkHotkey}" SelectedValuePath="Content" Margin="0,0,0,8" SelectionChanged="Settings_OnChanged">
+                                <ComboBoxItem Content="Ctrl+Alt+Space" />
+                                <ComboBoxItem Content="Ctrl+Shift+Space" />
+                                <ComboBoxItem Content="Ctrl+Win+Space" />
+                                <ComboBoxItem Content="F10" />
+                            </ComboBox>
                             <TextBlock Grid.Row="2" Text="Cancel" FontWeight="SemiBold" Margin="0,0,12,8" />
                             <TextBlock Grid.Row="2" Grid.Column="1" Text="Esc" Margin="0,0,0,8" />
                             <TextBlock Grid.Row="3" Text="Paste Last Transcript" FontWeight="SemiBold" Margin="0,0,12,8" />

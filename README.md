@@ -10,8 +10,8 @@ See [PRODUCT_SPEC.md](PRODUCT_SPEC.md) for the current MVP specification.
 
 - Windows desktop app built with .NET/WPF.
 - System tray utility with floating glass recording button.
-- Toggle recording hotkey: `Ctrl + Alt + R`.
-- Push-to-talk hotkey: `Ctrl + Alt + Space`.
+- Default toggle recording hotkey: `Ctrl + Alt + R`.
+- Default push-to-talk hotkey: `Ctrl + Alt + Space`.
 - Default cancel: `Esc`.
 - Paste Last Transcript is available from the tray and glass button menus.
 - Free local transcription through managed whisper.cpp setup and verified local Whisper model downloads.
@@ -38,7 +38,7 @@ Build installer:
 Installer output:
 
 ```text
-artifacts\installer\Trnscrbr-Setup-0.1.0-win-x64.exe
+artifacts\installer\Trnscrbr-Setup-0.2.0-win-x64.exe
 ```
 
 ## Tester Flow
@@ -60,6 +60,7 @@ Useful settings while testing:
 - Rewrite style: `Plain English`, `Professional`, `Friendly`, `Concise`, or `Native-level English`.
 - English spelling: `Auto`, `British English`, `American English`, `Canadian English`, or `Australian English`.
 - Capture startup buffer: helps avoid clipped first words.
+- Hotkeys: choose preset toggle and push-to-talk shortcuts if the defaults conflict with Windows or another app.
 - Diagnostics: refresh/copy logs or open the diagnostics folder.
 - Local Models: run Free Quick Setup, repair local mode, try a test phrase, install the official x64 whisper.cpp CLI, download/remove a verified Whisper model, browse for existing local files, detect common local candidates, and optionally use Ollama cleanup.
 

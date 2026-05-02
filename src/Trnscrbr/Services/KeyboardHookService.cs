@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using Trnscrbr.ViewModels;
 
 namespace Trnscrbr.Services;
 
@@ -14,6 +15,7 @@ public sealed class KeyboardHookService : IDisposable
     private const int WM_SYSKEYUP = 0x0105;
 
     private readonly LowLevelKeyboardProc _proc;
+    private readonly AppStateViewModel _state;
     private SynchronizationContext? _context;
     private System.Threading.Timer? _pushToTalkMonitor;
     private IntPtr _hookId;
@@ -22,11 +24,13 @@ public sealed class KeyboardHookService : IDisposable
     private bool _ctrlDown;
     private bool _winDown;
     private bool _altDown;
+    private bool _shiftDown;
     private bool _spaceDown;
     private bool _toggleRecordingChordDown;
 
-    public KeyboardHookService()
+    public KeyboardHookService(AppStateViewModel state)
     {
+        _state = state;
         _proc = HookCallback;
     }
 
@@ -70,9 +74,12 @@ public sealed class KeyboardHookService : IDisposable
         var ctrl = IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey);
         var win = IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin);
         var alt = IsKeyDown(Keys.LMenu) || IsKeyDown(Keys.RMenu) || IsKeyDown(Keys.Menu);
-        TrackChordKeyState(key, isDown, isUp, ctrl, win, alt);
+        var shift = IsKeyDown(Keys.LShiftKey) || IsKeyDown(Keys.RShiftKey) || IsKeyDown(Keys.ShiftKey);
+        var toggleHotkey = HotkeyGesture.Parse(_state.Settings.ToggleRecordingHotkey, "Ctrl+Alt+R");
+        var pushToTalkHotkey = HotkeyGesture.Parse(_state.Settings.PushToTalkHotkey, "Ctrl+Alt+Space");
+        TrackChordKeyState(key, isDown, isUp, ctrl, win, alt, shift);
 
-        if (isDown && IsToggleRecordingChord(key, ctrl, alt))
+        if (isDown && IsHotkeyPressed(key, ctrl, alt, win, shift, toggleHotkey))
         {
             if (!_toggleRecordingChordDown)
             {
@@ -83,22 +90,22 @@ public sealed class KeyboardHookService : IDisposable
             return (IntPtr)1;
         }
 
-        if (_toggleRecordingChordDown && isUp && IsToggleRecordingChordKey(key))
+        if (_toggleRecordingChordDown && isUp && IsHotkeyChordKey(key, toggleHotkey))
         {
-            _toggleRecordingChordDown = IsToggleRecordingChordDown();
+            _toggleRecordingChordDown = IsHotkeyDown(toggleHotkey);
             return (IntPtr)1;
         }
 
         if (IsWinKey(key) && (isDown || isUp))
         {
-            if ((isDown && ctrl) || _pushToTalkDown || _suppressWinKey)
+            if ((isDown && ctrl && pushToTalkHotkey.Win) || _pushToTalkDown || _suppressWinKey)
             {
                 _suppressWinKey = isDown;
                 return (IntPtr)1;
             }
         }
 
-        if (isDown && IsPushToTalkChordKey(key) && IsPushToTalkChordDown())
+        if (isDown && IsHotkeyChordKey(key, pushToTalkHotkey) && IsHotkeyDown(pushToTalkHotkey))
         {
             if (!_pushToTalkDown)
             {
@@ -110,10 +117,10 @@ public sealed class KeyboardHookService : IDisposable
             return (IntPtr)1;
         }
 
-        if (_pushToTalkDown && isUp && IsPushToTalkChordKey(key))
+        if (_pushToTalkDown && isUp && IsHotkeyChordKey(key, pushToTalkHotkey))
         {
             ReleasePushToTalk();
-            return key == Keys.Space || IsWinKey(key) || IsAltKey(key)
+            return key == pushToTalkHotkey.Key || IsWinKey(key) || IsAltKey(key)
                 ? (IntPtr)1
                 : CallNextHookEx(_hookId, nCode, wParam, lParam);
         }
@@ -131,19 +138,6 @@ public sealed class KeyboardHookService : IDisposable
         return (GetAsyncKeyState((int)key) & 0x8000) != 0;
     }
 
-    private static bool IsPushToTalkChordKey(Keys key)
-    {
-        return key is Keys.Space
-            or Keys.LWin
-            or Keys.RWin
-            or Keys.LMenu
-            or Keys.RMenu
-            or Keys.Menu
-            or Keys.LControlKey
-            or Keys.RControlKey
-            or Keys.ControlKey;
-    }
-
     private static bool IsWinKey(Keys key)
     {
         return key is Keys.LWin or Keys.RWin;
@@ -154,38 +148,38 @@ public sealed class KeyboardHookService : IDisposable
         return key is Keys.LMenu or Keys.RMenu or Keys.Menu;
     }
 
-    private static bool IsToggleRecordingChord(Keys key, bool ctrl, bool alt)
+    private static bool IsHotkeyPressed(Keys key, bool ctrl, bool alt, bool win, bool shift, HotkeyGesture hotkey)
     {
-        return key == Keys.R && ctrl && alt;
+        return key == hotkey.Key
+            && ctrl == hotkey.Ctrl
+            && alt == hotkey.Alt
+            && win == hotkey.Win
+            && shift == hotkey.Shift;
     }
 
-    private static bool IsToggleRecordingChordKey(Keys key)
-    {
-        return key is Keys.R
-            or Keys.LMenu
-            or Keys.RMenu
-            or Keys.Menu
-            or Keys.LControlKey
-            or Keys.RControlKey
-            or Keys.ControlKey;
-    }
-
-    private static bool IsToggleRecordingChordDown()
-    {
-        var ctrl = IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey);
-        var alt = IsKeyDown(Keys.LMenu) || IsKeyDown(Keys.RMenu) || IsKeyDown(Keys.Menu);
-        return ctrl && alt && IsKeyDown(Keys.R);
-    }
-
-    private static bool IsPushToTalkChordDown()
+    private static bool IsHotkeyDown(HotkeyGesture hotkey)
     {
         var ctrl = IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey);
         var win = IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin);
         var alt = IsKeyDown(Keys.LMenu) || IsKeyDown(Keys.RMenu) || IsKeyDown(Keys.Menu);
-        return ctrl && (win || alt) && IsKeyDown(Keys.Space);
+        var shift = IsKeyDown(Keys.LShiftKey) || IsKeyDown(Keys.RShiftKey) || IsKeyDown(Keys.ShiftKey);
+        return ctrl == hotkey.Ctrl
+            && alt == hotkey.Alt
+            && win == hotkey.Win
+            && shift == hotkey.Shift
+            && IsKeyDown(hotkey.Key);
     }
 
-    private void TrackChordKeyState(Keys key, bool isDown, bool isUp, bool ctrl, bool win, bool alt)
+    private static bool IsHotkeyChordKey(Keys key, HotkeyGesture hotkey)
+    {
+        return key == hotkey.Key
+            || (hotkey.Ctrl && key is Keys.LControlKey or Keys.RControlKey or Keys.ControlKey)
+            || (hotkey.Alt && IsAltKey(key))
+            || (hotkey.Win && IsWinKey(key))
+            || (hotkey.Shift && key is Keys.LShiftKey or Keys.RShiftKey or Keys.ShiftKey);
+    }
+
+    private void TrackChordKeyState(Keys key, bool isDown, bool isUp, bool ctrl, bool win, bool alt, bool shift)
     {
         if (isDown)
         {
@@ -201,12 +195,17 @@ public sealed class KeyboardHookService : IDisposable
             {
                 _altDown = true;
             }
+            else if (key is Keys.LShiftKey or Keys.RShiftKey or Keys.ShiftKey)
+            {
+                _shiftDown = true;
+            }
             else if (key == Keys.Space)
             {
                 _spaceDown = true;
                 _ctrlDown = _ctrlDown || ctrl;
                 _winDown = _winDown || win;
                 _altDown = _altDown || alt;
+                _shiftDown = _shiftDown || shift;
             }
         }
         else if (isUp)
@@ -223,6 +222,10 @@ public sealed class KeyboardHookService : IDisposable
             {
                 _altDown = IsKeyDown(Keys.LMenu) || IsKeyDown(Keys.RMenu) || IsKeyDown(Keys.Menu);
             }
+            else if (key is Keys.LShiftKey or Keys.RShiftKey or Keys.ShiftKey)
+            {
+                _shiftDown = IsKeyDown(Keys.LShiftKey) || IsKeyDown(Keys.RShiftKey) || IsKeyDown(Keys.ShiftKey);
+            }
             else if (key == Keys.Space)
             {
                 _spaceDown = false;
@@ -235,9 +238,11 @@ public sealed class KeyboardHookService : IDisposable
         _pushToTalkMonitor?.Dispose();
         _pushToTalkMonitor = new System.Threading.Timer(_ =>
         {
-            if (_pushToTalkDown && !IsPushToTalkChordDown())
+            var pushToTalkHotkey = HotkeyGesture.Parse(_state.Settings.PushToTalkHotkey, "Ctrl+Alt+Space");
+            if (_pushToTalkDown && !IsHotkeyDown(pushToTalkHotkey))
             {
-                if (!_ctrlDown && !_winDown && !_altDown && !_spaceDown)
+                if (!IsHotkeyDown(pushToTalkHotkey)
+                    && !_ctrlDown && !_winDown && !_altDown && !_shiftDown && !_spaceDown)
                 {
                     ReleasePushToTalk();
                 }
@@ -256,6 +261,7 @@ public sealed class KeyboardHookService : IDisposable
         _ctrlDown = IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey);
         _winDown = IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin);
         _altDown = IsKeyDown(Keys.LMenu) || IsKeyDown(Keys.RMenu) || IsKeyDown(Keys.Menu);
+        _shiftDown = IsKeyDown(Keys.LShiftKey) || IsKeyDown(Keys.RShiftKey) || IsKeyDown(Keys.ShiftKey);
         _spaceDown = IsKeyDown(Keys.Space);
         _pushToTalkMonitor?.Dispose();
         _pushToTalkMonitor = null;
@@ -303,4 +309,62 @@ public sealed class KeyboardHookService : IDisposable
 
     [DllImport("user32.dll")]
     private static extern short GetAsyncKeyState(int vKey);
+
+    private sealed record HotkeyGesture(bool Ctrl, bool Alt, bool Win, bool Shift, Keys Key)
+    {
+        public static HotkeyGesture Parse(string value, string fallback)
+        {
+            return TryParse(value, out var hotkey)
+                ? hotkey
+                : TryParse(fallback, out var fallbackHotkey)
+                    ? fallbackHotkey
+                    : new HotkeyGesture(true, true, false, false, Keys.R);
+        }
+
+        private static bool TryParse(string value, out HotkeyGesture hotkey)
+        {
+            var ctrl = false;
+            var alt = false;
+            var win = false;
+            var shift = false;
+            Keys? key = null;
+
+            foreach (var part in value.Split('+', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            {
+                switch (part.ToUpperInvariant())
+                {
+                    case "CTRL":
+                        ctrl = true;
+                        break;
+                    case "ALT":
+                        alt = true;
+                        break;
+                    case "WIN":
+                        win = true;
+                        break;
+                    case "SHIFT":
+                        shift = true;
+                        break;
+                    case "SPACE":
+                        key = Keys.Space;
+                        break;
+                    case "F9":
+                        key = Keys.F9;
+                        break;
+                    case "F10":
+                        key = Keys.F10;
+                        break;
+                    case "R":
+                        key = Keys.R;
+                        break;
+                    case "D":
+                        key = Keys.D;
+                        break;
+                }
+            }
+
+            hotkey = new HotkeyGesture(ctrl, alt, win, shift, key ?? Keys.None);
+            return key is not null;
+        }
+    }
 }

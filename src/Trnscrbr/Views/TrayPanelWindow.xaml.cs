@@ -110,7 +110,7 @@ public partial class TrayPanelWindow : Window
 
             Persist();
             RefreshLocalReadiness();
-            LocalTestResultText.Text = $"{result.Message} Click Test to confirm it works.";
+            LocalTestResultText.Text = $"{FormatRepairResult(result)} Click Test to confirm it works.";
             _state.StatusMessage = "Local mode repaired";
         }
         catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or IOException or InvalidOperationException or System.Text.Json.JsonException)
@@ -315,6 +315,14 @@ public partial class TrayPanelWindow : Window
         LocalReadinessActionButton.IsEnabled = enabled;
         LocalReadinessTestButton.IsEnabled = enabled && IsLocalModeReady();
         MicrophoneBox.IsEnabled = enabled;
+    }
+
+    private static string FormatRepairResult(LocalModeRepairResult result)
+    {
+        var details = string.Join(" ", result.Steps.Select(step => $"{step.Name}: {step.Detail}"));
+        return string.IsNullOrWhiteSpace(details)
+            ? result.Message
+            : $"{result.Message} {details}";
     }
 
     private bool IsLocalModeReady()

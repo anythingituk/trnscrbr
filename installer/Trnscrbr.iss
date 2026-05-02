@@ -1,5 +1,7 @@
 #define MyAppName "Trnscrbr"
+#ifndef MyAppVersion
 #define MyAppVersion "0.1.0"
+#endif
 #define MyAppPublisher "Trnscrbr"
 #define MyAppExeName "Trnscrbr.exe"
 #define PublishDir "..\artifacts\publish\win-x64"

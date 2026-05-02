@@ -160,7 +160,13 @@ public sealed class TextInsertionService
             || IsKeyDown(Keys.LMenu)
             || IsKeyDown(Keys.RMenu)
             || IsKeyDown(Keys.Menu)
+            || IsKeyDown(Keys.LShiftKey)
+            || IsKeyDown(Keys.RShiftKey)
+            || IsKeyDown(Keys.ShiftKey)
             || IsKeyDown(Keys.R)
+            || IsKeyDown(Keys.D)
+            || IsKeyDown(Keys.F9)
+            || IsKeyDown(Keys.F10)
             || IsKeyDown(Keys.Space);
     }
 
@@ -192,9 +198,29 @@ public sealed class TextInsertionService
             keys.Add("Space");
         }
 
+        if (IsKeyDown(Keys.LShiftKey) || IsKeyDown(Keys.RShiftKey) || IsKeyDown(Keys.ShiftKey))
+        {
+            keys.Add("Shift");
+        }
+
         if (IsKeyDown(Keys.R))
         {
             keys.Add("R");
+        }
+
+        if (IsKeyDown(Keys.D))
+        {
+            keys.Add("D");
+        }
+
+        if (IsKeyDown(Keys.F9))
+        {
+            keys.Add("F9");
+        }
+
+        if (IsKeyDown(Keys.F10))
+        {
+            keys.Add("F10");
         }
 
         return keys.Count == 0 ? "none" : string.Join("+", keys);

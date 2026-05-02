@@ -62,6 +62,8 @@ public sealed class SettingsImportExportService
             LanguageMode = settings.LanguageMode,
             EnglishDialect = settings.EnglishDialect,
             PasteMethod = settings.PasteMethod,
+            ToggleRecordingHotkey = settings.ToggleRecordingHotkey,
+            PushToTalkHotkey = settings.PushToTalkHotkey,
             MicrophoneName = settings.MicrophoneName,
             ActiveEngine = settings.ActiveEngine,
             LocalWhisperExecutablePath = settings.LocalWhisperExecutablePath,

@@ -22,7 +22,7 @@ public sealed class LocalModeRepairService
         IProgress<double>? downloadProgress = null,
         CancellationToken cancellationToken = default)
     {
-        var summary = new List<string>();
+        var steps = new List<LocalModeRepairStep>();
         var preset = _modelDownload.FindPreset(settings.LocalWhisperModelPath, settings.LocalWhisperModelPresetId)
             ?? LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
 
@@ -34,11 +34,11 @@ public sealed class LocalModeRepairService
             {
                 progress?.Report("Installing whisper.cpp CLI...");
                 cli = await _toolDownload.DownloadLatestX64Async(downloadProgress, cancellationToken);
-                summary.Add("installed CLI");
+                steps.Add(new LocalModeRepairStep("CLI", "Installed whisper.cpp CLI."));
             }
             else
             {
-                summary.Add("reused installed CLI");
+                steps.Add(new LocalModeRepairStep("CLI", "Reused installed whisper.cpp CLI."));
             }
 
             settings.LocalWhisperExecutablePath = cli.ExecutablePath;
@@ -46,7 +46,7 @@ public sealed class LocalModeRepairService
         }
         else
         {
-            summary.Add("CLI OK");
+            steps.Add(new LocalModeRepairStep("CLI", "Already configured."));
         }
 
         progress?.Report($"Checking {preset.DisplayName} model...");
@@ -58,11 +58,11 @@ public sealed class LocalModeRepairService
             {
                 progress?.Report($"Downloading {preset.DisplayName}...");
                 model = await _modelDownload.DownloadAsync(preset, downloadProgress, cancellationToken);
-                summary.Add("downloaded model");
+                steps.Add(new LocalModeRepairStep("Model", $"Downloaded and verified {preset.DisplayName}."));
             }
             else
             {
-                summary.Add("reused verified model");
+                steps.Add(new LocalModeRepairStep("Model", $"Reused verified {preset.DisplayName}."));
             }
 
             settings.LocalWhisperModelPath = model.ModelPath;
@@ -70,7 +70,7 @@ public sealed class LocalModeRepairService
         }
         else
         {
-            summary.Add("model OK");
+            steps.Add(new LocalModeRepairStep("Model", "Already configured and verified."));
         }
 
         settings.ProviderMode = "Local mode";
@@ -78,8 +78,9 @@ public sealed class LocalModeRepairService
         settings.ActiveEngine = "Local Whisper";
         settings.LocalSetupSource = "Repair Local Mode";
         settings.LocalSetupCompletedAt = DateTimeOffset.Now;
+        steps.Add(new LocalModeRepairStep("Provider", "Local mode is active."));
 
-        return new LocalModeRepairResult($"Local mode repaired: {string.Join(", ", summary)}.");
+        return new LocalModeRepairResult("Local mode repaired.", steps);
     }
 
     private async Task<bool> CanKeepConfiguredModelAsync(
@@ -98,4 +99,6 @@ public sealed class LocalModeRepairService
     }
 }
 
-public sealed record LocalModeRepairResult(string Message);
+public sealed record LocalModeRepairResult(string Message, IReadOnlyList<LocalModeRepairStep> Steps);
+
+public sealed record LocalModeRepairStep(string Name, string Detail);

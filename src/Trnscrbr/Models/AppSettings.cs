@@ -19,6 +19,8 @@ public sealed class AppSettings
     public string LanguageMode { get; set; } = "Auto";
     public string EnglishDialect { get; set; } = "Auto";
     public string PasteMethod { get; set; } = "Ctrl+V";
+    public string ToggleRecordingHotkey { get; set; } = "Ctrl+Alt+R";
+    public string PushToTalkHotkey { get; set; } = "Ctrl+Alt+Space";
     public string MicrophoneName { get; set; } = "Windows default";
     public string ActiveEngine { get; set; } = "None";
     public string LocalWhisperExecutablePath { get; set; } = string.Empty;

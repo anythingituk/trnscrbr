@@ -69,7 +69,7 @@ public partial class App : System.Windows.Application
         _floatingButton.SettingsRequested += (_, _) => ShowTrayPanel();
         _floatingButton.QuitRequested += (_, _) => Shutdown();
 
-        _keyboardHook = new KeyboardHookService();
+        _keyboardHook = new KeyboardHookService(appState);
         _keyboardHook.PushToTalkPressed += (_, _) => _recording.HandlePushToTalkPressed();
         _keyboardHook.PushToTalkReleased += (_, _) => _recording.HandlePushToTalkReleased();
         _keyboardHook.ToggleRecordingPressed += (_, _) => _recording.ToggleRecording();
