@@ -21,10 +21,11 @@
                        Foreground="{StaticResource MutedForegroundBrush}" />
 
             <StackPanel Margin="0,0,0,18">
-                <TextBlock Text="Hold Ctrl + Win + Space to record, then release to transcribe." TextWrapping="Wrap" Margin="0,0,0,8" />
+                <TextBlock Text="Press Ctrl + Alt + R to start recording, then press it again to transcribe." TextWrapping="Wrap" Margin="0,0,0,8" />
+                <TextBlock Text="For push-to-talk, hold Ctrl + Alt + Space while speaking and release to transcribe." TextWrapping="Wrap" Margin="0,0,0,8" />
                 <TextBlock Text="Trnscrbr inserts text for review and never presses Enter." TextWrapping="Wrap" Margin="0,0,0,8" />
                 <TextBlock Text="The tray icon and glass button open recording controls and settings." TextWrapping="Wrap" Margin="0,0,0,8" />
-                <TextBlock Text="Local mode is free and private, and requires a local Whisper model download." TextWrapping="Wrap" Margin="0,0,0,8" />
+                <TextBlock Text="Free Quick Setup installs local Whisper, then Try Test Phrase confirms your microphone and transcript." TextWrapping="Wrap" Margin="0,0,0,8" />
                 <TextBlock Text="Cloud/API modes may use third-party services and may require an API key." TextWrapping="Wrap" Margin="0,0,0,8" />
                 <TextBlock Text="Text is pasted through the clipboard temporarily, then the previous clipboard is restored." TextWrapping="Wrap" />
             </StackPanel>
@@ -37,7 +38,7 @@
 
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="Skip for now" Width="120" Margin="0,0,8,0" Click="Skip_OnClick" />
-                <Button Content="Set up local mode" Width="150" Click="Setup_OnClick" />
+                <Button Content="Set up free local mode" Width="170" Click="Setup_OnClick" />
             </StackPanel>
         </StackPanel>
     </Border>

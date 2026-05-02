@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Trnscrbr.ViewModels;
 
@@ -14,6 +15,8 @@ public partial class FloatingButtonWindow : Window
     private const int GWL_EXSTYLE = -20;
     private const int WS_EX_NOACTIVATE = 0x08000000;
     private const int WS_EX_TOOLWINDOW = 0x00000080;
+    private static readonly TimeSpan FadeOutDelay = TimeSpan.FromSeconds(1.6);
+    private static readonly TimeSpan FadeOutDuration = TimeSpan.FromMilliseconds(320);
     private static readonly System.Windows.Media.Color IdleGlassColor = System.Windows.Media.Color.FromArgb(78, 54, 145, 255);
     private static readonly System.Windows.Media.Color IdleShellColor = System.Windows.Media.Color.FromArgb(102, 24, 72, 132);
     private static readonly System.Windows.Media.Color RecordingGlassColor = System.Windows.Media.Color.FromArgb(112, 255, 34, 68);
@@ -23,7 +26,7 @@ public partial class FloatingButtonWindow : Window
     private static readonly System.Windows.Media.Color WarningGlassColor = System.Windows.Media.Color.FromArgb(86, 255, 214, 102);
 
     private readonly AppStateViewModel _state;
-    private readonly DispatcherTimer _hideTimer = new() { Interval = TimeSpan.FromSeconds(4) };
+    private readonly DispatcherTimer _hideTimer = new() { Interval = FadeOutDelay };
     private readonly DispatcherTimer _animationTimer = new() { Interval = TimeSpan.FromMilliseconds(45) };
     private System.Windows.Point? _dragStart;
     private bool _dragging;
@@ -40,7 +43,7 @@ public partial class FloatingButtonWindow : Window
         {
             if (_state.RecordingState is RecordingState.Idle or RecordingState.Error)
             {
-                Hide();
+                FadeOutAndHide();
             }
         };
         _animationTimer.Tick += (_, _) => AnimateWaveform();
@@ -55,11 +58,13 @@ public partial class FloatingButtonWindow : Window
 
     public void ShowNearTaskbar()
     {
+        _hideTimer.Stop();
+        BeginAnimation(OpacityProperty, null);
+        Opacity = 1;
         var area = GetTargetScreenWorkAreaSafe();
         Left = area.Left + (area.Width - Width) / 2;
         Top = area.Bottom - Height - 12;
         Show();
-        _hideTimer.Stop();
     }
 
     public void ShowTransient()
@@ -71,6 +76,28 @@ public partial class FloatingButtonWindow : Window
 
         _hideTimer.Stop();
         _hideTimer.Start();
+    }
+
+    private void FadeOutAndHide()
+    {
+        _hideTimer.Stop();
+        if (!IsVisible)
+        {
+            return;
+        }
+
+        var fade = new DoubleAnimation
+        {
+            To = 0,
+            Duration = new Duration(FadeOutDuration),
+            FillBehavior = FillBehavior.Stop
+        };
+        fade.Completed += (_, _) =>
+        {
+            Opacity = 1;
+            Hide();
+        };
+        BeginAnimation(OpacityProperty, fade);
     }
 
     private void StateOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -87,20 +114,20 @@ public partial class FloatingButtonWindow : Window
     private void ApplyState()
     {
         Root.ToolTip = GetTooltipText();
+        var showMessage = ShouldShowStatusMessage();
 
         TimerText.Visibility = _state.Elapsed >= TimeSpan.FromMinutes(1)
             ? Visibility.Visible
             : Visibility.Collapsed;
         TimerText.Text = $"{(int)_state.Elapsed.TotalMinutes}:{_state.Elapsed.Seconds:00}";
 
-        MessageBubble.Visibility = _state.RecordingState == RecordingState.Error
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        MessageBubble.Visibility = showMessage ? Visibility.Visible : Visibility.Collapsed;
 
         switch (_state.RecordingState)
         {
             case RecordingState.Recording:
-                Width = 76;
+                _hideTimer.Stop();
+                Width = 220;
                 Shell.Width = 46;
                 Shell.Height = 28;
                 Shell.CornerRadius = new CornerRadius(14);
@@ -110,7 +137,8 @@ public partial class FloatingButtonWindow : Window
                 GlowHalo.Fill = new SolidColorBrush(RecordingGlassColor);
                 break;
             case RecordingState.Processing:
-                Width = 76;
+                _hideTimer.Stop();
+                Width = 220;
                 Shell.Width = 46;
                 Shell.Height = 28;
                 Shell.CornerRadius = new CornerRadius(14);
@@ -130,7 +158,7 @@ public partial class FloatingButtonWindow : Window
                 GlowHalo.Fill = new SolidColorBrush(WarningGlassColor);
                 break;
             default:
-                Width = 76;
+                Width = showMessage ? 220 : 76;
                 Shell.Width = 28;
                 Shell.Height = 28;
                 Shell.CornerRadius = new CornerRadius(14);
@@ -141,7 +169,25 @@ public partial class FloatingButtonWindow : Window
                 break;
         }
 
+        if (IsVisible
+            && (_state.RecordingState is RecordingState.Idle or RecordingState.Error)
+            && !_hideTimer.IsEnabled)
+        {
+            _hideTimer.Start();
+        }
+
         AnimateWaveform();
+    }
+
+    private bool ShouldShowStatusMessage()
+    {
+        if (_state.RecordingState is RecordingState.Recording or RecordingState.Processing or RecordingState.Error)
+        {
+            return true;
+        }
+
+        return !string.IsNullOrWhiteSpace(_state.StatusMessage)
+            && !string.Equals(_state.StatusMessage, "Ready", StringComparison.OrdinalIgnoreCase);
     }
 
     private string GetTooltipText()

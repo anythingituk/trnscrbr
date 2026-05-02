@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.IO;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Input;
@@ -13,6 +14,12 @@ public partial class TrayPanelWindow : Window
 {
     private readonly AppStateViewModel _state;
     private readonly AppSettingsStore _settingsStore;
+    private readonly AudioCaptureService _audioCapture;
+    private readonly LocalProviderService _localProvider;
+    private readonly DiagnosticLogService _diagnosticLog;
+    private readonly LocalModelDownloadService _localModelDownload = new();
+    private readonly LocalWhisperToolDownloadService _localWhisperToolDownload = new();
+    private readonly LocalModeRepairService _localModeRepair;
     private readonly Func<IReadOnlyList<AudioInputDevice>> _getMicrophones;
     private readonly Action<bool> _setFloatingButtonVisibility;
     private readonly Action _showAdvanced;
@@ -21,14 +28,21 @@ public partial class TrayPanelWindow : Window
     public TrayPanelWindow(
         AppStateViewModel state,
         AppSettingsStore settingsStore,
+        AudioCaptureService audioCapture,
+        LocalProviderService localProvider,
+        DiagnosticLogService diagnosticLog,
         UsageStatsService usageStats,
         Func<IReadOnlyList<AudioInputDevice>> getMicrophones,
         Action<bool> setFloatingButtonVisibility,
         Action showAdvanced)
     {
         InitializeComponent();
+        _localModeRepair = new LocalModeRepairService(_localWhisperToolDownload, _localModelDownload);
         _state = state;
         _settingsStore = settingsStore;
+        _audioCapture = audioCapture;
+        _localProvider = localProvider;
+        _diagnosticLog = diagnosticLog;
         _getMicrophones = getMicrophones;
         _setFloatingButtonVisibility = setFloatingButtonVisibility;
         DataContext = state;
@@ -44,6 +58,7 @@ public partial class TrayPanelWindow : Window
         const double bottomOffset = 72;
 
         RefreshMicrophones();
+        RefreshLocalReadiness();
         Left = Math.Max(area.Left + 8, area.Right - Width - trayOverflowAvoidanceWidth);
         Top = Math.Max(area.Top + 8, area.Bottom - Height - bottomOffset);
         Show();
@@ -61,6 +76,134 @@ public partial class TrayPanelWindow : Window
     {
         Persist();
         _showAdvanced();
+    }
+
+    private async void LocalReadinessAction_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (IsLocalModeReady())
+        {
+            Persist();
+            _showAdvanced();
+            return;
+        }
+
+        SetLocalTestControlsEnabled(false);
+        LocalReadinessActionButton.Content = "Repairing";
+        LocalTestResultText.Text = "Repairing local mode...";
+
+        try
+        {
+            var progress = new Progress<string>(message =>
+            {
+                LocalTestResultText.Text = message;
+                _state.StatusMessage = message;
+            });
+            var downloadProgress = new Progress<double>(value =>
+            {
+                LocalTestResultText.Text = $"Repairing local mode: {value:P0}";
+            });
+
+            var result = await _localModeRepair.RepairAsync(
+                _state.Settings,
+                progress,
+                downloadProgress);
+
+            Persist();
+            RefreshLocalReadiness();
+            LocalTestResultText.Text = $"{result.Message} Click Test to confirm it works.";
+            _state.StatusMessage = "Local mode repaired";
+        }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or IOException or InvalidOperationException or System.Text.Json.JsonException)
+        {
+            LocalTestResultText.Text = LocalSetupErrorFormatter.Format("Local mode repair failed", ex);
+            _state.StatusMessage = "Local mode repair failed";
+            _diagnosticLog.Error("Tray local mode repair failed", ex);
+        }
+        finally
+        {
+            SetLocalTestControlsEnabled(true);
+            RefreshLocalReadiness();
+        }
+    }
+
+    private async void LocalReadinessTest_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (!_state.IsProviderConfigured || !IsLocalModeReady())
+        {
+            LocalTestResultText.Text = "Run Free Quick Setup before testing a local phrase.";
+            _showAdvanced();
+            return;
+        }
+
+        if (_state.RecordingState is RecordingState.Recording or RecordingState.Processing)
+        {
+            LocalTestResultText.Text = "Finish the current recording before testing a local phrase.";
+            return;
+        }
+
+        SetLocalTestControlsEnabled(false);
+        LocalTestResultText.Text = "Recording test phrase. Speak now for 5 seconds...";
+        RecordedAudio? recordedAudio = null;
+        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+
+        try
+        {
+            _state.RecordingState = RecordingState.Recording;
+            _state.StatusMessage = "Recording test phrase";
+            _audioCapture.Start();
+
+            for (var remaining = 5; remaining > 0; remaining--)
+            {
+                LocalTestResultText.Text = $"Recording test phrase. Speak now: {remaining}s";
+                await Task.Delay(TimeSpan.FromSeconds(1), timeout.Token);
+            }
+
+            recordedAudio = _audioCapture.Stop();
+            _state.RecordingState = RecordingState.Processing;
+            _state.StatusMessage = "Transcribing test phrase";
+
+            if (recordedAudio is null)
+            {
+                var summary = _audioCapture.LastCaptureSummary;
+                LocalTestResultText.Text = $"No microphone input captured from {_state.Settings.MicrophoneName}. Peak level: {summary.PeakLevel:0.000}.";
+                _state.RecordingState = RecordingState.Error;
+                _state.StatusMessage = $"No input from {_state.Settings.MicrophoneName}. Choose another microphone.";
+                return;
+            }
+
+            LocalTestResultText.Text = "Transcribing local test phrase...";
+            var transcript = await _localProvider.TranscribeOnlyAsync(recordedAudio, _state, timeout.Token);
+            LocalTestResultText.Text = string.IsNullOrWhiteSpace(transcript)
+                ? "Local test completed, but Whisper returned an empty transcript. Try speaking louder or choose a larger model."
+                : $"Local test transcript: {transcript.Trim()}";
+            _state.StatusMessage = "Local test completed";
+            _state.RecordingState = RecordingState.Idle;
+        }
+        catch (OperationCanceledException)
+        {
+            LocalTestResultText.Text = "Local test phrase timed out.";
+            _state.StatusMessage = "Local test timed out";
+            _state.RecordingState = RecordingState.Idle;
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            LocalTestResultText.Text = LocalSetupErrorFormatter.Format("Local test phrase failed", ex);
+            _state.StatusMessage = "Local test failed";
+            _state.RecordingState = RecordingState.Error;
+            _diagnosticLog.Error("Tray local test phrase failed", ex);
+        }
+        finally
+        {
+            if (_state.RecordingState is RecordingState.Recording)
+            {
+                _audioCapture.StopAndDelete();
+            }
+
+            _audioCapture.DeleteRecording(recordedAudio);
+            _state.InputLevel = 0;
+            _state.Elapsed = TimeSpan.Zero;
+            SetLocalTestControlsEnabled(true);
+        }
     }
 
     private void Window_OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -120,6 +263,78 @@ public partial class TrayPanelWindow : Window
 
     private void State_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName is nameof(AppStateViewModel.Settings) or nameof(AppStateViewModel.IsProviderConfigured))
+        {
+            Dispatcher.Invoke(RefreshLocalReadiness);
+        }
+    }
+
+    private void RefreshLocalReadiness()
+    {
+        var settings = _state.Settings;
+        var usingLocalMode = IsLocalModeActive();
+        var hasCli = HasLocalWhisperCli();
+        var hasModel = HasLocalWhisperModel();
+
+        if (usingLocalMode && hasCli && hasModel)
+        {
+            LocalReadinessPanel.Background = (System.Windows.Media.Brush)FindResource("StatusBackgroundBrush");
+            LocalReadinessTitleText.Text = "Local mode ready";
+            LocalReadinessDetailText.Text = $"Using {_state.ActiveEngineLabel}. Dictation is free and private.";
+            LocalReadinessActionButton.Content = "Details";
+            LocalReadinessTestButton.IsEnabled = true;
+            return;
+        }
+
+        LocalReadinessPanel.Background = System.Windows.Media.Brushes.Transparent;
+        LocalReadinessActionButton.Content = "Repair";
+        LocalReadinessTestButton.IsEnabled = false;
+
+        if (!usingLocalMode)
+        {
+            LocalReadinessTitleText.Text = "Free local mode not active";
+            LocalReadinessDetailText.Text = "Open setup to enable free dictation without an API key.";
+            return;
+        }
+
+        if (!hasCli && !hasModel)
+        {
+            LocalReadinessTitleText.Text = "Local setup needed";
+            LocalReadinessDetailText.Text = "Whisper CLI and model are missing. Run Free Quick Setup.";
+            return;
+        }
+
+        LocalReadinessTitleText.Text = "Local setup needs repair";
+        LocalReadinessDetailText.Text = hasCli
+            ? "The local Whisper model is missing. Open setup to repair it."
+            : "The whisper.cpp CLI is missing. Open setup to repair it.";
+    }
+
+    private void SetLocalTestControlsEnabled(bool enabled)
+    {
+        LocalReadinessActionButton.IsEnabled = enabled;
+        LocalReadinessTestButton.IsEnabled = enabled && IsLocalModeReady();
+        MicrophoneBox.IsEnabled = enabled;
+    }
+
+    private bool IsLocalModeReady()
+    {
+        return IsLocalModeActive() && HasLocalWhisperCli() && HasLocalWhisperModel();
+    }
+
+    private bool IsLocalModeActive()
+    {
+        return string.Equals(_state.Settings.ProviderMode, "Local mode", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool HasLocalWhisperCli()
+    {
+        return File.Exists(_state.Settings.LocalWhisperExecutablePath);
+    }
+
+    private bool HasLocalWhisperModel()
+    {
+        return File.Exists(_state.Settings.LocalWhisperModelPath);
     }
 
     private void Persist()

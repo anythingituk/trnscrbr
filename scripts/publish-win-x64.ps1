@@ -9,6 +9,7 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $project = Join-Path $repoRoot "src\Trnscrbr\Trnscrbr.csproj"
 $publishDir = Join-Path $repoRoot "artifacts\publish\$Runtime"
+$publishedExe = Join-Path $publishDir "Trnscrbr.exe"
 
 function Resolve-DotNet {
     $dotnet = Get-Command dotnet -ErrorAction SilentlyContinue
@@ -42,6 +43,26 @@ function Invoke-Checked {
     }
 }
 
+function Assert-PublishedExeContains {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Strings
+    )
+
+    if (-not (Test-Path $publishedExe)) {
+        throw "Published executable was not created: $publishedExe"
+    }
+
+    $bytes = [System.IO.File]::ReadAllBytes($publishedExe)
+    $utf8Content = [System.Text.Encoding]::UTF8.GetString($bytes)
+    $utf16Content = [System.Text.Encoding]::Unicode.GetString($bytes)
+    foreach ($value in $Strings) {
+        if (-not $utf8Content.Contains($value) -and -not $utf16Content.Contains($value)) {
+            throw "Published executable does not contain expected UX text: '$value'. Rebuild/package may be stale."
+        }
+    }
+}
+
 $dotnetPath = Resolve-DotNet
 
 Invoke-Checked $dotnetPath @("restore", $project, "-r", $Runtime)
@@ -59,6 +80,14 @@ Invoke-Checked $dotnetPath @(
     "-p:PublishSingleFile=true",
     "-p:IncludeNativeLibrariesForSelfExtract=true",
     "-o", $publishDir
+)
+
+Assert-PublishedExeContains @(
+    "Ctrl + Alt + R",
+    "Try Test Phrase",
+    "Repair Local Mode",
+    "Local mode repaired",
+    "Free Quick Setup"
 )
 
 if ($BuildInstaller) {

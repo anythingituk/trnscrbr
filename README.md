@@ -10,11 +10,12 @@ See [PRODUCT_SPEC.md](PRODUCT_SPEC.md) for the current MVP specification.
 
 - Windows desktop app built with .NET/WPF.
 - System tray utility with floating glass recording button.
-- Default hotkey: `Ctrl + Win + Space`.
+- Toggle recording hotkey: `Ctrl + Alt + R`.
+- Push-to-talk hotkey: `Ctrl + Alt + Space`.
 - Default cancel: `Esc`.
 - Paste Last Transcript is available from the tray and glass button menus.
-- OpenAI bring-your-own-key transcription processing.
-- Free local transcription through user-installed whisper.cpp and local Whisper model files, with optional Ollama cleanup.
+- Free local transcription through managed whisper.cpp setup and verified local Whisper model downloads.
+- Optional OpenAI bring-your-own-key transcription processing.
 
 ## Build Prerequisites
 
@@ -44,12 +45,13 @@ artifacts\installer\Trnscrbr-Setup-0.1.0-win-x64.exe
 
 1. Install Trnscrbr with the generated installer.
 2. Leave `Start Trnscrbr when Windows starts` checked unless testing startup behaviour.
-3. Open Trnscrbr from the tray icon and go to Advanced Settings.
-4. Add an OpenAI API key on the Provider tab.
-5. Focus a normal editable text field.
-6. Hold `Ctrl + Win + Space`, speak, then release to transcribe.
-7. Confirm text is inserted for review and Enter is not pressed.
-8. Test `Paste Last Transcript` from the tray or glass button menu.
+3. Choose **Set up free local mode** on onboarding, or open the tray panel and use the local setup card.
+4. Run **Free Quick Setup** and confirm it reports local mode ready.
+5. Click **Try Test Phrase**, speak for 5 seconds, and confirm the transcript appears.
+6. Focus a normal editable text field.
+7. Press `Ctrl + Alt + R`, speak, then press `Ctrl + Alt + R` again to transcribe.
+8. Confirm text is inserted for review and Enter is not pressed.
+9. Test `Paste Last Transcript` from the tray or glass button menu.
 
 Useful settings while testing:
 
@@ -59,17 +61,18 @@ Useful settings while testing:
 - English spelling: `Auto`, `British English`, `American English`, `Canadian English`, or `Australian English`.
 - Capture startup buffer: helps avoid clipped first words.
 - Diagnostics: refresh/copy logs or open the diagnostics folder.
-- Local Models: run a free quick setup, install the official x64 whisper.cpp CLI, download/remove a verified Whisper model, browse for existing local files, detect common local candidates, and optionally use Ollama cleanup.
+- Local Models: run Free Quick Setup, repair local mode, try a test phrase, install the official x64 whisper.cpp CLI, download/remove a verified Whisper model, browse for existing local files, detect common local candidates, and optionally use Ollama cleanup.
 
 ## Status
 
 WPF MVP in progress. Current build includes:
 
 - Dynamic tray icon and floating glass button with mic-level waveform states.
-- `Ctrl + Win + Space` hold-to-record and `Esc` cancel.
+- `Ctrl + Alt + R` toggle recording, `Ctrl + Alt + Space` push-to-talk, and `Esc` cancel.
 - Lightweight first-run onboarding.
 - Compact tray panel with usage estimate, monitor-aware placement, and Windows light/dark theme support.
-- OpenAI bring-your-own-key transcription processing.
+- Managed free local Whisper setup with a tray readiness card and test phrase flow.
+- Optional OpenAI bring-your-own-key transcription processing.
 - Temporary clipboard insertion with clipboard restoration.
 - One-hour last transcript recovery from hotkey, tray menu, and floating-button menu.
 - Optional voice action commands for deleting the last Trnscrbr insertion or discarding the current dictation.

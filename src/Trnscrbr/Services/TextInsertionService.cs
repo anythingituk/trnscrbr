@@ -157,6 +157,10 @@ public sealed class TextInsertionService
             || IsKeyDown(Keys.ControlKey)
             || IsKeyDown(Keys.LWin)
             || IsKeyDown(Keys.RWin)
+            || IsKeyDown(Keys.LMenu)
+            || IsKeyDown(Keys.RMenu)
+            || IsKeyDown(Keys.Menu)
+            || IsKeyDown(Keys.R)
             || IsKeyDown(Keys.Space);
     }
 
@@ -178,9 +182,19 @@ public sealed class TextInsertionService
             keys.Add("Win");
         }
 
+        if (IsKeyDown(Keys.LMenu) || IsKeyDown(Keys.RMenu) || IsKeyDown(Keys.Menu))
+        {
+            keys.Add("Alt");
+        }
+
         if (IsKeyDown(Keys.Space))
         {
             keys.Add("Space");
+        }
+
+        if (IsKeyDown(Keys.R))
+        {
+            keys.Add("R");
         }
 
         return keys.Count == 0 ? "none" : string.Join("+", keys);

@@ -85,6 +85,43 @@
                 <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource AccentBrush}" TextWrapping="Wrap" />
             </Border>
 
+            <Border x:Name="LocalReadinessPanel"
+                    BorderBrush="{StaticResource SubtleBorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="10"
+                    Margin="0,0,0,12">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="96" />
+                        <ColumnDefinition Width="96" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock x:Name="LocalReadinessTitleText" FontWeight="SemiBold" />
+                        <TextBlock x:Name="LocalReadinessDetailText"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource MutedForegroundBrush}"
+                                   Margin="0,2,0,0" />
+                    </StackPanel>
+                    <Button x:Name="LocalReadinessActionButton"
+                            Grid.Column="1"
+                            Content="Setup"
+                            Margin="8,0,0,0"
+                            Click="LocalReadinessAction_OnClick" />
+                    <Button x:Name="LocalReadinessTestButton"
+                            Grid.Column="2"
+                            Content="Test"
+                            Margin="8,0,0,0"
+                            Click="LocalReadinessTest_OnClick" />
+                </Grid>
+            </Border>
+
+            <TextBlock x:Name="LocalTestResultText"
+                       TextWrapping="Wrap"
+                       Foreground="{StaticResource AccentBrush}"
+                       Margin="0,-6,0,10" />
+
             <TextBlock Text="Transcription Type" FontWeight="SemiBold" />
             <ComboBox SelectedValue="{Binding Settings.CleanupMode}" SelectedValuePath="Content" Margin="0,6,0,12" SelectionChanged="Settings_OnChanged">
                 <ComboBoxItem Content="Clean only" />

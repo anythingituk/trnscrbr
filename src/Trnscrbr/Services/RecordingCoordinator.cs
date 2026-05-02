@@ -15,6 +15,7 @@ public sealed class RecordingCoordinator
     private readonly LocalProviderService _localProvider;
     private readonly DiagnosticLogService _diagnosticLog;
     private readonly UsageStatsService _usageStats;
+    private readonly Action _showMicrophoneSettings;
     private readonly DispatcherTimer _timer;
     private readonly Dispatcher _dispatcher;
     private CancellationTokenSource? _processingCancellation;
@@ -30,7 +31,8 @@ public sealed class RecordingCoordinator
         OpenAiProviderService openAiProvider,
         LocalProviderService localProvider,
         DiagnosticLogService diagnosticLog,
-        UsageStatsService usageStats)
+        UsageStatsService usageStats,
+        Action showMicrophoneSettings)
     {
         _state = state;
         _insertion = insertion;
@@ -41,6 +43,7 @@ public sealed class RecordingCoordinator
         _localProvider = localProvider;
         _diagnosticLog = diagnosticLog;
         _usageStats = usageStats;
+        _showMicrophoneSettings = showMicrophoneSettings;
         _dispatcher = Dispatcher.CurrentDispatcher;
         _audioCapture.InputLevelChanged += (_, level) =>
         {
@@ -218,8 +221,9 @@ public sealed class RecordingCoordinator
                 ["peakLevel"] = summary.PeakLevel.ToString("0.000")
             });
             _state.RecordingState = RecordingState.Error;
-            _state.StatusMessage = $"No input from {_state.Settings.MicrophoneName}. Check the microphone menu.";
+            _state.StatusMessage = $"No input from {_state.Settings.MicrophoneName}. Choose another microphone.";
             _floatingButton.ShowTransient();
+            _ = _dispatcher.BeginInvoke(_showMicrophoneSettings);
             return;
         }
 

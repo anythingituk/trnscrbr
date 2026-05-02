@@ -63,7 +63,7 @@ public partial class App : System.Windows.Application
         _floatingButton = new FloatingButtonWindow(appState);
         _audioCapture = new AudioCaptureService(appState);
         var insertion = new TextInsertionService(appState, _diagnosticLog);
-        _recording = new RecordingCoordinator(appState, insertion, _floatingButton, _audioCapture, _credentialStore, _openAiProvider, _localProvider, _diagnosticLog, _usageStats);
+        _recording = new RecordingCoordinator(appState, insertion, _floatingButton, _audioCapture, _credentialStore, _openAiProvider, _localProvider, _diagnosticLog, _usageStats, ShowTrayPanel);
         _floatingButton.ToggleRecordingRequested += (_, _) => _recording.ToggleRecording();
         _floatingButton.PasteLastTranscriptRequested += (_, _) => _recording.PasteLastTranscript();
         _floatingButton.SettingsRequested += (_, _) => ShowTrayPanel();
@@ -72,6 +72,7 @@ public partial class App : System.Windows.Application
         _keyboardHook = new KeyboardHookService();
         _keyboardHook.PushToTalkPressed += (_, _) => _recording.HandlePushToTalkPressed();
         _keyboardHook.PushToTalkReleased += (_, _) => _recording.HandlePushToTalkReleased();
+        _keyboardHook.ToggleRecordingPressed += (_, _) => _recording.ToggleRecording();
         _keyboardHook.CancelPressed += (_, _) => _recording.Cancel();
         try
         {
@@ -309,7 +310,7 @@ public partial class App : System.Windows.Application
             return;
         }
 
-        if (_settingsStore is null || _usageStats is null)
+        if (_settingsStore is null || _audioCapture is null || _localProvider is null || _diagnosticLog is null || _usageStats is null)
         {
             return;
         }
@@ -317,6 +318,9 @@ public partial class App : System.Windows.Application
         _trayPanel ??= new TrayPanelWindow(
             state,
             _settingsStore,
+            _audioCapture,
+            _localProvider,
+            _diagnosticLog,
             _usageStats,
             () => _audioCapture?.GetInputDevices() ?? [],
             SetFloatingButtonVisibility,

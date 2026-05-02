@@ -23,6 +23,7 @@ public partial class AdvancedSettingsWindow : Window
     private readonly LocalProviderService _localProvider = new();
     private readonly LocalModelDownloadService _localModelDownload = new();
     private readonly LocalWhisperToolDownloadService _localWhisperToolDownload = new();
+    private readonly LocalModeRepairService _localModeRepair;
     private readonly UpdateCheckService _updateCheck = new();
     private CancellationTokenSource? _modelDownloadCancellation;
     private bool _localOperationActive;
@@ -38,6 +39,7 @@ public partial class AdvancedSettingsWindow : Window
         SettingsImportExportService settingsImportExport)
     {
         InitializeComponent();
+        _localModeRepair = new LocalModeRepairService(_localWhisperToolDownload, _localModelDownload);
         _state = state;
         _settingsStore = settingsStore;
         _credentialStore = credentialStore;
@@ -100,14 +102,22 @@ public partial class AdvancedSettingsWindow : Window
         SetLocalOperationControlsEnabled(true);
     }
 
+    private void SetLocalTestStatus(string message)
+    {
+        LocalTestStatusText.Text = message;
+        LocalModeStatusText.Text = message;
+    }
+
     private void SetLocalOperationControlsEnabled(bool enabled)
     {
         QuickSetupButton.IsEnabled = enabled;
+        QuickSetupTestPhraseButton.IsEnabled = enabled;
         DownloadModelButton.IsEnabled = enabled;
         VerifyModelButton.IsEnabled = enabled;
         RemoveModelButton.IsEnabled = enabled;
         InstallWhisperCliButton.IsEnabled = enabled;
         CheckWhisperCliUpdateButton.IsEnabled = enabled;
+        RepairLocalModeButton.IsEnabled = enabled;
         BrowseWhisperExecutableButton.IsEnabled = enabled;
         BrowseWhisperModelButton.IsEnabled = enabled;
         UseLocalModeButton.IsEnabled = enabled;
@@ -251,6 +261,7 @@ public partial class AdvancedSettingsWindow : Window
     private void DetectLocalModels_OnClick(object sender, RoutedEventArgs e)
     {
         RefreshLocalModels();
+        LocalTestStatusText.Text = "Local model detection refreshed.";
     }
 
     private void ModelPreset_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -337,7 +348,11 @@ public partial class AdvancedSettingsWindow : Window
             RefreshLocalModels();
             RefreshLocalModeStatus();
             UpdateProviderModeStatus();
-            LocalModeStatusText.Text = $"Free local mode is ready: {string.Join(", ", setupSummary)}. Ollama cleanup remains optional.";
+            var readyMessage = $"Free local mode is ready: {string.Join(", ", setupSummary)}. Next, click Try Test Phrase to confirm your microphone and local transcription.";
+            LocalModeStatusText.Text = readyMessage;
+            LocalTestStatusText.Text = readyMessage;
+            QuickSetupNextStepText.Text = "Ready. Click Try Test Phrase, speak for 5 seconds, then check the transcript below.";
+            RecordTestPhraseButton.Focus();
         }
         catch (OperationCanceledException)
         {
@@ -347,6 +362,59 @@ public partial class AdvancedSettingsWindow : Window
         {
             LocalModeStatusText.Text = LocalSetupErrorFormatter.Format("Free quick setup failed", ex);
             _diagnosticLog.Error("Free local quick setup failed", ex);
+        }
+        finally
+        {
+            EndLocalOperation();
+        }
+    }
+
+    private async void RepairLocalMode_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (!BeginLocalOperation("Repairing local mode..."))
+        {
+            return;
+        }
+
+        _modelDownloadCancellation?.Cancel();
+        _modelDownloadCancellation?.Dispose();
+        _modelDownloadCancellation = new CancellationTokenSource();
+
+        try
+        {
+            var progress = new Progress<string>(message =>
+            {
+                LocalModeStatusText.Text = message;
+                LocalTestStatusText.Text = message;
+            });
+            var downloadProgress = new Progress<double>(value =>
+            {
+                LocalModeStatusText.Text = $"Repairing local mode: {value:P0}";
+            });
+
+            var result = await _localModeRepair.RepairAsync(
+                _state.Settings,
+                progress,
+                downloadProgress,
+                _modelDownloadCancellation.Token);
+
+            Persist();
+            RefreshOverview();
+            RefreshLocalModels();
+            RefreshLocalModeStatus();
+            UpdateProviderModeStatus();
+            LocalModeStatusText.Text = $"{result.Message} Next, click Try Test Phrase to confirm it works.";
+            LocalTestStatusText.Text = LocalModeStatusText.Text;
+            QuickSetupNextStepText.Text = "Repair complete. Click Try Test Phrase, speak for 5 seconds, then check the transcript below.";
+        }
+        catch (OperationCanceledException)
+        {
+            LocalModeStatusText.Text = "Local mode repair cancelled. Partial downloads were kept so they can resume later.";
+        }
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or IOException or InvalidOperationException or System.Text.Json.JsonException)
+        {
+            LocalModeStatusText.Text = LocalSetupErrorFormatter.Format("Local mode repair failed", ex);
+            _diagnosticLog.Error("Local mode repair failed", ex);
         }
         finally
         {
@@ -678,11 +746,11 @@ public partial class AdvancedSettingsWindow : Window
             return;
         }
 
-        LocalModeStatusText.Text = "Testing local setup...";
+        SetLocalTestStatus("Testing local setup...");
         try
         {
             var result = await _localProvider.TestLocalConfigurationAsync(_state);
-            LocalModeStatusText.Text = result.Message;
+            SetLocalTestStatus(result.Message);
         }
         finally
         {
@@ -697,16 +765,16 @@ public partial class AdvancedSettingsWindow : Window
             return;
         }
 
-        LocalModeStatusText.Text = "Running Whisper runtime smoke test...";
+        SetLocalTestStatus("Running Whisper runtime smoke test...");
         using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
         try
         {
             var result = await _localProvider.RunWhisperSmokeTestAsync(_state, timeout.Token);
-            LocalModeStatusText.Text = result.Message;
+            SetLocalTestStatus(result.Message);
         }
         catch (OperationCanceledException)
         {
-            LocalModeStatusText.Text = "Whisper runtime smoke test timed out after 2 minutes.";
+            SetLocalTestStatus("Whisper runtime smoke test timed out after 2 minutes.");
         }
         finally
         {
@@ -723,7 +791,7 @@ public partial class AdvancedSettingsWindow : Window
 
         if (_state.RecordingState is RecordingState.Recording or RecordingState.Processing)
         {
-            LocalModeStatusText.Text = "Finish the current recording before running a local test phrase.";
+            SetLocalTestStatus("Finish the current recording before running a local test phrase.");
             EndLocalOperation();
             return;
         }
@@ -731,7 +799,7 @@ public partial class AdvancedSettingsWindow : Window
         var setup = await _localProvider.TestLocalConfigurationAsync(_state);
         if (!setup.IsSuccess)
         {
-            LocalModeStatusText.Text = setup.Message;
+            SetLocalTestStatus(setup.Message);
             EndLocalOperation();
             return;
         }
@@ -744,12 +812,12 @@ public partial class AdvancedSettingsWindow : Window
         {
             _state.RecordingState = RecordingState.Recording;
             _state.StatusMessage = "Recording local test phrase";
-            LocalModeStatusText.Text = "Recording test phrase. Speak now for 5 seconds...";
+            SetLocalTestStatus("Recording test phrase. Speak now for 5 seconds...");
             _audioCapture.Start();
 
             for (var remaining = 5; remaining > 0; remaining--)
             {
-                LocalModeStatusText.Text = $"Recording test phrase. Speak now: {remaining}s";
+                SetLocalTestStatus($"Recording test phrase. Speak now: {remaining}s");
                 await Task.Delay(TimeSpan.FromSeconds(1), timeout.Token);
             }
 
@@ -759,24 +827,24 @@ public partial class AdvancedSettingsWindow : Window
             if (recordedAudio is null)
             {
                 var summary = _audioCapture.LastCaptureSummary;
-                LocalModeStatusText.Text = $"No microphone input captured. Peak level: {summary.PeakLevel:0.000}. Check the selected microphone.";
+                SetLocalTestStatus($"No microphone input captured. Peak level: {summary.PeakLevel:0.000}. Check the selected microphone.");
                 return;
             }
 
-            LocalModeStatusText.Text = "Transcribing local test phrase...";
+            SetLocalTestStatus("Transcribing local test phrase...");
             var transcript = await _localProvider.TranscribeOnlyAsync(recordedAudio, _state, timeout.Token);
             LocalTestTranscriptBox.Text = transcript;
-            LocalModeStatusText.Text = string.IsNullOrWhiteSpace(transcript)
+            SetLocalTestStatus(string.IsNullOrWhiteSpace(transcript)
                 ? "Local test completed, but Whisper returned an empty transcript. Try speaking louder or choosing a larger model."
-                : "Local test completed. Transcript shown below; nothing was pasted.";
+                : "Local test completed. Transcript shown below; nothing was pasted.");
         }
         catch (OperationCanceledException)
         {
-            LocalModeStatusText.Text = "Local test phrase timed out.";
+            SetLocalTestStatus("Local test phrase timed out.");
         }
         catch (Exception ex) when (ex is InvalidOperationException or System.IO.IOException or UnauthorizedAccessException)
         {
-            LocalModeStatusText.Text = LocalSetupErrorFormatter.Format("Local test phrase failed", ex);
+            SetLocalTestStatus(LocalSetupErrorFormatter.Format("Local test phrase failed", ex));
             _diagnosticLog.Error("Local test phrase failed", ex);
         }
         finally
@@ -851,7 +919,7 @@ public partial class AdvancedSettingsWindow : Window
             Floating button enabled: {FormatBool(_state.Settings.FloatingButtonEnabled)}
             Add trailing space: {FormatBool(_state.Settings.AddTrailingSpace)}
             Custom vocabulary entries: {_state.Settings.CustomVocabulary.Count}
-            Hotkeys: Ctrl+Win+Space, Esc
+            Hotkeys: Ctrl+Alt+R, Ctrl+Alt+Space or Ctrl+Win+Space, Esc
             Transcript content: redacted
             Raw audio: redacted
 

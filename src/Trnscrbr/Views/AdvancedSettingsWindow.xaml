@@ -73,11 +73,12 @@
                     <StackPanel Margin="18">
                         <TextBlock Text="First Run" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock Margin="0,8,0,12" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}"
-                                   Text="Press Ctrl + Win + Space to dictate into the focused text field. Trnscrbr inserts text for review and never presses Enter. Cloud/API modes may use third-party services; local mode is free and private but needs model downloads." />
+                                   Text="Press Ctrl + Alt + R to start recording, then press it again to transcribe into the focused text field. Trnscrbr inserts text for review and never presses Enter. Cloud/API modes may use third-party services; local mode is free and private but needs model downloads." />
                         <StackPanel Margin="0,0,0,12">
                             <TextBlock Text="- Right-click the tray icon or glass button for Settings." TextWrapping="Wrap" />
-                            <TextBlock Text="- Hold Ctrl + Win + Space to record, then release to transcribe." TextWrapping="Wrap" />
-                            <TextBlock Text="- Click the glass button to use manual recording controls." TextWrapping="Wrap" />
+                            <TextBlock Text="- Press Ctrl + Alt + R to start recording; press it again to stop and transcribe." TextWrapping="Wrap" />
+                            <TextBlock Text="- Hold Ctrl + Alt + Space for push-to-talk, then release to transcribe." TextWrapping="Wrap" />
+                            <TextBlock Text="- Click the glass button for manual recording controls." TextWrapping="Wrap" />
                             <TextBlock Text="- Press Esc to cancel recording or processing." TextWrapping="Wrap" />
                             <TextBlock Text="- Use the tray or glass button menu to recover the last transcript for up to one hour." TextWrapping="Wrap" />
                             <TextBlock Text="- Trnscrbr uses the clipboard temporarily, restores it afterwards, and does not save transcript history." TextWrapping="Wrap" />
@@ -138,7 +139,15 @@
                             <StackPanel>
                                 <TextBlock Text="Free Quick Setup" FontSize="16" FontWeight="SemiBold" />
                                 <TextBlock Text="Installs the official x64 whisper.cpp CPU CLI, downloads a verified model, and enables Local mode." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
-                                <Button x:Name="QuickSetupButton" Content="Free Quick Setup" Width="150" HorizontalAlignment="Left" Click="QuickSetupLocal_OnClick" />
+                                <WrapPanel>
+                                    <Button x:Name="QuickSetupButton" Content="Free Quick Setup" Width="150" Margin="0,0,8,8" Click="QuickSetupLocal_OnClick" />
+                                    <Button x:Name="QuickSetupTestPhraseButton" Content="Try Test Phrase" Width="140" Margin="0,0,8,8" Click="RecordLocalTestPhrase_OnClick" />
+                                </WrapPanel>
+                                <TextBlock x:Name="QuickSetupNextStepText"
+                                           Text="After setup, click Try Test Phrase to confirm your microphone and local transcription."
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource MutedForegroundBrush}"
+                                           Margin="0,2,0,0" />
                             </StackPanel>
                         </Border>
 
@@ -169,6 +178,7 @@
                                     <Button x:Name="CheckWhisperCliUpdateButton" Content="Check CLI Update" Width="150" Margin="0,0,8,8" Click="CheckWhisperCliUpdate_OnClick" />
                                     <Button x:Name="VerifyModelButton" Content="Verify Model" Width="130" Margin="0,0,8,8" Click="VerifyModel_OnClick" />
                                     <Button x:Name="UseLocalModeButton" Content="Use Local Mode" Width="140" Margin="0,0,8,8" Click="SaveLocalMode_OnClick" />
+                                    <Button x:Name="RepairLocalModeButton" Content="Repair Local Mode" Width="150" Margin="0,0,8,8" Click="RepairLocalMode_OnClick" />
                                 </WrapPanel>
                             </StackPanel>
                         </Border>
@@ -228,6 +238,10 @@
                                     <Button x:Name="RecordTestPhraseButton" Content="Record Test Phrase" Width="155" Margin="0,0,8,8" Click="RecordLocalTestPhrase_OnClick" />
                                     <Button x:Name="DetectLocalModelsButton" Content="Detect Local Models" Width="150" Margin="0,0,8,8" Click="DetectLocalModels_OnClick" />
                                 </WrapPanel>
+                                <TextBlock x:Name="LocalTestStatusText"
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           Margin="0,0,0,8" />
                                 <TextBlock Text="Local test transcript" FontWeight="SemiBold" Margin="0,10,0,6" />
                                 <TextBox x:Name="LocalTestTranscriptBox"
                                          IsReadOnly="True"
@@ -381,7 +395,7 @@
                 <ScrollViewer>
                     <StackPanel Margin="18">
                         <TextBlock Text="Hotkeys" FontSize="20" FontWeight="SemiBold" />
-                        <TextBlock Text="Hotkeys are fixed for the MVP. Configurable shortcuts are planned for a later version." TextWrapping="Wrap" Margin="0,8,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <TextBlock Text="Use toggle recording for normal dictation, or hold push-to-talk while speaking and release to transcribe." TextWrapping="Wrap" Margin="0,8,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="180" />
@@ -391,13 +405,16 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
-                            <TextBlock Text="Dictate" FontWeight="SemiBold" Margin="0,0,12,8" />
-                            <TextBlock Grid.Column="1" Text="Ctrl + Win + Space" Margin="0,0,0,8" />
-                            <TextBlock Grid.Row="1" Text="Cancel" FontWeight="SemiBold" Margin="0,0,12,8" />
-                            <TextBlock Grid.Row="1" Grid.Column="1" Text="Esc" Margin="0,0,0,8" />
-                            <TextBlock Grid.Row="2" Text="Paste Last Transcript" FontWeight="SemiBold" Margin="0,0,12,8" />
-                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Tray/glass button menu" Margin="0,0,0,8" />
+                            <TextBlock Text="Toggle recording" FontWeight="SemiBold" Margin="0,0,12,8" />
+                            <TextBlock Grid.Column="1" Text="Ctrl + Alt + R" Margin="0,0,0,8" />
+                            <TextBlock Grid.Row="1" Text="Push-to-talk" FontWeight="SemiBold" Margin="0,0,12,8" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="Hold Ctrl + Alt + Space or Ctrl + Win + Space" Margin="0,0,0,8" />
+                            <TextBlock Grid.Row="2" Text="Cancel" FontWeight="SemiBold" Margin="0,0,12,8" />
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Esc" Margin="0,0,0,8" />
+                            <TextBlock Grid.Row="3" Text="Paste Last Transcript" FontWeight="SemiBold" Margin="0,0,12,8" />
+                            <TextBlock Grid.Row="3" Grid.Column="1" Text="Tray/glass button menu" Margin="0,0,0,8" />
                         </Grid>
                         <TextBlock Text="A global paste-last-transcript shortcut is disabled for now to avoid collisions with Windows clipboard and accessibility shortcuts." TextWrapping="Wrap" Margin="0,8,0,0" Foreground="{StaticResource MutedForegroundBrush}" />
                     </StackPanel>

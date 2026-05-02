@@ -36,4 +36,4 @@ Run:
 .\scripts\test-package.ps1
 ```
 
-This publishes the app, builds the installer, and verifies that the expected installer executable exists and is non-empty.
+This publishes the app, verifies that the published executable contains current local-mode and hotkey UX text, builds the installer, and verifies that the expected installer executable exists and is non-empty.

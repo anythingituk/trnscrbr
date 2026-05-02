@@ -21,7 +21,9 @@ public sealed class KeyboardHookService : IDisposable
     private bool _suppressWinKey;
     private bool _ctrlDown;
     private bool _winDown;
+    private bool _altDown;
     private bool _spaceDown;
+    private bool _toggleRecordingChordDown;
 
     public KeyboardHookService()
     {
@@ -30,6 +32,7 @@ public sealed class KeyboardHookService : IDisposable
 
     public event EventHandler? PushToTalkPressed;
     public event EventHandler? PushToTalkReleased;
+    public event EventHandler? ToggleRecordingPressed;
     public event EventHandler? CancelPressed;
 
     public void Start()
@@ -66,7 +69,25 @@ public sealed class KeyboardHookService : IDisposable
         var isUp = wParam == WM_KEYUP || wParam == WM_SYSKEYUP;
         var ctrl = IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey);
         var win = IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin);
-        TrackChordKeyState(key, isDown, isUp, ctrl, win);
+        var alt = IsKeyDown(Keys.LMenu) || IsKeyDown(Keys.RMenu) || IsKeyDown(Keys.Menu);
+        TrackChordKeyState(key, isDown, isUp, ctrl, win, alt);
+
+        if (isDown && IsToggleRecordingChord(key, ctrl, alt))
+        {
+            if (!_toggleRecordingChordDown)
+            {
+                _toggleRecordingChordDown = true;
+                PostEvent(ToggleRecordingPressed);
+            }
+
+            return (IntPtr)1;
+        }
+
+        if (_toggleRecordingChordDown && isUp && IsToggleRecordingChordKey(key))
+        {
+            _toggleRecordingChordDown = IsToggleRecordingChordDown();
+            return (IntPtr)1;
+        }
 
         if (IsWinKey(key) && (isDown || isUp))
         {
@@ -92,7 +113,7 @@ public sealed class KeyboardHookService : IDisposable
         if (_pushToTalkDown && isUp && IsPushToTalkChordKey(key))
         {
             ReleasePushToTalk();
-            return key == Keys.Space || IsWinKey(key)
+            return key == Keys.Space || IsWinKey(key) || IsAltKey(key)
                 ? (IntPtr)1
                 : CallNextHookEx(_hookId, nCode, wParam, lParam);
         }
@@ -115,6 +136,9 @@ public sealed class KeyboardHookService : IDisposable
         return key is Keys.Space
             or Keys.LWin
             or Keys.RWin
+            or Keys.LMenu
+            or Keys.RMenu
+            or Keys.Menu
             or Keys.LControlKey
             or Keys.RControlKey
             or Keys.ControlKey;
@@ -125,14 +149,43 @@ public sealed class KeyboardHookService : IDisposable
         return key is Keys.LWin or Keys.RWin;
     }
 
-    private static bool IsPushToTalkChordDown()
+    private static bool IsAltKey(Keys key)
     {
-        return (IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey))
-            && (IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin))
-            && IsKeyDown(Keys.Space);
+        return key is Keys.LMenu or Keys.RMenu or Keys.Menu;
     }
 
-    private void TrackChordKeyState(Keys key, bool isDown, bool isUp, bool ctrl, bool win)
+    private static bool IsToggleRecordingChord(Keys key, bool ctrl, bool alt)
+    {
+        return key == Keys.R && ctrl && alt;
+    }
+
+    private static bool IsToggleRecordingChordKey(Keys key)
+    {
+        return key is Keys.R
+            or Keys.LMenu
+            or Keys.RMenu
+            or Keys.Menu
+            or Keys.LControlKey
+            or Keys.RControlKey
+            or Keys.ControlKey;
+    }
+
+    private static bool IsToggleRecordingChordDown()
+    {
+        var ctrl = IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey);
+        var alt = IsKeyDown(Keys.LMenu) || IsKeyDown(Keys.RMenu) || IsKeyDown(Keys.Menu);
+        return ctrl && alt && IsKeyDown(Keys.R);
+    }
+
+    private static bool IsPushToTalkChordDown()
+    {
+        var ctrl = IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey);
+        var win = IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin);
+        var alt = IsKeyDown(Keys.LMenu) || IsKeyDown(Keys.RMenu) || IsKeyDown(Keys.Menu);
+        return ctrl && (win || alt) && IsKeyDown(Keys.Space);
+    }
+
+    private void TrackChordKeyState(Keys key, bool isDown, bool isUp, bool ctrl, bool win, bool alt)
     {
         if (isDown)
         {
@@ -144,11 +197,16 @@ public sealed class KeyboardHookService : IDisposable
             {
                 _winDown = true;
             }
+            else if (IsAltKey(key))
+            {
+                _altDown = true;
+            }
             else if (key == Keys.Space)
             {
                 _spaceDown = true;
                 _ctrlDown = _ctrlDown || ctrl;
                 _winDown = _winDown || win;
+                _altDown = _altDown || alt;
             }
         }
         else if (isUp)
@@ -160,6 +218,10 @@ public sealed class KeyboardHookService : IDisposable
             else if (IsWinKey(key))
             {
                 _winDown = IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin);
+            }
+            else if (IsAltKey(key))
+            {
+                _altDown = IsKeyDown(Keys.LMenu) || IsKeyDown(Keys.RMenu) || IsKeyDown(Keys.Menu);
             }
             else if (key == Keys.Space)
             {
@@ -175,7 +237,7 @@ public sealed class KeyboardHookService : IDisposable
         {
             if (_pushToTalkDown && !IsPushToTalkChordDown())
             {
-                if (!_ctrlDown && !_winDown && !_spaceDown)
+                if (!_ctrlDown && !_winDown && !_altDown && !_spaceDown)
                 {
                     ReleasePushToTalk();
                 }
@@ -193,6 +255,7 @@ public sealed class KeyboardHookService : IDisposable
         _pushToTalkDown = false;
         _ctrlDown = IsKeyDown(Keys.LControlKey) || IsKeyDown(Keys.RControlKey) || IsKeyDown(Keys.ControlKey);
         _winDown = IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin);
+        _altDown = IsKeyDown(Keys.LMenu) || IsKeyDown(Keys.RMenu) || IsKeyDown(Keys.Menu);
         _spaceDown = IsKeyDown(Keys.Space);
         _pushToTalkMonitor?.Dispose();
         _pushToTalkMonitor = null;

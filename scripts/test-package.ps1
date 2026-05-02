@@ -5,8 +5,11 @@ param(
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+$project = Join-Path $repoRoot "src\Trnscrbr\Trnscrbr.csproj"
 $installerDir = Join-Path $repoRoot "artifacts\installer"
-$expectedInstaller = Join-Path $installerDir "Trnscrbr-Setup-0.1.0-$Runtime.exe"
+$projectXml = [xml](Get-Content $project)
+$version = $projectXml.Project.PropertyGroup.Version | Select-Object -First 1
+$expectedInstaller = Join-Path $installerDir "Trnscrbr-Setup-$version-$Runtime.exe"
 
 if (Test-Path $expectedInstaller) {
     Remove-Item -Force $expectedInstaller
