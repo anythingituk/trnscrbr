@@ -72,6 +72,13 @@ public static class AppSettingsNormalizer
         settings.PasteMethod = Pick(settings.PasteMethod, PasteMethods, defaults.PasteMethod);
         settings.ToggleRecordingHotkey = Pick(settings.ToggleRecordingHotkey, ToggleRecordingHotkeys, defaults.ToggleRecordingHotkey);
         settings.PushToTalkHotkey = Pick(settings.PushToTalkHotkey, PushToTalkHotkeys, defaults.PushToTalkHotkey);
+        if (string.Equals(settings.ToggleRecordingHotkey, settings.PushToTalkHotkey, StringComparison.OrdinalIgnoreCase))
+        {
+            settings.PushToTalkHotkey = settings.ToggleRecordingHotkey == defaults.PushToTalkHotkey
+                ? "F10"
+                : defaults.PushToTalkHotkey;
+        }
+
         settings.MicrophoneName = string.IsNullOrWhiteSpace(settings.MicrophoneName) ? defaults.MicrophoneName : settings.MicrophoneName;
         settings.ActiveEngine = string.IsNullOrWhiteSpace(settings.ActiveEngine) ? defaults.ActiveEngine : settings.ActiveEngine;
         settings.LocalWhisperExecutablePath = settings.LocalWhisperExecutablePath?.Trim() ?? string.Empty;

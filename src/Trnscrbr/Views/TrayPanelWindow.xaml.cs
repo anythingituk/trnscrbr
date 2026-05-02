@@ -61,6 +61,7 @@ public partial class TrayPanelWindow : Window
 
         RefreshMicrophones();
         RefreshLocalReadiness();
+        RefreshHotkeySummary();
         Left = Math.Max(area.Left + 8, area.Right - Width - trayOverflowAvoidanceWidth);
         Top = Math.Max(area.Top + 8, area.Bottom - Height - bottomOffset);
         Show();
@@ -238,8 +239,17 @@ public partial class TrayPanelWindow : Window
     {
         if (e.PropertyName is nameof(AppStateViewModel.Settings) or nameof(AppStateViewModel.IsProviderConfigured))
         {
-            Dispatcher.Invoke(RefreshLocalReadiness);
+            Dispatcher.Invoke(() =>
+            {
+                RefreshLocalReadiness();
+                RefreshHotkeySummary();
+            });
         }
+    }
+
+    private void RefreshHotkeySummary()
+    {
+        HotkeySummaryText.Text = $"Hotkeys: toggle {FormatHotkey(_state.Settings.ToggleRecordingHotkey)}; push-to-talk {FormatHotkey(_state.Settings.PushToTalkHotkey)}.";
     }
 
     private void RefreshLocalReadiness()
@@ -296,6 +306,11 @@ public partial class TrayPanelWindow : Window
         return string.IsNullOrWhiteSpace(details)
             ? result.Message
             : $"{result.Message} {details}";
+    }
+
+    private static string FormatHotkey(string hotkey)
+    {
+        return hotkey.Replace("+", " + ", StringComparison.Ordinal);
     }
 
     private bool IsLocalModeReady()

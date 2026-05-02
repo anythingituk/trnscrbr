@@ -122,6 +122,11 @@
                        Foreground="{StaticResource AccentBrush}"
                        Margin="0,-6,0,10" />
 
+            <TextBlock x:Name="HotkeySummaryText"
+                       TextWrapping="Wrap"
+                       Foreground="{StaticResource MutedForegroundBrush}"
+                       Margin="0,-2,0,12" />
+
             <TextBlock Text="Transcription Type" FontWeight="SemiBold" />
             <ComboBox SelectedValue="{Binding Settings.CleanupMode}" SelectedValuePath="Content" Margin="0,6,0,12" SelectionChanged="Settings_OnChanged">
                 <ComboBoxItem Content="Clean only" />

@@ -408,14 +408,14 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <TextBlock Text="Toggle recording" FontWeight="SemiBold" Margin="0,0,12,8" />
-                            <ComboBox Grid.Column="1" SelectedValue="{Binding Settings.ToggleRecordingHotkey}" SelectedValuePath="Content" Margin="0,0,0,8" SelectionChanged="Settings_OnChanged">
+                            <ComboBox x:Name="ToggleHotkeyComboBox" Grid.Column="1" SelectedValue="{Binding Settings.ToggleRecordingHotkey}" SelectedValuePath="Content" Margin="0,0,0,8" SelectionChanged="Settings_OnChanged">
                                 <ComboBoxItem Content="Ctrl+Alt+R" />
                                 <ComboBoxItem Content="Ctrl+Shift+R" />
                                 <ComboBoxItem Content="Ctrl+Alt+D" />
                                 <ComboBoxItem Content="F9" />
                             </ComboBox>
                             <TextBlock Grid.Row="1" Text="Push-to-talk" FontWeight="SemiBold" Margin="0,0,12,8" />
-                            <ComboBox Grid.Row="1" Grid.Column="1" SelectedValue="{Binding Settings.PushToTalkHotkey}" SelectedValuePath="Content" Margin="0,0,0,8" SelectionChanged="Settings_OnChanged">
+                            <ComboBox x:Name="PushToTalkHotkeyComboBox" Grid.Row="1" Grid.Column="1" SelectedValue="{Binding Settings.PushToTalkHotkey}" SelectedValuePath="Content" Margin="0,0,0,8" SelectionChanged="Settings_OnChanged">
                                 <ComboBoxItem Content="Ctrl+Alt+Space" />
                                 <ComboBoxItem Content="Ctrl+Shift+Space" />
                                 <ComboBoxItem Content="Ctrl+Win+Space" />
@@ -426,6 +426,10 @@
                             <TextBlock Grid.Row="3" Text="Paste Last Transcript" FontWeight="SemiBold" Margin="0,0,12,8" />
                             <TextBlock Grid.Row="3" Grid.Column="1" Text="Tray/glass button menu" Margin="0,0,0,8" />
                         </Grid>
+                        <TextBlock x:Name="HotkeyStatusText"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource AccentBrush}"
+                                   Margin="0,6,0,0" />
                         <TextBlock Text="A global paste-last-transcript shortcut is disabled for now to avoid collisions with Windows clipboard and accessibility shortcuts." TextWrapping="Wrap" Margin="0,8,0,0" Foreground="{StaticResource MutedForegroundBrush}" />
                     </StackPanel>
                 </ScrollViewer>

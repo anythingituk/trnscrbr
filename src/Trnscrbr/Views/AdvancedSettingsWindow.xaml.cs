@@ -214,6 +214,7 @@ public partial class AdvancedSettingsWindow : Window
 
     private void Settings_OnChanged(object sender, RoutedEventArgs e)
     {
+        var hotkeyChanged = sender == ToggleHotkeyComboBox || sender == PushToTalkHotkeyComboBox;
         if (_state.Settings.ProviderMode == "Local mode")
         {
             _state.Settings.ProviderName = "Local";
@@ -231,9 +232,35 @@ public partial class AdvancedSettingsWindow : Window
         }
 
         Persist();
+        if (hotkeyChanged)
+        {
+            ValidateHotkeySettings();
+        }
+
         RefreshOverview();
         UpdateProviderModeStatus();
         RefreshLocalModeStatus();
+    }
+
+    private void ValidateHotkeySettings()
+    {
+        if (string.Equals(_state.Settings.ToggleRecordingHotkey, _state.Settings.PushToTalkHotkey, StringComparison.OrdinalIgnoreCase))
+        {
+            _state.Settings.PushToTalkHotkey = _state.Settings.ToggleRecordingHotkey == "Ctrl+Alt+Space"
+                ? "F10"
+                : "Ctrl+Alt+Space";
+            Persist();
+            _state.RaiseSettingsChanged();
+            HotkeyStatusText.Text = "Toggle and push-to-talk shortcuts must be different. Push-to-talk was moved to a non-conflicting shortcut.";
+            return;
+        }
+
+        HotkeyStatusText.Text = $"Hotkeys updated. Toggle: {FormatHotkey(_state.Settings.ToggleRecordingHotkey)}. Push-to-talk: {FormatHotkey(_state.Settings.PushToTalkHotkey)}.";
+    }
+
+    private static string FormatHotkey(string hotkey)
+    {
+        return hotkey.Replace("+", " + ", StringComparison.Ordinal);
     }
 
     private void CursorContext_OnClick(object sender, RoutedEventArgs e)
