@@ -1,4 +1,5 @@
 using Microsoft.Win32;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -30,6 +31,7 @@ public partial class App : System.Windows.Application
     private OnboardingWindow? _onboarding;
     private TrayPanelWindow? _trayPanel;
     private AdvancedSettingsWindow? _advancedSettings;
+    private bool? _globalHotkeysApplied;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -58,6 +60,7 @@ public partial class App : System.Windows.Application
         _updateCheck = new UpdateCheckService();
         var settings = _settingsStore.Load();
         var appState = new AppStateViewModel(settings);
+        appState.PropertyChanged += AppStateOnPropertyChanged;
         StartLastTranscriptExpiryTimer(appState);
         _singleInstance = new SingleInstanceService(() => Dispatcher.BeginInvoke(ShowTrayPanel));
         _singleInstance.Start();
@@ -71,21 +74,7 @@ public partial class App : System.Windows.Application
         _floatingButton.SettingsRequested += (_, _) => ShowTrayPanel();
         _floatingButton.QuitRequested += (_, _) => Shutdown();
 
-        _keyboardHook = new KeyboardHookService(appState);
-        _keyboardHook.PushToTalkPressed += (_, _) => _recording.HandlePushToTalkPressed();
-        _keyboardHook.PushToTalkReleased += (_, _) => _recording.HandlePushToTalkReleased();
-        _keyboardHook.ToggleRecordingPressed += (_, _) => _recording.ToggleRecording();
-        _keyboardHook.CancelPressed += (_, _) => _recording.Cancel();
-        try
-        {
-            _keyboardHook.Start();
-        }
-        catch (Exception ex)
-        {
-            _diagnosticLog.Error("Keyboard hook startup failed", ex);
-            appState.RecordingState = RecordingState.Error;
-            appState.StatusMessage = "Hotkeys unavailable. Use tray controls.";
-        }
+        ApplyGlobalHotkeyState(appState);
 
         _trayIcon = new TrayIconService(
             appState,
@@ -94,6 +83,7 @@ public partial class App : System.Windows.Application
             onPasteLastTranscript: () => _recording.PasteLastTranscript(),
             getMicrophones: () => _audioCapture.GetInputDevices(),
             settingsStore: _settingsStore,
+            onSetGlobalHotkeysEnabled: SetGlobalHotkeysEnabled,
             onShowSettings: ShowTrayPanel,
             onShowAdvancedSettings: ShowAdvancedSettings,
             onQuit: Shutdown);
@@ -125,6 +115,7 @@ public partial class App : System.Windows.Application
 
             if (_settingsStore is not null && _floatingButton?.DataContext is AppStateViewModel state)
             {
+                state.PropertyChanged -= AppStateOnPropertyChanged;
                 _settingsStore.Save(state.Settings);
             }
 
@@ -235,6 +226,72 @@ public partial class App : System.Windows.Application
             }
         };
         _lastTranscriptTimer.Start();
+    }
+
+    private void AppStateOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(AppStateViewModel.Settings)
+            || sender is not AppStateViewModel state
+            || _globalHotkeysApplied == state.Settings.GlobalHotkeysEnabled)
+        {
+            return;
+        }
+
+        ApplyGlobalHotkeyState(state);
+    }
+
+    private void ApplyGlobalHotkeyState(AppStateViewModel state)
+    {
+        _globalHotkeysApplied = state.Settings.GlobalHotkeysEnabled;
+        _keyboardHook?.Dispose();
+        _keyboardHook = null;
+
+        if (!state.Settings.GlobalHotkeysEnabled)
+        {
+            state.StatusMessage = "Global hotkeys disabled. Use tray controls.";
+            return;
+        }
+
+        if (_recording is null || _diagnosticLog is null)
+        {
+            return;
+        }
+
+        _keyboardHook = new KeyboardHookService(state);
+        _keyboardHook.PushToTalkPressed += (_, _) => _recording.HandlePushToTalkPressed();
+        _keyboardHook.PushToTalkReleased += (_, _) => _recording.HandlePushToTalkReleased();
+        _keyboardHook.ToggleRecordingPressed += (_, _) => _recording.ToggleRecording();
+        _keyboardHook.CancelPressed += (_, _) => _recording.Cancel();
+
+        try
+        {
+            _keyboardHook.Start();
+        }
+        catch (Exception ex)
+        {
+            _diagnosticLog.Error("Keyboard hook startup failed", ex);
+            state.Settings.GlobalHotkeysEnabled = false;
+            _settingsStore?.Save(state.Settings);
+            state.RaiseSettingsChanged();
+            state.RecordingState = RecordingState.Error;
+            state.StatusMessage = "Hotkeys unavailable. Use tray controls.";
+        }
+    }
+
+    private void SetGlobalHotkeysEnabled(bool enabled)
+    {
+        if (_floatingButton?.DataContext is not AppStateViewModel state)
+        {
+            return;
+        }
+
+        state.Settings.GlobalHotkeysEnabled = enabled;
+        _settingsStore?.Save(state.Settings);
+        ApplyGlobalHotkeyState(state);
+        state.RaiseSettingsChanged();
+        state.StatusMessage = enabled
+            ? "Global hotkeys enabled"
+            : "Global hotkeys disabled. Use tray controls.";
     }
 
     private void StartUpdateNotificationCheck(AppStateViewModel state)

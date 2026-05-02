@@ -925,6 +925,7 @@ public partial class AdvancedSettingsWindow : Window
             Floating button enabled: {FormatBool(_state.Settings.FloatingButtonEnabled)}
             Add trailing space: {FormatBool(_state.Settings.AddTrailingSpace)}
             Custom vocabulary entries: {_state.Settings.CustomVocabulary.Count}
+            Global hotkeys enabled: {FormatBool(_state.Settings.GlobalHotkeysEnabled)}
             Hotkeys: toggle {_state.Settings.ToggleRecordingHotkey}, push-to-talk {_state.Settings.PushToTalkHotkey}, Esc
             Transcript content: redacted
             Raw audio: redacted

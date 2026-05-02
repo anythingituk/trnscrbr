@@ -36,7 +36,6 @@ public static class AppSettingsNormalizer
     [
         "Ctrl+Alt+Space",
         "Ctrl+Shift+Space",
-        "Ctrl+Win+Space",
         "F10"
     ];
 

@@ -17,6 +17,7 @@ public sealed class TrayIconService : IDisposable
     private readonly Action _onPasteLastTranscript;
     private readonly Func<IReadOnlyList<AudioInputDevice>> _getMicrophones;
     private readonly AppSettingsStore _settingsStore;
+    private readonly Action<bool> _onSetGlobalHotkeysEnabled;
     private readonly Action _onShowSettings;
     private readonly Action _onShowAdvancedSettings;
     private readonly Action _onQuit;
@@ -31,6 +32,7 @@ public sealed class TrayIconService : IDisposable
         Action onPasteLastTranscript,
         Func<IReadOnlyList<AudioInputDevice>> getMicrophones,
         AppSettingsStore settingsStore,
+        Action<bool> onSetGlobalHotkeysEnabled,
         Action onShowSettings,
         Action onShowAdvancedSettings,
         Action onQuit)
@@ -41,6 +43,7 @@ public sealed class TrayIconService : IDisposable
         _onPasteLastTranscript = onPasteLastTranscript;
         _getMicrophones = getMicrophones;
         _settingsStore = settingsStore;
+        _onSetGlobalHotkeysEnabled = onSetGlobalHotkeysEnabled;
         _onShowSettings = onShowSettings;
         _onShowAdvancedSettings = onShowAdvancedSettings;
         _onQuit = onQuit;
@@ -116,12 +119,17 @@ public sealed class TrayIconService : IDisposable
         var showItem = new ToolStripMenuItem("Show/Hide Floating Button", null, (_, _) => _onToggleFloatingButton());
         var pasteItem = new ToolStripMenuItem("Paste Last Transcript", null, (_, _) => _onPasteLastTranscript());
         var updateItem = new ToolStripMenuItem("Update Available", null, (_, _) => OpenAvailableUpdate()) { Visible = false };
+        var hotkeysItem = new ToolStripMenuItem("Global Hotkeys", null, (_, _) => _onSetGlobalHotkeysEnabled(!_state.Settings.GlobalHotkeysEnabled));
         var micMenu = new ToolStripMenuItem("Microphone");
 
         menu.Opening += (_, _) =>
         {
             recordItem.Text = _state.RecordingState == RecordingState.Recording ? "Stop Recording" : "Start Recording";
             pasteItem.Enabled = HasRecoverableTranscript();
+            hotkeysItem.Checked = _state.Settings.GlobalHotkeysEnabled;
+            hotkeysItem.Text = _state.Settings.GlobalHotkeysEnabled
+                ? "Disable Global Hotkeys"
+                : "Enable Global Hotkeys";
             updateItem.Visible = _availableUpdate is { IsUpdateAvailable: true };
             updateItem.Text = _availableUpdate is { IsUpdateAvailable: true } update
                 ? $"Update Available: {update.LatestVersion}"
@@ -132,6 +140,7 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add(recordItem);
         menu.Items.Add(pasteItem);
         menu.Items.Add(updateItem);
+        menu.Items.Add(hotkeysItem);
         menu.Items.Add(showItem);
         menu.Items.Add(micMenu);
         menu.Items.Add(new ToolStripSeparator());

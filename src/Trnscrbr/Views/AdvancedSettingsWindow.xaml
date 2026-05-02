@@ -397,6 +397,7 @@
                     <StackPanel Margin="18">
                         <TextBlock Text="Hotkeys" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock Text="Use toggle recording for normal dictation, or hold push-to-talk while speaking and release to transcribe." TextWrapping="Wrap" Margin="0,8,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <CheckBox Content="Enable global hotkeys" IsChecked="{Binding Settings.GlobalHotkeysEnabled}" Margin="0,0,0,14" Click="Settings_OnChanged" />
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="180" />
@@ -419,7 +420,6 @@
                             <ComboBox x:Name="PushToTalkHotkeyComboBox" Grid.Row="1" Grid.Column="1" SelectedValue="{Binding Settings.PushToTalkHotkey}" SelectedValuePath="Content" Margin="0,0,0,8" SelectionChanged="Settings_OnChanged">
                                 <ComboBoxItem Content="Ctrl+Alt+Space" />
                                 <ComboBoxItem Content="Ctrl+Shift+Space" />
-                                <ComboBoxItem Content="Ctrl+Win+Space" />
                                 <ComboBoxItem Content="F10" />
                             </ComboBox>
                             <TextBlock Grid.Row="2" Text="Cancel" FontWeight="SemiBold" Margin="0,0,12,8" />

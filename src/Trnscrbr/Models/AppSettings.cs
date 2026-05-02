@@ -11,6 +11,7 @@ public sealed class AppSettings
     public bool VoiceActionCommandsEnabled { get; set; }
     public bool DiagnosticsEnabled { get; set; }
     public bool ForceCpuOnly { get; set; }
+    public bool GlobalHotkeysEnabled { get; set; } = true;
     public int CaptureStartupBufferMilliseconds { get; set; }
     public string ProviderMode { get; set; } = "Not configured";
     public string ProviderName { get; set; } = "OpenAI";

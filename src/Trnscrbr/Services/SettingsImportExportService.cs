@@ -54,6 +54,7 @@ public sealed class SettingsImportExportService
             VoiceActionCommandsEnabled = settings.VoiceActionCommandsEnabled,
             DiagnosticsEnabled = settings.DiagnosticsEnabled,
             ForceCpuOnly = settings.ForceCpuOnly,
+            GlobalHotkeysEnabled = settings.GlobalHotkeysEnabled,
             CaptureStartupBufferMilliseconds = settings.CaptureStartupBufferMilliseconds,
             ProviderMode = settings.ProviderMode,
             ProviderName = settings.ProviderName,

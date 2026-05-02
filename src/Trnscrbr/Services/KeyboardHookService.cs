@@ -20,7 +20,6 @@ public sealed class KeyboardHookService : IDisposable
     private System.Threading.Timer? _pushToTalkMonitor;
     private IntPtr _hookId;
     private bool _pushToTalkDown;
-    private bool _suppressWinKey;
     private bool _ctrlDown;
     private bool _winDown;
     private bool _altDown;
@@ -93,16 +92,9 @@ public sealed class KeyboardHookService : IDisposable
         if (_toggleRecordingChordDown && isUp && IsHotkeyChordKey(key, toggleHotkey))
         {
             _toggleRecordingChordDown = IsHotkeyDown(toggleHotkey);
-            return (IntPtr)1;
-        }
-
-        if (IsWinKey(key) && (isDown || isUp))
-        {
-            if ((isDown && ctrl && pushToTalkHotkey.Win) || _pushToTalkDown || _suppressWinKey)
-            {
-                _suppressWinKey = isDown;
-                return (IntPtr)1;
-            }
+            return key == toggleHotkey.Key
+                ? (IntPtr)1
+                : CallNextHookEx(_hookId, nCode, wParam, lParam);
         }
 
         if (isDown && IsHotkeyChordKey(key, pushToTalkHotkey) && IsHotkeyDown(pushToTalkHotkey))
@@ -114,13 +106,15 @@ public sealed class KeyboardHookService : IDisposable
                 PostEvent(PushToTalkPressed);
             }
 
-            return (IntPtr)1;
+            return key == pushToTalkHotkey.Key
+                ? (IntPtr)1
+                : CallNextHookEx(_hookId, nCode, wParam, lParam);
         }
 
         if (_pushToTalkDown && isUp && IsHotkeyChordKey(key, pushToTalkHotkey))
         {
             ReleasePushToTalk();
-            return key == pushToTalkHotkey.Key || IsWinKey(key) || IsAltKey(key)
+            return key == pushToTalkHotkey.Key
                 ? (IntPtr)1
                 : CallNextHookEx(_hookId, nCode, wParam, lParam);
         }
@@ -340,8 +334,8 @@ public sealed class KeyboardHookService : IDisposable
                         alt = true;
                         break;
                     case "WIN":
-                        win = true;
-                        break;
+                        hotkey = new HotkeyGesture(false, false, false, false, Keys.None);
+                        return false;
                     case "SHIFT":
                         shift = true;
                         break;

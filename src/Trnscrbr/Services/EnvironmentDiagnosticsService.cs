@@ -30,7 +30,7 @@ public sealed class EnvironmentDiagnosticsService
             ["os"] = RuntimeInformation.OSDescription,
             ["framework"] = RuntimeInformation.FrameworkDescription,
             ["processArchitecture"] = RuntimeInformation.ProcessArchitecture.ToString(),
-            ["hotkeys"] = "Ctrl+Win+Space, Esc"
+            ["hotkeys"] = "Ctrl+Alt+R, Ctrl+Alt+Space, Esc"
         });
 
         var detectedProcesses = GetDetectedProcesses();

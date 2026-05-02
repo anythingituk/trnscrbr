@@ -271,7 +271,9 @@ public partial class TrayPanelWindow : Window
 
     private void RefreshHotkeySummary()
     {
-        HotkeySummaryText.Text = $"Hotkeys: toggle {FormatHotkey(_state.Settings.ToggleRecordingHotkey)}; push-to-talk {FormatHotkey(_state.Settings.PushToTalkHotkey)}.";
+        HotkeySummaryText.Text = _state.Settings.GlobalHotkeysEnabled
+            ? $"Hotkeys: toggle {FormatHotkey(_state.Settings.ToggleRecordingHotkey)}; push-to-talk {FormatHotkey(_state.Settings.PushToTalkHotkey)}."
+            : "Global hotkeys disabled. Use tray controls.";
     }
 
     private void RefreshLocalReadiness()
