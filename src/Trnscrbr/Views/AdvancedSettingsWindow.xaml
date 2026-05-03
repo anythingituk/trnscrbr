@@ -72,15 +72,15 @@
                 <ScrollViewer>
                     <StackPanel Margin="18">
                         <TextBlock x:Name="SetupTitleText" Text="Setup" FontSize="20" FontWeight="SemiBold" />
-                        <TextBlock x:Name="SetupIntroText" Margin="0,8,0,12" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
-                        <StackPanel Margin="0,0,0,12">
-                            <TextBlock Text="- Right-click the tray icon or glass button for Settings." TextWrapping="Wrap" />
-                            <TextBlock Text="- Press Ctrl + Alt + R to start recording; press it again to stop and transcribe." TextWrapping="Wrap" />
-                            <TextBlock Text="- Hold Ctrl + Alt + Space for push-to-talk, then release to transcribe." TextWrapping="Wrap" />
-                            <TextBlock Text="- Click the glass button for manual recording controls." TextWrapping="Wrap" />
-                            <TextBlock Text="- Press Esc to cancel recording or processing." TextWrapping="Wrap" />
-                            <TextBlock Text="- Use the tray or glass button menu to recover the last transcript for up to one hour." TextWrapping="Wrap" />
-                            <TextBlock Text="- Trnscrbr uses the clipboard temporarily, restores it afterwards, and does not save transcript history." TextWrapping="Wrap" />
+                        <TextBlock x:Name="SetupIntroText" FontSize="14" Margin="0,8,0,14" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <StackPanel Margin="0,0,0,14">
+                            <TextBlock Text="- Right-click the tray icon or glass button for Settings." FontSize="14" TextWrapping="Wrap" Margin="0,0,0,3" />
+                            <TextBlock Text="- Press Ctrl + Alt + R (or F9) to start recording; press it again to stop and transcribe." FontSize="14" TextWrapping="Wrap" Margin="0,0,0,3" />
+                            <TextBlock Text="- Hold Ctrl + Alt + Space for push-to-talk, then release to transcribe." FontSize="14" TextWrapping="Wrap" Margin="0,0,0,3" />
+                            <TextBlock Text="- Click the glass button for manual recording controls." FontSize="14" TextWrapping="Wrap" Margin="0,0,0,3" />
+                            <TextBlock Text="- Press Esc to cancel recording or processing." FontSize="14" TextWrapping="Wrap" Margin="0,0,0,3" />
+                            <TextBlock Text="- Use the tray or glass button menu to recover the last transcript for up to one hour." FontSize="14" TextWrapping="Wrap" Margin="0,0,0,3" />
+                            <TextBlock Text="- Trnscrbr uses the clipboard temporarily, restores it afterwards, and does not save transcript history." FontSize="14" TextWrapping="Wrap" />
                         </StackPanel>
                         <ComboBox SelectedValue="{Binding Settings.ProviderMode}" SelectedValuePath="Content" Margin="0,0,0,12" SelectionChanged="Settings_OnChanged">
                             <ComboBoxItem Content="Not configured" />

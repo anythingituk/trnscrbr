@@ -1193,7 +1193,7 @@ public partial class AdvancedSettingsWindow : Window
         }
 
         SetupTitleText.Text = "First Run";
-        SetupIntroText.Text = "Press Ctrl + Alt + R to start recording, then press it again to transcribe into the focused text field. Trnscrbr inserts text for review and never presses Enter. Cloud/API modes may use third-party services; local mode is free and private but needs model downloads.";
+        SetupIntroText.Text = "Press Ctrl + Alt + R (or F9) to start recording, then press it again to transcribe into the focused text field. Trnscrbr inserts text for review and never presses Enter. Cloud/API modes may use third-party services; local mode is free and private but needs model downloads.";
         SetupSkipButton.Visibility = Visibility.Visible;
     }
 
