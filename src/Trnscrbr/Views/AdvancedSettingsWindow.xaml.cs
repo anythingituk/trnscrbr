@@ -69,6 +69,7 @@ public partial class AdvancedSettingsWindow : Window
         UpdateApiKeyStatus();
         UpdateProviderModeStatus();
         UpdateSetupPageText();
+        RefreshApiKeyEntryState();
         Closing += (_, args) =>
         {
             args.Cancel = true;
@@ -153,6 +154,13 @@ public partial class AdvancedSettingsWindow : Window
 
     private async void TestConnection_OnClick(object sender, RoutedEventArgs e)
     {
+        if (ApiKeyBox.Password.Trim().Length == 0)
+        {
+            ApiKeyStatusText.Text = "Paste a new OpenAI key before testing.";
+            ShowApiKeyEntry();
+            return;
+        }
+
         ApiKeyStatusText.Text = "Testing OpenAI connection...";
         var result = await _openAiProvider.TestApiKeyAsync(ApiKeyBox.Password);
         ApiKeyStatusText.Text = result.IsSuccess
@@ -195,6 +203,7 @@ public partial class AdvancedSettingsWindow : Window
         RefreshOverview();
         UpdateProviderModeStatus();
         RefreshLocalModeStatus();
+        RefreshApiKeyEntryState();
         ApiKeyStatusText.Text = result.IsSuccess
             ? "OpenAI key saved in Windows Credential Manager."
             : "OpenAI key saved with warning in Windows Credential Manager.";
@@ -211,6 +220,20 @@ public partial class AdvancedSettingsWindow : Window
         UpdateApiKeyStatus();
         UpdateProviderModeStatus();
         RefreshLocalModeStatus();
+        RefreshApiKeyEntryState();
+    }
+
+    private void ShowApiKeyEntry_OnClick(object sender, RoutedEventArgs e)
+    {
+        ShowApiKeyEntry();
+    }
+
+    private void ShowApiKeyEntry()
+    {
+        ApiKeyEntryPanel.Visibility = Visibility.Visible;
+        TestConnectionButton.Visibility = Visibility.Visible;
+        SaveKeyButton.Visibility = Visibility.Visible;
+        ApiKeyBox.Focus();
     }
 
     private void CaptureBuffer_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -1269,9 +1292,22 @@ public partial class AdvancedSettingsWindow : Window
 
     private void UpdateApiKeyStatus()
     {
-        ApiKeyStatusText.Text = _credentialStore.HasOpenAiApiKey()
-            ? "OpenAI API key is stored locally in Windows Credential Manager."
-            : "No OpenAI API key is stored.";
+        var hasKey = _credentialStore.HasOpenAiApiKey();
+        ApiKeyStatusText.Text = hasKey
+            ? "OpenAI key is saved locally in Windows Credential Manager."
+            : "No OpenAI key is saved.";
+        RefreshApiKeyEntryState();
+    }
+
+    private void RefreshApiKeyEntryState()
+    {
+        var hasKey = _credentialStore.HasOpenAiApiKey();
+        ApiKeySavedPanel.Visibility = hasKey ? Visibility.Visible : Visibility.Collapsed;
+        DeleteKeyButton.Visibility = hasKey ? Visibility.Visible : Visibility.Collapsed;
+        ApiKeyEntryPanel.Visibility = hasKey ? Visibility.Collapsed : Visibility.Visible;
+        TestConnectionButton.Visibility = hasKey ? Visibility.Collapsed : Visibility.Visible;
+        SaveKeyButton.Visibility = hasKey ? Visibility.Collapsed : Visibility.Visible;
+        ShowApiKeyEntryButton.Content = hasKey ? "Replace Key" : "Add Key";
     }
 
     private void ApplyImportedSettings(Models.AppSettings imported)

@@ -126,11 +126,30 @@
                     <StackPanel Margin="18">
                         <TextBlock Text="OpenAI" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock Text="API keys are stored locally in Windows Credential Manager and are never exported with settings." TextWrapping="Wrap" Margin="0,8,0,12" />
-                        <PasswordBox x:Name="ApiKeyBox" Height="32" />
+                        <Border x:Name="ApiKeySavedPanel"
+                                Background="{StaticResource StatusBackgroundBrush}"
+                                BorderBrush="{StaticResource SubtleBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="12"
+                                Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="OpenAI key saved" FontWeight="SemiBold" />
+                                <TextBlock Text="••••••••••••••••"
+                                           FontSize="16"
+                                           Foreground="{StaticResource MutedForegroundBrush}"
+                                           Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <StackPanel x:Name="ApiKeyEntryPanel" Visibility="Collapsed">
+                            <TextBlock Text="Paste a new OpenAI API key" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <PasswordBox x:Name="ApiKeyBox" Height="32" />
+                        </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                            <Button Content="Test Connection" Width="130" Click="TestConnection_OnClick" />
-                            <Button Content="Save Key" Width="100" Margin="8,0,0,0" Click="SaveProvider_OnClick" />
-                            <Button Content="Delete Key" Width="100" Margin="8,0,0,0" Click="DeleteKey_OnClick" />
+                            <Button x:Name="ShowApiKeyEntryButton" Content="Add / Replace Key" Width="145" Click="ShowApiKeyEntry_OnClick" />
+                            <Button x:Name="TestConnectionButton" Content="Test Connection" Width="130" Margin="8,0,0,0" Click="TestConnection_OnClick" />
+                            <Button x:Name="SaveKeyButton" Content="Save Key" Width="100" Margin="8,0,0,0" Click="SaveProvider_OnClick" />
+                            <Button x:Name="DeleteKeyButton" Content="Delete Key" Width="100" Margin="8,0,0,0" Click="DeleteKey_OnClick" />
                         </StackPanel>
                         <TextBlock x:Name="ApiKeyStatusText" Margin="0,12,0,0" Foreground="{StaticResource MutedForegroundBrush}" />
                         <TextBlock Margin="0,18,0,0">
