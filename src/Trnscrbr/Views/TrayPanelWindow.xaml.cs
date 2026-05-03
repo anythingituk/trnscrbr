@@ -88,7 +88,7 @@ public partial class TrayPanelWindow : Window
         if (_repairInProgress)
         {
             _repairCancellation?.Cancel();
-            LocalTestResultText.Text = "Cancelling local mode repair...";
+            LocalTestResultText.Text = "Cancelling setup...";
             return;
         }
 
@@ -105,7 +105,7 @@ public partial class TrayPanelWindow : Window
         _repairInProgress = true;
         LocalReadinessActionButton.IsEnabled = true;
         LocalReadinessActionButton.Content = "Cancel";
-        LocalTestResultText.Text = "Repairing local mode...";
+        LocalTestResultText.Text = "Setting up local dictation...";
 
         try
         {
@@ -116,7 +116,7 @@ public partial class TrayPanelWindow : Window
             });
             var downloadProgress = new Progress<double>(value =>
             {
-                LocalTestResultText.Text = $"Repairing local mode: {value:P0}";
+                LocalTestResultText.Text = $"Downloading setup files: {value:P0}";
             });
 
             var result = await _localModeRepair.RepairAsync(
@@ -127,18 +127,18 @@ public partial class TrayPanelWindow : Window
 
             Persist();
             RefreshLocalReadiness();
-            LocalTestResultText.Text = $"{FormatRepairResult(result)} Click Test to confirm it works.";
-            _state.StatusMessage = "Local mode repaired";
+            LocalTestResultText.Text = $"{result.Message} Click Test to confirm it works.";
+            _state.StatusMessage = "Local setup completed";
         }
         catch (OperationCanceledException)
         {
-            LocalTestResultText.Text = "Local mode repair cancelled. Partial downloads were kept so they can resume later.";
-            _state.StatusMessage = "Local mode repair cancelled";
+            LocalTestResultText.Text = "Setup cancelled. Partial downloads were kept so they can resume later.";
+            _state.StatusMessage = "Local setup cancelled";
         }
         catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or IOException or InvalidOperationException or System.Text.Json.JsonException)
         {
-            LocalTestResultText.Text = LocalSetupErrorFormatter.Format("Local mode repair failed", ex);
-            _state.StatusMessage = "Local mode repair failed";
+            LocalTestResultText.Text = LocalSetupErrorFormatter.Format("Setup could not finish", ex);
+            _state.StatusMessage = "Local setup needs attention";
             _diagnosticLog.Error("Tray local mode repair failed", ex);
         }
         finally
@@ -294,7 +294,7 @@ public partial class TrayPanelWindow : Window
         }
 
         LocalReadinessPanel.Background = System.Windows.Media.Brushes.Transparent;
-        LocalReadinessActionButton.Content = "Repair";
+        LocalReadinessActionButton.Content = "Set up";
         LocalReadinessTestButton.IsEnabled = false;
 
         if (!usingLocalMode)
@@ -306,15 +306,15 @@ public partial class TrayPanelWindow : Window
 
         if (!hasCli && !hasModel)
         {
-            LocalReadinessTitleText.Text = "Local setup needed";
-            LocalReadinessDetailText.Text = "Whisper CLI and model are missing. Run Free Quick Setup.";
+            LocalReadinessTitleText.Text = "Download needed";
+            LocalReadinessDetailText.Text = "A local dictation download is needed. Run Free Quick Setup.";
             return;
         }
 
-        LocalReadinessTitleText.Text = "Local setup needs repair";
+        LocalReadinessTitleText.Text = "More setup needed";
         LocalReadinessDetailText.Text = hasCli
-            ? "The local Whisper model is missing. Open setup to repair it."
-            : "The whisper.cpp CLI is missing. Open setup to repair it.";
+            ? "One local dictation file is missing. Open setup to finish."
+            : "A local dictation component is missing. Open setup to finish.";
     }
 
     private void SetLocalTestControlsEnabled(bool enabled)
@@ -322,14 +322,6 @@ public partial class TrayPanelWindow : Window
         LocalReadinessActionButton.IsEnabled = enabled || _repairInProgress;
         LocalReadinessTestButton.IsEnabled = enabled && IsLocalModeReady();
         MicrophoneBox.IsEnabled = enabled;
-    }
-
-    private static string FormatRepairResult(LocalModeRepairResult result)
-    {
-        var details = string.Join(" ", result.Steps.Select(step => $"{step.Name}: {step.Detail}"));
-        return string.IsNullOrWhiteSpace(details)
-            ? result.Message
-            : $"{result.Message} {details}";
     }
 
     private static string FormatHotkey(string hotkey)

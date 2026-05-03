@@ -88,7 +88,7 @@ Assert-PublishedExeContains @(
     "Ctrl + Alt + R",
     "Ctrl+Shift+R",
     "Try Test Phrase",
-    "Repair Local Mode",
+    "Complete Setup",
     "Free Quick Setup"
 )
 

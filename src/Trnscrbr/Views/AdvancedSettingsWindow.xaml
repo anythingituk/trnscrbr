@@ -138,7 +138,7 @@
                         <Border BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,16">
                             <StackPanel>
                                 <TextBlock Text="Free Quick Setup" FontSize="16" FontWeight="SemiBold" />
-                                <TextBlock Text="Installs the official x64 whisper.cpp CPU CLI, downloads a verified model, and enables Local mode." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
+                                <TextBlock Text="Downloads the files needed for free local dictation and enables Local mode." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
                                 <WrapPanel>
                                     <Button x:Name="QuickSetupButton" Content="Free Quick Setup" Width="150" Margin="0,0,8,8" Click="QuickSetupLocal_OnClick" />
                                     <Button x:Name="QuickSetupTestPhraseButton" Content="Try Test Phrase" Width="140" Margin="0,0,8,8" Click="RecordLocalTestPhrase_OnClick" />
@@ -165,7 +165,7 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
-                                    <TextBlock Text="CLI" FontWeight="SemiBold" Margin="0,0,12,6" />
+                                    <TextBlock Text="Local engine" FontWeight="SemiBold" Margin="0,0,12,6" />
                                     <TextBlock x:Name="LocalCliSummaryText" Grid.Column="1" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,0,0,6" />
                                     <TextBlock Grid.Row="1" Text="Model" FontWeight="SemiBold" Margin="0,0,12,6" />
                                     <TextBlock x:Name="LocalModelSummaryText" Grid.Row="1" Grid.Column="1" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,0,0,6" />
@@ -175,11 +175,11 @@
                                     <TextBlock x:Name="LocalModeStatusText" Grid.Row="3" Grid.Column="1" TextWrapping="Wrap" Foreground="{StaticResource AccentBrush}" />
                                 </Grid>
                                 <WrapPanel>
-                                    <Button x:Name="CheckWhisperCliUpdateButton" Content="Check CLI Update" Width="150" Margin="0,0,8,8" Click="CheckWhisperCliUpdate_OnClick" />
+                                    <Button x:Name="CheckWhisperCliUpdateButton" Content="Check Update" Width="150" Margin="0,0,8,8" Click="CheckWhisperCliUpdate_OnClick" />
                                     <Button x:Name="VerifyModelButton" Content="Verify Model" Width="130" Margin="0,0,8,8" Click="VerifyModel_OnClick" />
                                     <Button x:Name="UseLocalModeButton" Content="Use Local Mode" Width="140" Margin="0,0,8,8" Click="SaveLocalMode_OnClick" />
-                                    <Button x:Name="RepairLocalModeButton" Content="Repair Local Mode" Width="150" Margin="0,0,8,8" Click="RepairLocalMode_OnClick" />
-                                    <Button x:Name="CancelLocalRepairButton" Content="Cancel Repair" Width="130" Margin="0,0,8,8" Click="CancelModelDownload_OnClick" />
+                                    <Button x:Name="RepairLocalModeButton" Content="Complete Setup" Width="150" Margin="0,0,8,8" Click="RepairLocalMode_OnClick" />
+                                    <Button x:Name="CancelLocalRepairButton" Content="Cancel Setup" Width="130" Margin="0,0,8,8" Click="CancelModelDownload_OnClick" />
                                 </WrapPanel>
                             </StackPanel>
                         </Border>
@@ -187,9 +187,9 @@
                         <Border BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,16">
                             <StackPanel>
                                 <TextBlock Text="Manual Setup" FontSize="16" FontWeight="SemiBold" />
-                                <TextBlock Text="Whisper executable" FontWeight="SemiBold" Margin="0,10,0,6" />
+                                <TextBlock Text="Local engine executable" FontWeight="SemiBold" Margin="0,10,0,6" />
                                 <WrapPanel Margin="0,0,0,8">
-                                    <Button x:Name="InstallWhisperCliButton" Content="Install Whisper CLI" Width="150" Margin="0,0,8,8" Click="InstallWhisperCli_OnClick" />
+                                    <Button x:Name="InstallWhisperCliButton" Content="Install Local Engine" Width="150" Margin="0,0,8,8" Click="InstallWhisperCli_OnClick" />
                                     <Button Content="Open Tools Folder" Width="150" Margin="0,0,8,8" Click="OpenWhisperToolsFolder_OnClick" />
                                 </WrapPanel>
                                 <Grid>

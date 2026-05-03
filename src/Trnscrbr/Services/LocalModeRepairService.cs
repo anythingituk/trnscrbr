@@ -26,19 +26,19 @@ public sealed class LocalModeRepairService
         var preset = _modelDownload.FindPreset(settings.LocalWhisperModelPath, settings.LocalWhisperModelPresetId)
             ?? LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
 
-        progress?.Report("Checking whisper.cpp CLI...");
+        progress?.Report("Checking local dictation files...");
         if (!File.Exists(settings.LocalWhisperExecutablePath))
         {
             var cli = await _toolDownload.TryUseExistingLatestX64Async(cancellationToken);
             if (cli is null)
             {
-                progress?.Report("Installing whisper.cpp CLI...");
+                progress?.Report("Downloading local dictation files...");
                 cli = await _toolDownload.DownloadLatestX64Async(downloadProgress, cancellationToken);
-                steps.Add(new LocalModeRepairStep("CLI", "Installed whisper.cpp CLI."));
+                steps.Add(new LocalModeRepairStep("Engine", "Downloaded."));
             }
             else
             {
-                steps.Add(new LocalModeRepairStep("CLI", "Reused installed whisper.cpp CLI."));
+                steps.Add(new LocalModeRepairStep("Engine", "Already downloaded."));
             }
 
             settings.LocalWhisperExecutablePath = cli.ExecutablePath;
@@ -46,23 +46,23 @@ public sealed class LocalModeRepairService
         }
         else
         {
-            steps.Add(new LocalModeRepairStep("CLI", "Already configured."));
+            steps.Add(new LocalModeRepairStep("Engine", "Already configured."));
         }
 
-        progress?.Report($"Checking {preset.DisplayName} model...");
+        progress?.Report("Checking local dictation model...");
         var keepConfiguredModel = await CanKeepConfiguredModelAsync(settings, preset, cancellationToken);
         if (!keepConfiguredModel)
         {
             var model = await _modelDownload.TryUseExistingAsync(preset, cancellationToken);
             if (model is null)
             {
-                progress?.Report($"Downloading {preset.DisplayName}...");
+                progress?.Report("Downloading local dictation model...");
                 model = await _modelDownload.DownloadAsync(preset, downloadProgress, cancellationToken);
-                steps.Add(new LocalModeRepairStep("Model", $"Downloaded and verified {preset.DisplayName}."));
+                steps.Add(new LocalModeRepairStep("Model", "Downloaded and verified."));
             }
             else
             {
-                steps.Add(new LocalModeRepairStep("Model", $"Reused verified {preset.DisplayName}."));
+                steps.Add(new LocalModeRepairStep("Model", "Already downloaded and verified."));
             }
 
             settings.LocalWhisperModelPath = model.ModelPath;
@@ -76,11 +76,11 @@ public sealed class LocalModeRepairService
         settings.ProviderMode = "Local mode";
         settings.ProviderName = "Local";
         settings.ActiveEngine = "Local Whisper";
-        settings.LocalSetupSource = "Repair Local Mode";
+        settings.LocalSetupSource = "Complete Local Setup";
         settings.LocalSetupCompletedAt = DateTimeOffset.Now;
         steps.Add(new LocalModeRepairStep("Provider", "Local mode is active."));
 
-        return new LocalModeRepairResult("Local mode repaired.", steps);
+        return new LocalModeRepairResult("Setup completed.", steps);
     }
 
     private async Task<bool> CanKeepConfiguredModelAsync(

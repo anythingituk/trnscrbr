@@ -28,7 +28,7 @@ public static class LocalSetupErrorFormatter
         {
             if (IsDiskSpaceError(ioException))
             {
-                return "There is not enough free disk space for the local model or CLI download.";
+                return "There is not enough free disk space for the local dictation download.";
             }
 
             return "A local file could not be read or written. Close any app using the file and try again.";
@@ -44,12 +44,12 @@ public static class LocalSetupErrorFormatter
             if (message.Contains("whisper-cli.exe", StringComparison.OrdinalIgnoreCase)
                 || message.Contains("archive", StringComparison.OrdinalIgnoreCase))
             {
-                return "The downloaded whisper.cpp archive did not contain the expected Windows CLI. Try again later or browse to an existing whisper-cli.exe.";
+                return "The downloaded local engine package did not contain the expected Windows app file. Try again later or browse to an existing local engine executable.";
             }
 
             if (message.Contains("exit code", StringComparison.OrdinalIgnoreCase))
             {
-                return "whisper.cpp started but failed. Check that the model matches whisper.cpp and that required DLL files are next to whisper-cli.exe.";
+                return "The local engine started but failed. Check that the selected model matches the local engine and that the required files are in the same folder.";
             }
         }
 

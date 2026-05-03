@@ -81,7 +81,7 @@ public partial class AdvancedSettingsWindow : Window
         SettingsTabControl.SelectedItem = LocalModelsTab;
         LocalModeStatusText.Text = IsLocalModeConfigured()
             ? "Local Whisper is configured. Click Use Local Mode to make it active."
-            : "Click Free Quick Setup to install the local CLI, download a verified model, and enable free local dictation.";
+            : "Click Free Quick Setup to download the files needed for free local dictation.";
     }
 
     private bool BeginLocalOperation(string operationName)
@@ -314,7 +314,7 @@ public partial class AdvancedSettingsWindow : Window
 
         var preset = LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
         var choice = System.Windows.MessageBox.Show(
-            $"Free quick setup will install the official x64 whisper.cpp CPU CLI and download {preset.DisplayName} ({preset.DiskSize}).\n\nContinue?",
+            $"Free quick setup will download the files needed for local dictation ({preset.DisplayName}, {preset.DiskSize}).\n\nContinue?",
             "Trnscrbr",
             MessageBoxButton.YesNo,
             MessageBoxImage.Information);
@@ -333,29 +333,29 @@ public partial class AdvancedSettingsWindow : Window
         {
             var setupSummary = new List<string>();
 
-            LocalModeStatusText.Text = "Checking existing whisper.cpp CLI...";
+            LocalModeStatusText.Text = "Checking local dictation files...";
             var cli = await _localWhisperToolDownload.TryUseExistingLatestX64Async(_modelDownloadCancellation.Token);
             if (cli is null)
             {
-                LocalModeStatusText.Text = "Installing whisper.cpp CLI...";
+                LocalModeStatusText.Text = "Downloading local dictation files...";
                 cli = await _localWhisperToolDownload.DownloadLatestX64Async(
-                    new Progress<double>(value => LocalModeStatusText.Text = $"Installing whisper.cpp CLI: {value:P0}"),
+                    new Progress<double>(value => LocalModeStatusText.Text = $"Downloading setup files: {value:P0}"),
                     _modelDownloadCancellation.Token);
-                setupSummary.Add("installed CLI");
+                setupSummary.Add("downloaded required files");
             }
             else
             {
-                setupSummary.Add("CLI already installed");
+                setupSummary.Add("required files already downloaded");
             }
 
-            LocalModeStatusText.Text = $"Checking existing {preset.DisplayName} model...";
+            LocalModeStatusText.Text = "Checking local dictation model...";
             var model = await _localModelDownload.TryUseExistingAsync(preset, _modelDownloadCancellation.Token);
             if (model is null)
             {
-                LocalModeStatusText.Text = $"Downloading {preset.DisplayName}...";
+                LocalModeStatusText.Text = "Downloading local dictation model...";
                 model = await _localModelDownload.DownloadAsync(
                     preset,
-                    new Progress<double>(value => LocalModeStatusText.Text = $"Downloading {preset.DisplayName}: {value:P0}"),
+                    new Progress<double>(value => LocalModeStatusText.Text = $"Downloading model: {value:P0}"),
                     _modelDownloadCancellation.Token);
                 setupSummary.Add("downloaded model");
             }
@@ -378,7 +378,7 @@ public partial class AdvancedSettingsWindow : Window
             RefreshLocalModels();
             RefreshLocalModeStatus();
             UpdateProviderModeStatus();
-            var readyMessage = $"Free local mode is ready: {string.Join(", ", setupSummary)}. Next, click Try Test Phrase to confirm your microphone and local transcription.";
+            var readyMessage = $"Setup completed: {string.Join(", ", setupSummary)}. Next, click Try Test Phrase to confirm your microphone and local transcription.";
             LocalModeStatusText.Text = readyMessage;
             LocalTestStatusText.Text = readyMessage;
             QuickSetupNextStepText.Text = "Ready. Click Try Test Phrase, speak for 5 seconds, then check the transcript below.";
@@ -401,7 +401,7 @@ public partial class AdvancedSettingsWindow : Window
 
     private async void RepairLocalMode_OnClick(object sender, RoutedEventArgs e)
     {
-        if (!BeginLocalOperation("Repairing local mode..."))
+        if (!BeginLocalOperation("Completing local setup..."))
         {
             return;
         }
@@ -420,7 +420,7 @@ public partial class AdvancedSettingsWindow : Window
             });
             var downloadProgress = new Progress<double>(value =>
             {
-                LocalModeStatusText.Text = $"Repairing local mode: {value:P0}";
+                LocalModeStatusText.Text = $"Downloading setup files: {value:P0}";
             });
 
             var result = await _localModeRepair.RepairAsync(
@@ -434,18 +434,18 @@ public partial class AdvancedSettingsWindow : Window
             RefreshLocalModels();
             RefreshLocalModeStatus();
             UpdateProviderModeStatus();
-            LocalModeStatusText.Text = $"{FormatRepairResult(result)} Next, click Try Test Phrase to confirm it works.";
+            LocalModeStatusText.Text = $"{result.Message} Next, click Try Test Phrase to confirm it works.";
             LocalTestStatusText.Text = LocalModeStatusText.Text;
-            QuickSetupNextStepText.Text = "Repair complete. Click Try Test Phrase, speak for 5 seconds, then check the transcript below.";
+            QuickSetupNextStepText.Text = "Setup completed. Click Try Test Phrase, speak for 5 seconds, then check the transcript below.";
         }
         catch (OperationCanceledException)
         {
-            LocalModeStatusText.Text = "Local mode repair cancelled. Partial downloads were kept so they can resume later.";
+            LocalModeStatusText.Text = "Setup cancelled. Partial downloads were kept so they can resume later.";
             LocalTestStatusText.Text = LocalModeStatusText.Text;
         }
         catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or IOException or InvalidOperationException or System.Text.Json.JsonException)
         {
-            LocalModeStatusText.Text = LocalSetupErrorFormatter.Format("Local mode repair failed", ex);
+            LocalModeStatusText.Text = LocalSetupErrorFormatter.Format("Setup could not finish", ex);
             _diagnosticLog.Error("Local mode repair failed", ex);
         }
         finally
@@ -516,14 +516,6 @@ public partial class AdvancedSettingsWindow : Window
         }
     }
 
-    private static string FormatRepairResult(LocalModeRepairResult result)
-    {
-        var details = string.Join(" ", result.Steps.Select(step => $"{step.Name}: {step.Detail}"));
-        return string.IsNullOrWhiteSpace(details)
-            ? result.Message
-            : $"{result.Message} {details}";
-    }
-
     private void CancelModelDownload_OnClick(object sender, RoutedEventArgs e)
     {
         _modelDownloadCancellation?.Cancel();
@@ -561,7 +553,7 @@ public partial class AdvancedSettingsWindow : Window
                 return;
             }
 
-            LocalModeStatusText.Text = $"Model failed verification: {preset.DisplayName}. Click Download Model to repair it.";
+            LocalModeStatusText.Text = $"Model failed verification: {preset.DisplayName}. Click Download Model to download it again.";
         }
         catch (Exception ex) when (ex is System.IO.IOException or UnauthorizedAccessException)
         {
@@ -582,15 +574,15 @@ public partial class AdvancedSettingsWindow : Window
 
     private async void InstallWhisperCli_OnClick(object sender, RoutedEventArgs e)
     {
-        if (!BeginLocalOperation("Downloading whisper.cpp CLI..."))
+        if (!BeginLocalOperation("Downloading local engine..."))
         {
             return;
         }
 
-        LocalModeStatusText.Text = "Downloading whisper.cpp CLI...";
+        LocalModeStatusText.Text = "Downloading local engine...";
         var progress = new Progress<double>(value =>
         {
-            LocalModeStatusText.Text = $"Downloading whisper.cpp CLI: {value:P0}";
+            LocalModeStatusText.Text = $"Downloading local engine: {value:P0}";
         });
 
         try
@@ -598,18 +590,18 @@ public partial class AdvancedSettingsWindow : Window
             var cli = await _localWhisperToolDownload.DownloadLatestX64Async(progress);
             _state.Settings.LocalWhisperExecutablePath = cli.ExecutablePath;
             _state.Settings.LocalWhisperCliVersion = cli.Version;
-            _state.Settings.LocalSetupSource = "Manual CLI install";
+            _state.Settings.LocalSetupSource = "Manual local engine install";
             _state.Settings.LocalSetupCompletedAt = DateTimeOffset.Now;
             Persist();
             RefreshOverview();
             RefreshLocalModels();
             RefreshLocalModeStatus();
             UpdateProviderModeStatus();
-            LocalModeStatusText.Text = "Installed and verified whisper.cpp CLI.";
+            LocalModeStatusText.Text = "Local engine installed and verified.";
         }
         catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or System.IO.IOException or InvalidOperationException or System.Text.Json.JsonException)
         {
-            LocalModeStatusText.Text = LocalSetupErrorFormatter.Format("Could not install whisper.cpp CLI", ex);
+            LocalModeStatusText.Text = LocalSetupErrorFormatter.Format("Could not install local engine", ex);
             _diagnosticLog.Error("Whisper CLI install failed", ex);
         }
         finally
@@ -620,7 +612,7 @@ public partial class AdvancedSettingsWindow : Window
 
     private async void CheckWhisperCliUpdate_OnClick(object sender, RoutedEventArgs e)
     {
-        if (!BeginLocalOperation("Checking whisper.cpp CLI release..."))
+        if (!BeginLocalOperation("Checking local engine update..."))
         {
             return;
         }
@@ -632,7 +624,7 @@ public partial class AdvancedSettingsWindow : Window
         }
         catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or TaskCanceledException or System.Text.Json.JsonException)
         {
-            LocalModeStatusText.Text = LocalSetupErrorFormatter.Format("Could not check whisper.cpp CLI update", ex);
+            LocalModeStatusText.Text = LocalSetupErrorFormatter.Format("Could not check local engine update", ex);
             _diagnosticLog.Error("Whisper CLI update check failed", ex);
         }
         finally
@@ -1020,8 +1012,8 @@ public partial class AdvancedSettingsWindow : Window
         var isReady = hasCli && hasModel && _state.Settings.ProviderMode == "Local mode";
         var badgeText = (hasCli, hasModel, _state.Settings.ProviderMode) switch
         {
-            (false, _, _) => "Missing CLI",
-            (_, false, _) => "Missing model",
+            (false, _, _) => "Download needed",
+            (_, false, _) => "Download needed",
             (true, true, "Local mode") => "Ready",
             _ => "Configured, not active"
         };

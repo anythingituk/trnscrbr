@@ -47,7 +47,7 @@ public sealed class LocalWhisperToolDownloadService
                 false,
                 installedVersion,
                 release.TagName,
-                "The latest whisper.cpp release does not include a Windows x64 CLI asset.");
+                "The latest local engine release does not include a Windows x64 download.");
         }
 
         if (string.IsNullOrWhiteSpace(installedVersion))
@@ -56,7 +56,7 @@ public sealed class LocalWhisperToolDownloadService
                 true,
                 installedVersion,
                 release.TagName,
-                $"whisper.cpp {release.TagName} is available. Click Install Whisper CLI to install it.");
+                $"Local engine {release.TagName} is available. Click Install Local Engine to install it.");
         }
 
         if (!TryParseVersion(installedVersion, out var installed)
@@ -68,8 +68,8 @@ public sealed class LocalWhisperToolDownloadService
                 installedVersion,
                 release.TagName,
                 isDifferent
-                    ? $"Installed: {installedVersion}. Latest: {release.TagName}. Click Install Whisper CLI to update."
-                    : $"Installed whisper.cpp CLI is current: {release.TagName}.");
+                    ? $"Installed: {installedVersion}. Latest: {release.TagName}. Click Install Local Engine to update."
+                    : $"Local engine is current: {release.TagName}.");
         }
 
         return latest > installed
@@ -77,12 +77,12 @@ public sealed class LocalWhisperToolDownloadService
                 true,
                 installedVersion,
                 release.TagName,
-                $"whisper.cpp CLI update available: {release.TagName}. Click Install Whisper CLI to update.")
+                $"Local engine update available: {release.TagName}. Click Install Local Engine to update.")
             : new LocalWhisperToolUpdateResult(
                 false,
                 installedVersion,
                 release.TagName,
-                $"Installed whisper.cpp CLI is current: {installedVersion}.");
+                $"Local engine is current: {installedVersion}.");
     }
 
     public async Task<LocalWhisperToolInstallResult> DownloadLatestX64Async(
