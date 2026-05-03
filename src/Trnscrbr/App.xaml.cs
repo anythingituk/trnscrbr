@@ -98,7 +98,7 @@ public partial class App : System.Windows.Application
 
         if (!settings.OnboardingCompleted)
         {
-            ShowOnboarding();
+            ShowInitialTrayPanel(appState);
         }
     }
 
@@ -434,6 +434,17 @@ public partial class App : System.Windows.Application
 
         _onboarding.Show();
         _onboarding.Activate();
+    }
+
+    private void ShowInitialTrayPanel(AppStateViewModel state)
+    {
+        Dispatcher.BeginInvoke(() =>
+        {
+            state.Settings.OnboardingCompleted = true;
+            _settingsStore?.Save(state.Settings);
+            state.RaiseSettingsChanged();
+            ShowTrayPanel();
+        }, DispatcherPriority.ApplicationIdle);
     }
 
     private void ShowAdvancedSettings()
