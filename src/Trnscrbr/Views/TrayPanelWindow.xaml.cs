@@ -20,6 +20,7 @@ public partial class TrayPanelWindow : Window
     private readonly LocalProviderService _localProvider;
     private readonly LocalTestPhraseService _localTestPhrase;
     private readonly DiagnosticLogService _diagnosticLog;
+    private readonly UsageStatsService _usageStats;
     private readonly CredentialStore _credentialStore = new();
     private readonly LocalModelDownloadService _localModelDownload = new();
     private readonly LocalWhisperToolDownloadService _localWhisperToolDownload = new();
@@ -51,6 +52,7 @@ public partial class TrayPanelWindow : Window
         _localProvider = localProvider;
         _localTestPhrase = new LocalTestPhraseService(audioCapture, localProvider);
         _diagnosticLog = diagnosticLog;
+        _usageStats = usageStats;
         _getMicrophones = getMicrophones;
         DataContext = state;
         _showAdvanced = showAdvanced;
@@ -67,6 +69,7 @@ public partial class TrayPanelWindow : Window
         RefreshMicrophones();
         RefreshLocalModels();
         RefreshHotkeySummary();
+        RefreshCostWarning();
         UpdateLayout();
         var panelHeight = GetPlacementHeight();
         Left = Math.Max(area.Left + 8, area.Right - Width - trayOverflowAvoidanceWidth);
@@ -192,6 +195,7 @@ public partial class TrayPanelWindow : Window
             {
                 RefreshLocalModels();
                 RefreshHotkeySummary();
+                RefreshCostWarning();
             });
         }
     }
@@ -201,6 +205,31 @@ public partial class TrayPanelWindow : Window
         HotkeySummaryText.Text = _state.Settings.GlobalHotkeysEnabled
             ? $"Hotkeys: toggle {FormatHotkey(_state.Settings.ToggleRecordingHotkey)}; push-to-talk {FormatHotkey(_state.Settings.PushToTalkHotkey)}."
             : "Global hotkeys disabled. Use tray controls.";
+    }
+
+    private void RefreshCostWarning()
+    {
+        CostWarningPanel.Visibility = Visibility.Collapsed;
+
+        if (!string.Equals(_state.Settings.ProviderMode, "Bring your own API key", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var threshold = (double)_state.Settings.MonthlyCostWarning;
+        if (threshold <= 0)
+        {
+            return;
+        }
+
+        var month = _usageStats.GetCurrentMonth();
+        if (month.EstimatedCostUsd < threshold)
+        {
+            return;
+        }
+
+        CostWarningText.Text = $"OpenAI monthly estimate ${month.EstimatedCostUsd:0.00} has reached your ${threshold:0.00} warning.";
+        CostWarningPanel.Visibility = Visibility.Visible;
     }
 
     private void RefreshLocalModels()

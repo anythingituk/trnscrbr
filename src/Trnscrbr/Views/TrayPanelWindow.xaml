@@ -140,6 +140,19 @@
                       AutomationProperties.Name="Microphone"
                       SelectionChanged="Microphone_OnSelectionChanged" />
 
+            <Border x:Name="CostWarningPanel"
+                    Background="{StaticResource StatusBackgroundBrush}"
+                    BorderBrush="{StaticResource AccentBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="10,7"
+                    Margin="0,0,0,10"
+                    Visibility="Collapsed">
+                <TextBlock x:Name="CostWarningText"
+                           TextWrapping="Wrap"
+                           Foreground="{StaticResource AccentBrush}" />
+            </Border>
+
             <TextBlock x:Name="HotkeySummaryText"
                        TextWrapping="Wrap"
                        Foreground="{StaticResource MutedForegroundBrush}"
