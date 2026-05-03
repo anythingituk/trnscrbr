@@ -15,31 +15,31 @@ public sealed class LocalModelDownloadService
     [
         new(
             "small",
-            "Small - base.en",
+            "Small - recommended, fastest",
             "ggml-base.en.bin",
             "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin",
             "137c40403d78fd54d454da0f9bd998f78703390c",
             "142 MiB",
             "4 GB RAM",
-            "Fastest practical English preset for older or low-power PCs."),
+            "Best default for free local dictation. Fastest on most PCs, with good English accuracy."),
         new(
             "medium",
-            "Medium - small.en",
+            "Medium - slower, more accurate",
             "ggml-small.en.bin",
             "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.en.bin",
             "db8a495a91d927739e50b3fc1cc4c6b8f6c2d022",
             "466 MiB",
             "8 GB RAM",
-            "Better English accuracy while staying manageable for most laptops."),
+            "Better English accuracy, but noticeably slower on many PCs."),
         new(
             "large",
-            "Large - large-v3-turbo-q5_0",
+            "Large - slowest, best quality",
             "ggml-large-v3-turbo-q5_0.bin",
             "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin",
             "e050f7970618a659205450ad97eb95a18d69c9ee",
             "547 MiB",
             "8-16 GB RAM",
-            "Highest quality preset that remains realistic for a free local MVP.")
+            "Best quality option, but can be very slow without a powerful PC.")
     ];
 
     public string ModelsDirectory { get; } = Path.Combine(

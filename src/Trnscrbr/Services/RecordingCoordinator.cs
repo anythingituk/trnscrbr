@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Windows.Threading;
 using Trnscrbr.ViewModels;
 using Trnscrbr.Views;
@@ -244,6 +245,11 @@ public sealed class RecordingCoordinator
         _state.RecordingState = RecordingState.Processing;
         _state.StatusMessage = "Transcribing";
         _floatingButton.ShowNearTaskbar();
+        var processingStopwatch = Stopwatch.StartNew();
+        var slowLocalNoticeShown = false;
+        var slowLocalTimer = useLocalMode
+            ? CreateSlowLocalTranscriptionTimer(processingStopwatch, () => slowLocalNoticeShown = true)
+            : null;
         _diagnosticLog.Info("Processing recording", new Dictionary<string, string>
         {
             ["duration"] = recordedAudio.Duration.TotalSeconds.ToString("0.00"),
@@ -316,9 +322,13 @@ public sealed class RecordingCoordinator
             var threshold = (double)_state.Settings.MonthlyCostWarning;
             if (!isVoiceAction)
             {
-                _state.StatusMessage = threshold > 0 && currentMonth.EstimatedCostUsd >= threshold
+                var insertedMessage = threshold > 0 && currentMonth.EstimatedCostUsd >= threshold
                     ? $"Inserted transcript. Monthly estimate ${currentMonth.EstimatedCostUsd:0.00}."
                     : $"Inserted transcript ({usage.Last.WordsPerMinute:0} wpm)";
+
+                _state.StatusMessage = useLocalMode && ShouldShowLocalSpeedTip(processingStopwatch.Elapsed, slowLocalNoticeShown)
+                    ? $"{insertedMessage} Tip: Small is faster for local AI."
+                    : insertedMessage;
             }
 
             _floatingButton.ShowTransient();
@@ -342,8 +352,42 @@ public sealed class RecordingCoordinator
         }
         finally
         {
+            slowLocalTimer?.Stop();
             _audioCapture.DeleteRecording(recordedAudio);
         }
+    }
+
+    private DispatcherTimer CreateSlowLocalTranscriptionTimer(Stopwatch stopwatch, Action markNoticeShown)
+    {
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(8) };
+        timer.Tick += (_, _) =>
+        {
+            if (_state.RecordingState != RecordingState.Processing)
+            {
+                timer.Stop();
+                return;
+            }
+
+            if (stopwatch.Elapsed < TimeSpan.FromSeconds(20))
+            {
+                return;
+            }
+
+            markNoticeShown();
+            _state.StatusMessage = "Still transcribing with local AI. Larger models can take longer on this PC.";
+        };
+        timer.Start();
+        return timer;
+    }
+
+    private bool ShouldShowLocalSpeedTip(TimeSpan elapsed, bool slowLocalNoticeShown)
+    {
+        if (!slowLocalNoticeShown && elapsed < TimeSpan.FromSeconds(30))
+        {
+            return false;
+        }
+
+        return !string.Equals(_state.Settings.LocalWhisperModelPresetId, "small", StringComparison.OrdinalIgnoreCase);
     }
 
     private void ShowProviderRequired()

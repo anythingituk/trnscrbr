@@ -302,7 +302,7 @@ public partial class AdvancedSettingsWindow : Window
             return;
         }
 
-        ModelPresetDescriptionText.Text = $"{preset.Description} Download: {preset.DiskSize}. Recommended: {preset.RamRecommendation}.";
+        ModelPresetDescriptionText.Text = $"{preset.Description} Download: {preset.DiskSize}. Recommended memory: {preset.RamRecommendation}.";
     }
 
     private async void QuickSetupLocal_OnClick(object sender, RoutedEventArgs e)
