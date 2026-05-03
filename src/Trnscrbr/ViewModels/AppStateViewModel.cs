@@ -63,9 +63,13 @@ public sealed class AppStateViewModel : INotifyPropertyChanged
         ? File.Exists(Settings.LocalWhisperExecutablePath) && File.Exists(Settings.LocalWhisperModelPath)
         : Settings.ProviderMode != "Not configured" && Settings.ActiveEngine != "None";
 
-    public string ActiveEngineLabel => Settings.ActiveEngine == "None"
-        ? "No engine configured"
-        : Settings.ActiveEngine;
+    public string ActiveEngineLabel => Settings.ActiveEngine switch
+    {
+        "None" => "No engine configured",
+        "Local Whisper" => "Local AI",
+        "Local AI" => "Local AI",
+        _ => Settings.ActiveEngine
+    };
 
     public void RaiseSettingsChanged()
     {

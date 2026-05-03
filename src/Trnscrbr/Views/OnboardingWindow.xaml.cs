@@ -32,7 +32,7 @@ public partial class OnboardingWindow : Window
     {
         _state.Settings.ProviderMode = "Local mode";
         _state.Settings.ProviderName = "Local";
-        _state.Settings.ActiveEngine = "Local Whisper";
+        _state.Settings.ActiveEngine = "Local AI";
         CompleteOnboarding();
         Close();
         _showLocalSetup();

@@ -31,12 +31,12 @@ public sealed class LocalProviderService
     {
         if (!File.Exists(state.Settings.LocalWhisperExecutablePath))
         {
-            return ProviderTestResult.Fail("Choose a whisper.cpp executable before using local mode.");
+            return ProviderTestResult.Fail("Choose a local engine before using local mode.");
         }
 
         if (!File.Exists(state.Settings.LocalWhisperModelPath))
         {
-            return ProviderTestResult.Fail("Choose a Whisper model file before using local mode.");
+            return ProviderTestResult.Fail("Choose a local AI model before using local mode.");
         }
 
         if (string.IsNullOrWhiteSpace(state.Settings.LocalLlmModel))
@@ -49,12 +49,12 @@ public sealed class LocalProviderService
             var models = await ListLocalLlmModelsAsync(state.Settings.LocalLlmEndpoint, cancellationToken);
             return models.Any(model => string.Equals(model, state.Settings.LocalLlmModel, StringComparison.OrdinalIgnoreCase))
                 ? ProviderTestResult.Success()
-                : ProviderTestResult.Fail("Whisper is configured, but the selected Ollama cleanup model was not found.");
+                : ProviderTestResult.Fail("Local AI is configured, but the selected cleanup model was not found.");
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException or UriFormatException)
         {
             _diagnosticLog?.Error("Local LLM test failed", ex);
-            return ProviderTestResult.Fail($"Whisper is configured, but Ollama cleanup could not be reached: {LocalSetupErrorFormatter.GetUserMessage(ex)}");
+            return ProviderTestResult.Fail($"Local AI is configured, but cleanup could not be reached: {LocalSetupErrorFormatter.GetUserMessage(ex)}");
         }
     }
 
@@ -64,7 +64,7 @@ public sealed class LocalProviderService
     {
         if (!IsConfigured(state))
         {
-            return ProviderTestResult.Fail("Choose a whisper.cpp executable and Whisper model before running the smoke test.");
+            return ProviderTestResult.Fail("Choose a local engine and local AI model before running the test.");
         }
 
         var audioPath = Path.Combine(
@@ -87,13 +87,13 @@ public sealed class LocalProviderService
                 allowEmptyTranscript: true);
 
             return string.IsNullOrWhiteSpace(transcript)
-                ? ProviderTestResult.Success("Whisper runtime test passed. The generated test audio produced no transcript, which is expected.")
-                : ProviderTestResult.Success("Whisper runtime test passed. Generated test audio produced a short transcript, which can happen and is not a quality check.");
+                ? ProviderTestResult.Success("Local AI test passed. The generated test audio produced no transcript, which is expected.")
+                : ProviderTestResult.Success("Local AI test passed. Generated test audio produced a short transcript, which can happen and is not a quality check.");
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
         {
             _diagnosticLog?.Error("Local Whisper smoke test failed", ex);
-            return ProviderTestResult.Fail(LocalSetupErrorFormatter.Format("Whisper runtime test failed", ex));
+            return ProviderTestResult.Fail(LocalSetupErrorFormatter.Format("Local AI test failed", ex));
         }
         finally
         {
@@ -142,7 +142,7 @@ public sealed class LocalProviderService
     {
         if (!IsConfigured(state))
         {
-            throw new InvalidOperationException("Local mode requires a whisper.cpp executable path and model path in Settings.");
+            throw new InvalidOperationException("Local mode requires a local engine path and model path in Settings.");
         }
 
         var rawTranscript = await TranscribeAsync(audio, state, cancellationToken);
@@ -168,7 +168,7 @@ public sealed class LocalProviderService
     {
         if (!IsConfigured(state))
         {
-            throw new InvalidOperationException("Local mode requires a whisper.cpp executable path and model path in Settings.");
+            throw new InvalidOperationException("Local mode requires a local engine path and model path in Settings.");
         }
 
         return await TranscribeAsync(audio, state, cancellationToken);
@@ -218,7 +218,7 @@ public sealed class LocalProviderService
             }
 
             using var process = Process.Start(startInfo)
-                ?? throw new InvalidOperationException("Could not start local Whisper process.");
+                ?? throw new InvalidOperationException("Could not start local AI process.");
 
             var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
             var stderrTask = process.StandardError.ReadToEndAsync(cancellationToken);
@@ -243,7 +243,7 @@ public sealed class LocalProviderService
                     ["exitCode"] = process.ExitCode.ToString(),
                     ["stderr"] = TrimForLog(stderr)
                 });
-                throw new InvalidOperationException($"Local Whisper failed with exit code {process.ExitCode}.");
+                throw new InvalidOperationException($"Local AI failed with exit code {process.ExitCode}.");
             }
 
             var transcript = File.Exists(outputTextPath)

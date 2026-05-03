@@ -75,7 +75,7 @@ public sealed class LocalModeRepairService
 
         settings.ProviderMode = "Local mode";
         settings.ProviderName = "Local";
-        settings.ActiveEngine = "Local Whisper";
+        settings.ActiveEngine = "Local AI";
         settings.LocalSetupSource = "Complete Local Setup";
         settings.LocalSetupCompletedAt = DateTimeOffset.Now;
         steps.Add(new LocalModeRepairStep("Provider", "Local mode is active."));

@@ -200,9 +200,9 @@
                                     <TextBox Text="{Binding Settings.LocalWhisperExecutablePath, UpdateSourceTrigger=PropertyChanged}" />
                                     <Button x:Name="BrowseWhisperExecutableButton" Grid.Column="1" Content="Browse" Margin="8,0,0,0" Click="BrowseWhisperExecutable_OnClick" />
                                 </Grid>
-                                <TextBlock Text="Example: C:\Tools\whisper.cpp\whisper-cli.exe" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
+                                <TextBlock Text="Example: C:\Tools\LocalAI\local-engine.exe" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
 
-                                <TextBlock Text="Download a Whisper model" FontWeight="SemiBold" Margin="0,6,0,6" />
+                                <TextBlock Text="Download a local AI model" FontWeight="SemiBold" Margin="0,6,0,6" />
                                 <ComboBox x:Name="ModelPresetComboBox"
                                           DisplayMemberPath="DisplayName"
                                           SelectionChanged="ModelPreset_OnSelectionChanged" />
@@ -216,7 +216,7 @@
                                     <Button x:Name="RemoveModelButton" Content="Remove Model" Width="130" Margin="0,0,8,8" Click="RemoveModel_OnClick" />
                                     <Button Content="Open Folder" Width="120" Margin="0,0,8,8" Click="OpenModelsFolder_OnClick" />
                                 </WrapPanel>
-                                <TextBlock Text="Whisper model" FontWeight="SemiBold" Margin="0,6,0,6" />
+                                <TextBlock Text="Local AI model" FontWeight="SemiBold" Margin="0,6,0,6" />
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*" />
@@ -261,7 +261,7 @@
                             <TextBlock Text="Default: http://localhost:11434/api/chat" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
                             <TextBlock Text="Ollama cleanup model" FontWeight="SemiBold" Margin="0,6,0,6" />
                             <TextBox Text="{Binding Settings.LocalLlmModel, UpdateSourceTrigger=PropertyChanged}" />
-                            <TextBlock Text="Leave blank to insert the raw local Whisper transcript without LLM cleanup." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
+                            <TextBlock Text="Leave blank to insert the raw local AI transcript without cleanup." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
                             <Button x:Name="DetectOllamaModelsButton" Content="Detect Ollama Models" Width="160" HorizontalAlignment="Left" Margin="0,4,0,0" Click="DetectOllamaModels_OnClick" />
                         </StackPanel>
                     </StackPanel>

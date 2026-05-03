@@ -55,7 +55,7 @@ public sealed class LocalTestPhraseService
             return string.IsNullOrWhiteSpace(transcript)
                 ? new LocalTestPhraseResult(
                     true,
-                    "Local test completed, but Whisper returned an empty transcript. Try speaking louder or choosing a larger model.",
+                    "Local test completed, but local AI returned an empty transcript. Try speaking louder or choosing a larger model.",
                     string.Empty,
                     false)
                 : new LocalTestPhraseResult(

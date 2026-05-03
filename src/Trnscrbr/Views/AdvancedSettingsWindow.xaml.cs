@@ -80,7 +80,7 @@ public partial class AdvancedSettingsWindow : Window
     {
         SettingsTabControl.SelectedItem = LocalModelsTab;
         LocalModeStatusText.Text = IsLocalModeConfigured()
-            ? "Local Whisper is configured. Click Use Local Mode to make it active."
+            ? "Local AI is configured. Click Use Local Mode to make it active."
             : "Click Free Quick Setup to download the files needed for free local dictation.";
     }
 
@@ -219,7 +219,7 @@ public partial class AdvancedSettingsWindow : Window
         if (_state.Settings.ProviderMode == "Local mode")
         {
             _state.Settings.ProviderName = "Local";
-            _state.Settings.ActiveEngine = "Local Whisper";
+            _state.Settings.ActiveEngine = "Local AI";
         }
         else if (_state.Settings.ProviderMode == "Bring your own API key")
         {
@@ -372,7 +372,7 @@ public partial class AdvancedSettingsWindow : Window
             _state.Settings.LocalSetupCompletedAt = DateTimeOffset.Now;
             _state.Settings.ProviderMode = "Local mode";
             _state.Settings.ProviderName = "Local";
-            _state.Settings.ActiveEngine = "Local Whisper";
+            _state.Settings.ActiveEngine = "Local AI";
             Persist();
             RefreshOverview();
             RefreshLocalModels();
@@ -523,7 +523,7 @@ public partial class AdvancedSettingsWindow : Window
 
     private async void VerifyModel_OnClick(object sender, RoutedEventArgs e)
     {
-        if (!BeginLocalOperation("Verifying local Whisper model..."))
+        if (!BeginLocalOperation("Verifying local AI model..."))
         {
             return;
         }
@@ -733,7 +733,7 @@ public partial class AdvancedSettingsWindow : Window
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "Choose whisper.cpp executable",
+            Title = "Choose local engine executable",
             Filter = "Executable files (*.exe)|*.exe|All files (*.*)|*.*",
             FileName = string.IsNullOrWhiteSpace(_state.Settings.LocalWhisperExecutablePath)
                 ? "whisper-cli.exe"
@@ -756,8 +756,8 @@ public partial class AdvancedSettingsWindow : Window
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "Choose Whisper model",
-            Filter = "Whisper model files (*.bin;*.gguf)|*.bin;*.gguf|All files (*.*)|*.*"
+            Title = "Choose local AI model",
+            Filter = "Local AI model files (*.bin;*.gguf)|*.bin;*.gguf|All files (*.*)|*.*"
         };
 
         if (dialog.ShowDialog(this) != true)
@@ -793,12 +793,12 @@ public partial class AdvancedSettingsWindow : Window
 
     private async void RunLocalSmokeTest_OnClick(object sender, RoutedEventArgs e)
     {
-        if (!BeginLocalOperation("Running Whisper runtime smoke test..."))
+        if (!BeginLocalOperation("Running local AI test..."))
         {
             return;
         }
 
-        SetLocalTestStatus("Running Whisper runtime smoke test...");
+        SetLocalTestStatus("Running local AI test...");
         using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
         try
         {
@@ -807,7 +807,7 @@ public partial class AdvancedSettingsWindow : Window
         }
         catch (OperationCanceledException)
         {
-            SetLocalTestStatus("Whisper runtime smoke test timed out after 2 minutes.");
+            SetLocalTestStatus("Local AI test timed out after 2 minutes.");
         }
         finally
         {
@@ -876,14 +876,14 @@ public partial class AdvancedSettingsWindow : Window
 
         _state.Settings.ProviderMode = "Local mode";
         _state.Settings.ProviderName = "Local";
-        _state.Settings.ActiveEngine = "Local Whisper";
+        _state.Settings.ActiveEngine = "Local AI";
         Persist();
         RefreshOverview();
         RefreshLocalModeStatus();
         UpdateProviderModeStatus();
         LocalModeStatusText.Text = string.IsNullOrWhiteSpace(_state.Settings.LocalLlmModel)
-            ? "Local mode saved. Dictation will use local Whisper without LLM cleanup."
-            : "Local mode saved. Dictation will use local Whisper with Ollama cleanup.";
+            ? "Local mode saved. Dictation will use locally installed AI."
+            : "Local mode saved. Dictation will use locally installed AI with optional cleanup.";
     }
 
     private void CopyDiagnostics_OnClick(object sender, RoutedEventArgs e)
@@ -967,7 +967,7 @@ public partial class AdvancedSettingsWindow : Window
         var candidates = _localModelDiscovery.Discover();
         if (candidates.Count == 0)
         {
-            LocalModelsBox.Text = "No local candidates found in common Trnscrbr, Downloads, Documents, Models, Tools, Hugging Face, or Whisper cache folders.";
+            LocalModelsBox.Text = "No local AI files found in common Trnscrbr, Downloads, Documents, Models, Tools, or cache folders.";
             return;
         }
 
@@ -984,11 +984,11 @@ public partial class AdvancedSettingsWindow : Window
         {
             LocalModeStatusText.Text = _state.Settings.ProviderMode == "Local mode"
                 ? "Local mode is active."
-                : "Local Whisper is configured. Click Use Local Mode to make it active.";
+                : "Local AI is configured. Click Use Local Mode to make it active.";
             return;
         }
 
-        LocalModeStatusText.Text = "Choose a whisper.cpp executable and Whisper model file to enable free local dictation.";
+        LocalModeStatusText.Text = "Choose a local engine and local AI model to enable free local dictation.";
     }
 
     private void RefreshLocalInstallSummary()
@@ -1000,7 +1000,7 @@ public partial class AdvancedSettingsWindow : Window
         var hasModel = File.Exists(modelPath);
 
         LocalCliSummaryText.Text = hasCli
-            ? $"{FormatOptional(_state.Settings.LocalWhisperCliVersion)} - {RedactPath(cliPath)}"
+            ? $"{FormatOptional(_state.Settings.LocalWhisperCliVersion)} - installed"
             : "Not installed";
         LocalModelSummaryText.Text = hasModel
             ? $"{modelPreset?.DisplayName ?? "Custom model"} - {RedactPath(modelPath)}"
@@ -1132,7 +1132,7 @@ public partial class AdvancedSettingsWindow : Window
 
         OverviewProviderText.Text = _state.Settings.ProviderMode;
         OverviewEngineText.Text = _state.Settings.ProviderMode == "Local mode" && !string.IsNullOrWhiteSpace(_state.Settings.LocalWhisperCliVersion)
-            ? $"{_state.ActiveEngineLabel} {_state.Settings.LocalWhisperCliVersion}"
+            ? _state.ActiveEngineLabel
             : _state.ActiveEngineLabel;
         OverviewUsageText.Text = threshold > 0 && cost >= (double)threshold
             ? $"{month.Recordings} dictations, ${cost:0.00} of ${threshold:0.00}"
@@ -1147,8 +1147,8 @@ public partial class AdvancedSettingsWindow : Window
                 ? "OpenAI API key is stored. Trnscrbr can transcribe using your API account."
                 : "Add an OpenAI API key on the Provider tab before dictation will work.",
             "Local mode" => IsLocalModeConfigured()
-                ? "Local mode is configured. Trnscrbr will use local Whisper transcription and optional local LLM cleanup."
-                : "Local mode needs a whisper.cpp executable path and model path on the Local Models tab.",
+                ? "Local mode is configured. Trnscrbr will use locally installed AI."
+                : "Local mode needs a local engine and model on the Local Models tab.",
             "Cloud managed by app (planned)" => "Cloud managed by app is planned for a later paid/free-tier model and is not available yet.",
             _ => "Choose a provider now or skip and configure one later."
         };

@@ -350,7 +350,7 @@ public sealed class RecordingCoordinator
     {
         _state.RecordingState = RecordingState.Error;
         _state.StatusMessage = string.Equals(_state.Settings.ProviderMode, "Local mode", StringComparison.OrdinalIgnoreCase)
-            ? "Local Whisper setup required. Right-click for Settings."
+            ? "Local AI setup required. Right-click for Settings."
             : "Provider required. Right-click for Settings.";
         _floatingButton.ShowNearTaskbar();
     }

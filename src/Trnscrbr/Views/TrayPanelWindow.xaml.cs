@@ -287,7 +287,7 @@ public partial class TrayPanelWindow : Window
         {
             LocalReadinessPanel.Background = (System.Windows.Media.Brush)FindResource("StatusBackgroundBrush");
             LocalReadinessTitleText.Text = "Local mode ready";
-            LocalReadinessDetailText.Text = $"Using {_state.ActiveEngineLabel}. Dictation is free and private.";
+            LocalReadinessDetailText.Text = "Using locally installed AI. Dictation is free and private.";
             LocalReadinessActionButton.Content = "Details";
             LocalReadinessTestButton.IsEnabled = true;
             return;

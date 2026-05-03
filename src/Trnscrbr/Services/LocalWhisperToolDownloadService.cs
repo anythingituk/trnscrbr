@@ -95,7 +95,7 @@ public sealed class LocalWhisperToolDownloadService
 
         if (asset is null)
         {
-            throw new InvalidOperationException("The latest whisper.cpp release does not include whisper-bin-x64.zip.");
+            throw new InvalidOperationException("The latest local engine release does not include a Windows x64 download.");
         }
 
         Directory.CreateDirectory(ToolsDirectory);
@@ -114,7 +114,7 @@ public sealed class LocalWhisperToolDownloadService
             && !await VerifySha256Async(zipPath, asset.Sha256, cancellationToken))
         {
             File.Delete(zipPath);
-            throw new InvalidOperationException("Downloaded whisper.cpp CLI failed checksum verification.");
+            throw new InvalidOperationException("Downloaded local engine failed checksum verification.");
         }
 
         if (Directory.Exists(releaseDirectory))
@@ -129,7 +129,7 @@ public sealed class LocalWhisperToolDownloadService
 
         if (discoveredCliPath is null)
         {
-            throw new InvalidOperationException("The whisper.cpp CLI archive did not contain whisper-cli.exe.");
+            throw new InvalidOperationException("The local engine archive did not contain the expected executable.");
         }
 
         progress?.Report(1);

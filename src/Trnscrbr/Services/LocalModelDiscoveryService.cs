@@ -137,7 +137,7 @@ public sealed class LocalModelDiscoveryService
                 name,
                 path,
                 root,
-                "Whisper executable"));
+                "Local engine"));
             return;
         }
 
@@ -147,7 +147,7 @@ public sealed class LocalModelDiscoveryService
                 name,
                 path,
                 root,
-                "Whisper model"));
+                "Local AI model"));
             return;
         }
 
