@@ -11,6 +11,7 @@ namespace Trnscrbr;
 
 public partial class App : System.Windows.Application
 {
+    private const string ShowMiniSettingsArgument = "--show-mini-settings";
     private Mutex? _singleInstanceMutex;
     private SingleInstanceService? _singleInstance;
     private AppSettingsStore? _settingsStore;
@@ -96,7 +97,7 @@ public partial class App : System.Windows.Application
             _floatingButton.ShowNearTaskbar();
         }
 
-        if (!settings.OnboardingCompleted)
+        if (ShouldShowMiniSettingsAfterStartup(e.Args, settings))
         {
             ShowInitialTrayPanel(appState);
         }
@@ -445,6 +446,12 @@ public partial class App : System.Windows.Application
             state.RaiseSettingsChanged();
             ShowTrayPanel();
         }, DispatcherPriority.ApplicationIdle);
+    }
+
+    private static bool ShouldShowMiniSettingsAfterStartup(string[] args, Models.AppSettings settings)
+    {
+        return args.Any(arg => string.Equals(arg, ShowMiniSettingsArgument, StringComparison.OrdinalIgnoreCase))
+            || !settings.OnboardingCompleted;
     }
 
     private void ShowAdvancedSettings()
