@@ -153,6 +153,28 @@
 
                         <Border BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,16">
                             <StackPanel>
+                                <TextBlock Text="Local AI model" FontSize="16" FontWeight="SemiBold" />
+                                <TextBlock Text="Small is recommended for most PCs. Medium and Large can be much slower." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
+                                <ComboBox x:Name="ModelPresetComboBox"
+                                          DisplayMemberPath="DisplayName"
+                                          SelectionChanged="ModelPreset_OnSelectionChanged" />
+                                <TextBlock x:Name="ModelPresetDescriptionText"
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource MutedForegroundBrush}"
+                                           Margin="0,4,0,8" />
+                                <WrapPanel Margin="0,0,0,8">
+                                    <Button x:Name="DownloadModelButton" Content="Download Model" Width="140" Margin="0,0,8,8" Click="DownloadModel_OnClick" />
+                                    <Button x:Name="CancelModelDownloadButton" Content="Cancel Download" Width="140" Margin="0,0,8,8" Click="CancelModelDownload_OnClick" />
+                                    <Button x:Name="RemoveModelButton" Content="Remove Model" Width="130" Margin="0,0,8,8" Click="RemoveModel_OnClick" />
+                                    <Button Content="Open Folder" Width="120" Margin="0,0,8,8" Click="OpenModelsFolder_OnClick" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Expander Header="Advanced local AI settings" Margin="0,0,0,16">
+                            <StackPanel Margin="0,12,0,0">
+                                <Border BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,16">
+                                    <StackPanel>
                                 <TextBlock Text="Installed Components" FontSize="16" FontWeight="SemiBold" />
                                 <Grid Margin="0,8,0,10">
                                     <Grid.ColumnDefinitions>
@@ -181,11 +203,11 @@
                                     <Button x:Name="RepairLocalModeButton" Content="Complete Setup" Width="150" Margin="0,0,8,8" Click="RepairLocalMode_OnClick" />
                                     <Button x:Name="CancelLocalRepairButton" Content="Cancel Setup" Width="130" Margin="0,0,8,8" Click="CancelModelDownload_OnClick" />
                                 </WrapPanel>
-                            </StackPanel>
-                        </Border>
+                                    </StackPanel>
+                                </Border>
 
-                        <Border BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,16">
-                            <StackPanel>
+                                <Border BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,16">
+                                    <StackPanel>
                                 <TextBlock Text="Manual Setup" FontSize="16" FontWeight="SemiBold" />
                                 <TextBlock Text="Local engine executable" FontWeight="SemiBold" Margin="0,10,0,6" />
                                 <WrapPanel Margin="0,0,0,8">
@@ -202,20 +224,6 @@
                                 </Grid>
                                 <TextBlock Text="Example: C:\Tools\LocalAI\local-engine.exe" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
 
-                                <TextBlock Text="Download a local AI model" FontWeight="SemiBold" Margin="0,6,0,6" />
-                                <ComboBox x:Name="ModelPresetComboBox"
-                                          DisplayMemberPath="DisplayName"
-                                          SelectionChanged="ModelPreset_OnSelectionChanged" />
-                                <TextBlock x:Name="ModelPresetDescriptionText"
-                                           TextWrapping="Wrap"
-                                           Foreground="{StaticResource MutedForegroundBrush}"
-                                           Margin="0,4,0,8" />
-                                <WrapPanel Margin="0,0,0,8">
-                                    <Button x:Name="DownloadModelButton" Content="Download Model" Width="140" Margin="0,0,8,8" Click="DownloadModel_OnClick" />
-                                    <Button x:Name="CancelModelDownloadButton" Content="Cancel Download" Width="140" Margin="0,0,8,8" Click="CancelModelDownload_OnClick" />
-                                    <Button x:Name="RemoveModelButton" Content="Remove Model" Width="130" Margin="0,0,8,8" Click="RemoveModel_OnClick" />
-                                    <Button Content="Open Folder" Width="120" Margin="0,0,8,8" Click="OpenModelsFolder_OnClick" />
-                                </WrapPanel>
                                 <TextBlock Text="Local AI model" FontWeight="SemiBold" Margin="0,6,0,6" />
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -227,11 +235,11 @@
                                 </Grid>
                                 <TextBlock Text="Example: C:\Models\ggml-small.en.bin" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
                                 <CheckBox Content="Force CPU-only mode" IsChecked="{Binding Settings.ForceCpuOnly}" Margin="0,6,0,0" Click="Settings_OnChanged" />
-                            </StackPanel>
-                        </Border>
+                                    </StackPanel>
+                                </Border>
 
-                        <Border BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,16">
-                            <StackPanel>
+                                <Border BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,16">
+                                    <StackPanel>
                                 <TextBlock Text="Tests" FontSize="16" FontWeight="SemiBold" />
                                 <WrapPanel Margin="0,10,0,8">
                                     <Button x:Name="TestLocalSetupButton" Content="Test Local Setup" Width="140" Margin="0,0,8,8" Click="TestLocalSetup_OnClick" />
@@ -251,10 +259,10 @@
                                          VerticalScrollBarVisibility="Auto" />
                                 <TextBlock Text="Detected models are suggestions. Paste the executable and model path above to enable local dictation." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,10,0,8" />
                                 <TextBox x:Name="LocalModelsBox" IsReadOnly="True" MinHeight="120" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
-                            </StackPanel>
-                        </Border>
+                                    </StackPanel>
+                                </Border>
 
-                        <StackPanel>
+                                <StackPanel>
                             <TextBlock Text="Optional Ollama Cleanup" FontSize="16" FontWeight="SemiBold" />
                             <TextBlock Text="Ollama cleanup endpoint" FontWeight="SemiBold" Margin="0,10,0,6" />
                             <TextBox Text="{Binding Settings.LocalLlmEndpoint, UpdateSourceTrigger=PropertyChanged}" />
@@ -263,7 +271,9 @@
                             <TextBox Text="{Binding Settings.LocalLlmModel, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock Text="Leave blank to insert the raw local AI transcript without cleanup." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
                             <Button x:Name="DetectOllamaModelsButton" Content="Detect Ollama Models" Width="160" HorizontalAlignment="Left" Margin="0,4,0,0" Click="DetectOllamaModels_OnClick" />
-                        </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </Expander>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

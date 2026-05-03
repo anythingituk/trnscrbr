@@ -24,9 +24,8 @@ public partial class TrayPanelWindow : Window
     private readonly Func<IReadOnlyList<AudioInputDevice>> _getMicrophones;
     private readonly Action<bool> _setFloatingButtonVisibility;
     private readonly Action _showAdvanced;
-    private CancellationTokenSource? _repairCancellation;
-    private bool _repairInProgress;
     private bool _loadingMicrophones;
+    private bool _loadingLocalModels;
 
     public TrayPanelWindow(
         AppStateViewModel state,
@@ -62,7 +61,7 @@ public partial class TrayPanelWindow : Window
         const double bottomOffset = 72;
 
         RefreshMicrophones();
-        RefreshLocalReadiness();
+        RefreshLocalModels();
         RefreshHotkeySummary();
         Left = Math.Max(area.Left + 8, area.Right - Width - trayOverflowAvoidanceWidth);
         Top = Math.Max(area.Top + 8, area.Bottom - Height - bottomOffset);
@@ -81,125 +80,6 @@ public partial class TrayPanelWindow : Window
     {
         Persist();
         _showAdvanced();
-    }
-
-    private async void LocalReadinessAction_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (_repairInProgress)
-        {
-            _repairCancellation?.Cancel();
-            LocalTestResultText.Text = "Cancelling setup...";
-            return;
-        }
-
-        if (IsLocalModeReady())
-        {
-            Persist();
-            _showAdvanced();
-            return;
-        }
-
-        SetLocalTestControlsEnabled(false);
-        _repairCancellation?.Dispose();
-        _repairCancellation = new CancellationTokenSource();
-        _repairInProgress = true;
-        LocalReadinessActionButton.IsEnabled = true;
-        LocalReadinessActionButton.Content = "Cancel";
-        LocalTestResultText.Text = "Setting up local dictation...";
-
-        try
-        {
-            var progress = new Progress<string>(message =>
-            {
-                LocalTestResultText.Text = message;
-                _state.StatusMessage = message;
-            });
-            var downloadProgress = new Progress<double>(value =>
-            {
-                LocalTestResultText.Text = $"Downloading setup files: {value:P0}";
-            });
-
-            var result = await _localModeRepair.RepairAsync(
-                _state.Settings,
-                progress,
-                downloadProgress,
-                _repairCancellation.Token);
-
-            Persist();
-            RefreshLocalReadiness();
-            LocalTestResultText.Text = $"{result.Message} Click Test to confirm it works.";
-            _state.StatusMessage = "Local setup completed";
-        }
-        catch (OperationCanceledException)
-        {
-            LocalTestResultText.Text = "Setup cancelled. Partial downloads were kept so they can resume later.";
-            _state.StatusMessage = "Local setup cancelled";
-        }
-        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or IOException or InvalidOperationException or System.Text.Json.JsonException)
-        {
-            LocalTestResultText.Text = LocalSetupErrorFormatter.Format("Setup could not finish", ex);
-            _state.StatusMessage = "Local setup needs attention";
-            _diagnosticLog.Error("Tray local mode repair failed", ex);
-        }
-        finally
-        {
-            _repairInProgress = false;
-            _repairCancellation?.Dispose();
-            _repairCancellation = null;
-            SetLocalTestControlsEnabled(true);
-            RefreshLocalReadiness();
-        }
-    }
-
-    private async void LocalReadinessTest_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (!_state.IsProviderConfigured || !IsLocalModeReady())
-        {
-            LocalTestResultText.Text = "Run Free Quick Setup before testing a local phrase.";
-            _showAdvanced();
-            return;
-        }
-
-        if (_state.RecordingState is RecordingState.Recording or RecordingState.Processing)
-        {
-            LocalTestResultText.Text = "Finish the current recording before testing a local phrase.";
-            return;
-        }
-
-        SetLocalTestControlsEnabled(false);
-        LocalTestResultText.Text = "Recording test phrase. Speak now for 5 seconds...";
-        using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(3));
-
-        try
-        {
-            var result = await _localTestPhrase.RunAsync(_state, message => LocalTestResultText.Text = message, timeout.Token);
-            LocalTestResultText.Text = string.IsNullOrWhiteSpace(result.Transcript)
-                ? result.Message
-                : $"Local test transcript: {result.Transcript.Trim()}";
-            _state.StatusMessage = result.NoInputCaptured
-                ? $"No input from {_state.Settings.MicrophoneName}. Choose another microphone."
-                : "Local test completed";
-            _state.RecordingState = result.NoInputCaptured
-                ? RecordingState.Error
-                : RecordingState.Idle;
-        }
-        catch (OperationCanceledException)
-        {
-            LocalTestResultText.Text = "Local test phrase timed out.";
-            _state.StatusMessage = "Local test timed out";
-            _state.RecordingState = RecordingState.Idle;
-        }
-        catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
-        {
-            LocalTestResultText.Text = LocalSetupErrorFormatter.Format("Local test phrase failed", ex);
-            _state.StatusMessage = "Local test failed";
-            _state.RecordingState = RecordingState.Error;
-            _diagnosticLog.Error("Tray local test phrase failed", ex);
-        }
-        finally
-        {
-            SetLocalTestControlsEnabled(true);
-        }
     }
 
     private void Window_OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -263,7 +143,7 @@ public partial class TrayPanelWindow : Window
         {
             Dispatcher.Invoke(() =>
             {
-                RefreshLocalReadiness();
+                RefreshLocalModels();
                 RefreshHotkeySummary();
             });
         }
@@ -276,52 +156,49 @@ public partial class TrayPanelWindow : Window
             : "Global hotkeys disabled. Use tray controls.";
     }
 
-    private void RefreshLocalReadiness()
+    private void RefreshLocalModels()
     {
-        var settings = _state.Settings;
-        var usingLocalMode = IsLocalModeActive();
-        var hasCli = HasLocalWhisperCli();
-        var hasModel = HasLocalWhisperModel();
-
-        if (usingLocalMode && hasCli && hasModel)
+        _loadingLocalModels = true;
+        try
         {
-            LocalReadinessPanel.Background = (System.Windows.Media.Brush)FindResource("StatusBackgroundBrush");
-            LocalReadinessTitleText.Text = "Local mode ready";
-            LocalReadinessDetailText.Text = "Using locally installed AI. Dictation is free and private.";
-            LocalReadinessActionButton.Content = "Details";
-            LocalReadinessTestButton.IsEnabled = true;
-            return;
+            TrayLocalModelComboBox.ItemsSource = LocalModelDownloadService.Presets;
+            var selected = _localModelDownload.FindPreset(
+                    _state.Settings.LocalWhisperModelPath,
+                    _state.Settings.LocalWhisperModelPresetId)
+                ?? LocalModelDownloadService.Presets.FirstOrDefault(candidate => candidate.Id == "small");
+            TrayLocalModelComboBox.SelectedItem = selected;
+            TrayLocalModelHelpText.Text = selected is null
+                ? "Run Free Quick Setup in main settings to enable local AI."
+                : selected.Description;
         }
-
-        LocalReadinessPanel.Background = System.Windows.Media.Brushes.Transparent;
-        LocalReadinessActionButton.Content = "Set up";
-        LocalReadinessTestButton.IsEnabled = false;
-
-        if (!usingLocalMode)
+        finally
         {
-            LocalReadinessTitleText.Text = "Free local mode not active";
-            LocalReadinessDetailText.Text = "Open setup to enable free dictation without an API key.";
-            return;
+            _loadingLocalModels = false;
         }
-
-        if (!hasCli && !hasModel)
-        {
-            LocalReadinessTitleText.Text = "Download needed";
-            LocalReadinessDetailText.Text = "A local dictation download is needed. Run Free Quick Setup.";
-            return;
-        }
-
-        LocalReadinessTitleText.Text = "More setup needed";
-        LocalReadinessDetailText.Text = hasCli
-            ? "One local dictation file is missing. Open setup to finish."
-            : "A local dictation component is missing. Open setup to finish.";
     }
 
-    private void SetLocalTestControlsEnabled(bool enabled)
+    private void LocalModel_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        LocalReadinessActionButton.IsEnabled = enabled || _repairInProgress;
-        LocalReadinessTestButton.IsEnabled = enabled && IsLocalModeReady();
-        MicrophoneBox.IsEnabled = enabled;
+        if (_loadingLocalModels || TrayLocalModelComboBox.SelectedItem is not LocalModelPreset preset)
+        {
+            return;
+        }
+
+        var modelPath = Path.Combine(_localModelDownload.ModelsDirectory, preset.FileName);
+        if (!File.Exists(modelPath))
+        {
+            TrayLocalModelHelpText.Text = $"{preset.DisplayName} needs to be downloaded in main settings.";
+            RefreshLocalModels();
+            return;
+        }
+
+        _state.Settings.LocalWhisperModelPath = modelPath;
+        _state.Settings.LocalWhisperModelPresetId = preset.Id;
+        _state.Settings.ProviderMode = "Local mode";
+        _state.Settings.ProviderName = "Local";
+        _state.Settings.ActiveEngine = "Local AI";
+        Persist();
+        TrayLocalModelHelpText.Text = $"{preset.DisplayName} selected.";
     }
 
     private static string FormatHotkey(string hotkey)

@@ -28,6 +28,7 @@ public partial class AdvancedSettingsWindow : Window
     private readonly UpdateCheckService _updateCheck = new();
     private CancellationTokenSource? _modelDownloadCancellation;
     private bool _localOperationActive;
+    private bool _loadingModelPreset;
 
     public AdvancedSettingsWindow(
         AppStateViewModel state,
@@ -52,7 +53,7 @@ public partial class AdvancedSettingsWindow : Window
         _settingsImportExport = settingsImportExport;
         DataContext = state;
         ModelPresetComboBox.ItemsSource = LocalModelDownloadService.Presets;
-        ModelPresetComboBox.SelectedIndex = 0;
+        SelectCurrentModelPreset();
         VocabularyBox.Text = string.Join(Environment.NewLine, state.Settings.CustomVocabulary);
         DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
         UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
@@ -296,6 +297,11 @@ public partial class AdvancedSettingsWindow : Window
 
     private void ModelPreset_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
+        if (_loadingModelPreset)
+        {
+            return;
+        }
+
         if (ModelPresetComboBox.SelectedItem is not LocalModelPreset preset)
         {
             ModelPresetDescriptionText.Text = string.Empty;
@@ -303,6 +309,24 @@ public partial class AdvancedSettingsWindow : Window
         }
 
         ModelPresetDescriptionText.Text = $"{preset.Description} Download: {preset.DiskSize}. Recommended memory: {preset.RamRecommendation}.";
+    }
+
+    private void SelectCurrentModelPreset()
+    {
+        _loadingModelPreset = true;
+        try
+        {
+            var selected = _localModelDownload.FindPreset(
+                    _state.Settings.LocalWhisperModelPath,
+                    _state.Settings.LocalWhisperModelPresetId)
+                ?? LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
+            ModelPresetComboBox.SelectedItem = selected;
+            ModelPresetDescriptionText.Text = $"{selected.Description} Download: {selected.DiskSize}. Recommended memory: {selected.RamRecommendation}.";
+        }
+        finally
+        {
+            _loadingModelPreset = false;
+        }
     }
 
     private async void QuickSetupLocal_OnClick(object sender, RoutedEventArgs e)
