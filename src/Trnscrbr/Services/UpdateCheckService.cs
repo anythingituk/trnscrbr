@@ -66,7 +66,7 @@ public sealed record UpdateCheckResult(bool IsSuccess, bool IsUpdateAvailable, s
         new(true, false, tag, $"You are up to date. Latest release: {tag}.", releaseUrl);
 
     public static UpdateCheckResult UpdateAvailable(string tag, string releaseUrl) =>
-        new(true, true, tag, $"Update available: {tag}. Open releases to download the installer.", releaseUrl);
+        new(true, true, tag, $"Update available: {tag}. Open the latest release to download and run the installer.", releaseUrl);
 
     public static UpdateCheckResult NoRelease(string message) =>
         new(true, false, string.Empty, message, string.Empty);

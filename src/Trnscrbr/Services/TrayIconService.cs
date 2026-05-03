@@ -160,7 +160,7 @@ public sealed class TrayIconService : IDisposable
 
         _availableUpdate = result;
         _notifyIcon.BalloonTipTitle = "Trnscrbr update available";
-        _notifyIcon.BalloonTipText = $"Version {result.LatestVersion} is available. Click to open releases.";
+        _notifyIcon.BalloonTipText = $"Version {result.LatestVersion} is available. Click here to download the installer.";
         _notifyIcon.ShowBalloonTip(10000);
     }
 

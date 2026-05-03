@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Navigation;
 using Microsoft.Win32;
@@ -23,10 +24,12 @@ public partial class AdvancedSettingsWindow : Window
     private readonly LocalProviderService _localProvider = new();
     private readonly LocalModelDownloadService _localModelDownload = new();
     private readonly LocalWhisperToolDownloadService _localWhisperToolDownload = new();
+    private readonly LocalHardwareProfileService _localHardwareProfile = new();
     private readonly LocalModeRepairService _localModeRepair;
     private readonly LocalTestPhraseService _localTestPhrase;
     private readonly UpdateCheckService _updateCheck = new();
     private CancellationTokenSource? _modelDownloadCancellation;
+    private UpdateCheckResult? _latestUpdateResult;
     private bool _localOperationActive;
     private bool _loadingModelPreset;
 
@@ -58,9 +61,11 @@ public partial class AdvancedSettingsWindow : Window
         DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
         UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
         CurrentVersionText.Text = $"Current version: {AppInfo.Version}";
+        OpenLatestReleaseButton.IsEnabled = false;
         RefreshOverview();
         RefreshLocalModels();
         RefreshLocalModeStatus();
+        _ = RefreshHardwareGuidance();
         UpdateApiKeyStatus();
         UpdateProviderModeStatus();
         UpdateSetupPageText();
@@ -929,6 +934,9 @@ public partial class AdvancedSettingsWindow : Window
         var diagnostics = $"""
             Trnscrbr diagnostics
             App version: {AppInfo.Version}
+            OS: {RuntimeInformation.OSDescription}
+            Framework: {RuntimeInformation.FrameworkDescription}
+            Process architecture: {RuntimeInformation.ProcessArchitecture}
             Provider: {_state.Settings.ProviderName}
             Provider mode: {_state.Settings.ProviderMode}
             Active engine: {_state.Settings.ActiveEngine}
@@ -938,6 +946,7 @@ public partial class AdvancedSettingsWindow : Window
             Local model preset: {FormatOptional(_state.Settings.LocalWhisperModelPresetId)}
             Local setup source: {FormatOptional(_state.Settings.LocalSetupSource)}
             Local setup completed: {_state.Settings.LocalSetupCompletedAt?.ToString("u") ?? "not set"}
+            Force CPU-only local mode: {FormatBool(_state.Settings.ForceCpuOnly)}
             Local LLM endpoint: {_state.Settings.LocalLlmEndpoint}
             Local LLM model: {_state.Settings.LocalLlmModel}
             API key present: {(_credentialStore.HasOpenAiApiKey() ? "yes" : "no")}
@@ -993,11 +1002,34 @@ public partial class AdvancedSettingsWindow : Window
         UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
     }
 
+    private async void RefreshHardwareGuidance_OnClick(object sender, RoutedEventArgs e)
+    {
+        await RefreshHardwareGuidance();
+    }
+
+    private async Task RefreshHardwareGuidance()
+    {
+        LocalHardwareGuidanceText.Text = "Checking this PC for local AI guidance...";
+        var profile = await _localHardwareProfile.DetectAsync();
+        LocalHardwareGuidanceText.Text = profile.Guidance;
+    }
+
     private async void CheckUpdates_OnClick(object sender, RoutedEventArgs e)
     {
         UpdateStatusText.Text = "Checking GitHub releases...";
         var result = await _updateCheck.CheckLatestReleaseAsync();
+        _latestUpdateResult = result;
         UpdateStatusText.Text = result.Message;
+        OpenLatestReleaseButton.IsEnabled = !string.IsNullOrWhiteSpace(result.ReleaseUrl);
+    }
+
+    private void OpenLatestRelease_OnClick(object sender, RoutedEventArgs e)
+    {
+        var url = string.IsNullOrWhiteSpace(_latestUpdateResult?.ReleaseUrl)
+            ? AppInfo.ReleasesUrl
+            : _latestUpdateResult.ReleaseUrl;
+
+        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
     }
 
     private void RefreshLocalModels()

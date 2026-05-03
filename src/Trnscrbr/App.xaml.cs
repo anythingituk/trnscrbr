@@ -53,13 +53,13 @@ public partial class App : System.Windows.Application
         _diagnosticLog = new DiagnosticLogService();
         RegisterExceptionHandlers(_diagnosticLog);
         _environmentDiagnostics = new EnvironmentDiagnosticsService(_diagnosticLog);
-        _environmentDiagnostics.LogStartupSnapshot();
         _openAiProvider = new OpenAiProviderService(_diagnosticLog);
         _localProvider = new LocalProviderService(_diagnosticLog);
         _usageStats = new UsageStatsService();
         _settingsImportExport = new SettingsImportExportService();
         _updateCheck = new UpdateCheckService();
         var settings = _settingsStore.Load();
+        _environmentDiagnostics.LogStartupSnapshot(settings, _credentialStore.HasOpenAiApiKey());
         var appState = new AppStateViewModel(settings);
         appState.PropertyChanged += AppStateOnPropertyChanged;
         StartLastTranscriptExpiryTimer(appState);

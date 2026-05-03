@@ -182,6 +182,24 @@
                             <StackPanel>
                                 <TextBlock Text="Local AI model" FontSize="16" FontWeight="SemiBold" />
                                 <TextBlock Text="Small is recommended for most PCs. Medium and Large can be much slower." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
+                                <Border Background="{StaticResource StatusBackgroundBrush}"
+                                        BorderBrush="{StaticResource SubtleBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="10"
+                                        Margin="0,0,0,10">
+                                    <StackPanel>
+                                        <TextBlock x:Name="LocalHardwareGuidanceText"
+                                                   Text="Checking this PC for local AI guidance..."
+                                                   TextWrapping="Wrap"
+                                                   Foreground="{StaticResource MutedForegroundBrush}" />
+                                        <Button Content="Refresh PC Check"
+                                                Width="140"
+                                                HorizontalAlignment="Left"
+                                                Margin="0,8,0,0"
+                                                Click="RefreshHardwareGuidance_OnClick" />
+                                    </StackPanel>
+                                </Border>
                                 <ComboBox x:Name="ModelPresetComboBox"
                                           DisplayMemberPath="DisplayName"
                                           SelectionChanged="ModelPreset_OnSelectionChanged" />
@@ -520,13 +538,20 @@
                     <StackPanel Margin="18">
                         <TextBlock Text="Updates" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock x:Name="CurrentVersionText" Margin="0,8,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
-                        <TextBlock Text="Manual updates are used for the MVP. Check the releases page for installer updates when published." TextWrapping="Wrap" Margin="0,0,0,12" />
-                        <Button Content="Check for Updates" Width="150" HorizontalAlignment="Left" Margin="0,0,0,12" Click="CheckUpdates_OnClick" />
+                        <TextBlock Text="Trnscrbr checks GitHub releases and opens the latest release page when an update is available." TextWrapping="Wrap" Margin="0,0,0,12" />
+                        <WrapPanel Margin="0,0,0,12">
+                            <Button Content="Check for Updates" Width="150" Margin="0,0,8,8" Click="CheckUpdates_OnClick" />
+                            <Button x:Name="OpenLatestReleaseButton"
+                                    Content="Open Latest Release"
+                                    Width="160"
+                                    Margin="0,0,8,8"
+                                    Click="OpenLatestRelease_OnClick" />
+                        </WrapPanel>
                         <TextBlock x:Name="UpdateStatusText" TextWrapping="Wrap" Margin="0,0,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
                         <TextBlock Margin="0,0,0,12">
                             <Hyperlink NavigateUri="https://github.com/anythingituk/trnscrbr/releases" RequestNavigate="Hyperlink_OnRequestNavigate">Open Trnscrbr releases</Hyperlink>
                         </TextBlock>
-                        <TextBlock Text="Automatic installation is planned for a later version." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <TextBlock Text="Automatic installation is planned for a later version. For now, download and run the installer from the release page." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

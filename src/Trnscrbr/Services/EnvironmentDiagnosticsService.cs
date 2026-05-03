@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Trnscrbr.Models;
 
 namespace Trnscrbr.Services;
 
@@ -22,7 +23,7 @@ public sealed class EnvironmentDiagnosticsService
         _diagnosticLog = diagnosticLog;
     }
 
-    public void LogStartupSnapshot()
+    public void LogStartupSnapshot(AppSettings settings, bool hasOpenAiApiKey)
     {
         _diagnosticLog.Info("Application startup", new Dictionary<string, string>
         {
@@ -30,7 +31,13 @@ public sealed class EnvironmentDiagnosticsService
             ["os"] = RuntimeInformation.OSDescription,
             ["framework"] = RuntimeInformation.FrameworkDescription,
             ["processArchitecture"] = RuntimeInformation.ProcessArchitecture.ToString(),
-            ["hotkeys"] = "Ctrl+Alt+R, Ctrl+Alt+Space, Esc"
+            ["providerMode"] = settings.ProviderMode,
+            ["providerName"] = settings.ProviderName,
+            ["activeEngine"] = settings.ActiveEngine,
+            ["apiKeyPresent"] = hasOpenAiApiKey ? "yes" : "no",
+            ["microphone"] = settings.MicrophoneName,
+            ["hotkeys"] = $"toggle {settings.ToggleRecordingHotkey}, push-to-talk {settings.PushToTalkHotkey}, Esc",
+            ["localModelPreset"] = string.IsNullOrWhiteSpace(settings.LocalWhisperModelPresetId) ? "not set" : settings.LocalWhisperModelPresetId
         });
 
         var detectedProcesses = GetDetectedProcesses();

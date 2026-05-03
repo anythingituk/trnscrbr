@@ -54,6 +54,10 @@ public sealed class TextInsertionService
             System.Threading.Thread.Sleep(250);
             _lastInsertedOutput = output;
         }
+        catch (ElevatedTargetInsertionException)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             _diagnosticLog.Error("Text insertion failed", ex, new Dictionary<string, string>
@@ -62,7 +66,9 @@ public sealed class TextInsertionService
                 ["characters"] = output.Length.ToString(),
                 ["targetElevated"] = (ex is ElevatedTargetInsertionException).ToString()
             });
-            throw;
+            throw new TextInsertionFailedException(
+                "Could not paste into the active app. Use Paste Last Transcript from the tray or glass button after choosing a text field.",
+                ex);
         }
         finally
         {
@@ -337,6 +343,14 @@ public sealed class ElevatedTargetInsertionException : InvalidOperationException
 {
     public ElevatedTargetInsertionException(string message)
         : base(message)
+    {
+    }
+}
+
+public sealed class TextInsertionFailedException : InvalidOperationException
+{
+    public TextInsertionFailedException(string message, Exception innerException)
+        : base(message, innerException)
     {
     }
 }
