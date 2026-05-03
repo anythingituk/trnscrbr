@@ -18,11 +18,11 @@ public partial class TrayPanelWindow : Window
     private readonly LocalProviderService _localProvider;
     private readonly LocalTestPhraseService _localTestPhrase;
     private readonly DiagnosticLogService _diagnosticLog;
+    private readonly CredentialStore _credentialStore = new();
     private readonly LocalModelDownloadService _localModelDownload = new();
     private readonly LocalWhisperToolDownloadService _localWhisperToolDownload = new();
     private readonly LocalModeRepairService _localModeRepair;
     private readonly Func<IReadOnlyList<AudioInputDevice>> _getMicrophones;
-    private readonly Action<bool> _setFloatingButtonVisibility;
     private readonly Action _showAdvanced;
     private bool _loadingMicrophones;
     private bool _loadingLocalModels;
@@ -47,7 +47,6 @@ public partial class TrayPanelWindow : Window
         _localTestPhrase = new LocalTestPhraseService(audioCapture, localProvider);
         _diagnosticLog = diagnosticLog;
         _getMicrophones = getMicrophones;
-        _setFloatingButtonVisibility = setFloatingButtonVisibility;
         DataContext = state;
         _showAdvanced = showAdvanced;
         _state.PropertyChanged += State_OnPropertyChanged;
@@ -94,11 +93,6 @@ public partial class TrayPanelWindow : Window
     private void Settings_OnChanged(object sender, RoutedEventArgs e)
     {
         Persist();
-    }
-
-    private void FloatingButton_OnClick(object sender, RoutedEventArgs e)
-    {
-        _setFloatingButtonVisibility(_state.Settings.FloatingButtonEnabled);
     }
 
     private void Microphone_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -165,9 +159,7 @@ public partial class TrayPanelWindow : Window
             TrayLocalModelComboBox.ItemsSource = options;
             var selected = SelectCurrentAiModelOption(options);
             TrayLocalModelComboBox.SelectedItem = selected;
-            TrayLocalModelHelpText.Text = selected is null
-                ? "Choose an AI model in main settings."
-                : selected.Help;
+            RefreshAiModelHelp(selected);
         }
         finally
         {
@@ -188,7 +180,7 @@ public partial class TrayPanelWindow : Window
             _state.Settings.ProviderName = "OpenAI";
             _state.Settings.ActiveEngine = "OpenAI";
             Persist();
-            TrayLocalModelHelpText.Text = option.Help;
+            RefreshAiModelHelp(option);
             return;
         }
 
@@ -206,7 +198,7 @@ public partial class TrayPanelWindow : Window
             _state.Settings.ActiveEngine = "Local AI";
             _state.Settings.CleanupMode = "Rewrite";
             Persist();
-            TrayLocalModelHelpText.Text = option.Help;
+            RefreshAiModelHelp(option);
             return;
         }
 
@@ -229,7 +221,33 @@ public partial class TrayPanelWindow : Window
         _state.Settings.ProviderName = "Local";
         _state.Settings.ActiveEngine = "Local AI";
         Persist();
-        TrayLocalModelHelpText.Text = $"{preset.DisplayName} selected.";
+        RefreshAiModelHelp(option);
+    }
+
+    private void RefreshAiModelHelp(TrayAiModelOption? selected)
+    {
+        ApiKeySetupButton.Visibility = Visibility.Collapsed;
+
+        if (selected is null)
+        {
+            TrayLocalModelHelpText.Text = "Choose an AI model in main settings.";
+            return;
+        }
+
+        if (selected.Kind == AiModelKind.OpenAi && !_credentialStore.HasOpenAiApiKey())
+        {
+            TrayLocalModelHelpText.Text = "OpenAI API key needed before this model can be used.";
+            ApiKeySetupButton.Visibility = Visibility.Visible;
+            return;
+        }
+
+        TrayLocalModelHelpText.Text = selected.Help;
+    }
+
+    private void ApiKeySetup_OnClick(object sender, RoutedEventArgs e)
+    {
+        Persist();
+        _showAdvanced();
     }
 
     private IReadOnlyList<TrayAiModelOption> BuildAiModelOptions()
@@ -337,7 +355,13 @@ public partial class TrayPanelWindow : Window
         string Label,
         string Help,
         AiModelKind Kind,
-        LocalModelPreset? LocalPreset);
+        LocalModelPreset? LocalPreset)
+    {
+        public override string ToString()
+        {
+            return Label;
+        }
+    }
 
     private Rect GetCurrentScreenWorkArea()
     {

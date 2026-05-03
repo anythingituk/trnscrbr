@@ -90,6 +90,22 @@
                             <ComboBoxItem Content="Cloud managed by app (planned)" IsEnabled="False" />
                         </ComboBox>
                         <TextBlock x:Name="ProviderModeStatusText" TextWrapping="Wrap" Margin="0,0,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <Expander Header="Advanced app options" Margin="0,0,0,12">
+                            <StackPanel Margin="0,10,0,0">
+                                <CheckBox Content="Floating button"
+                                          IsChecked="{Binding Settings.FloatingButtonEnabled}"
+                                          Margin="0,4"
+                                          Click="Settings_OnChanged" />
+                                <CheckBox Content="Start with Windows"
+                                          IsChecked="{Binding Settings.LaunchOnStartup}"
+                                          Margin="0,4"
+                                          Click="Settings_OnChanged" />
+                                <CheckBox Content="Add trailing space after inserted text"
+                                          IsChecked="{Binding Settings.AddTrailingSpace}"
+                                          Margin="0,4"
+                                          Click="Settings_OnChanged" />
+                            </StackPanel>
+                        </Expander>
                         <Button Content="Skip for now" Width="130" HorizontalAlignment="Left" Click="OnboardingComplete_OnClick" />
                     </StackPanel>
                 </ScrollViewer>

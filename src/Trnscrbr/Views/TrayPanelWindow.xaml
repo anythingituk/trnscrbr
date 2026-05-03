@@ -88,13 +88,19 @@
 
             <TextBlock Text="AI model" FontWeight="SemiBold" />
             <ComboBox x:Name="TrayLocalModelComboBox"
-                      DisplayMemberPath="Label"
                       Margin="0,6,0,4"
                       SelectionChanged="AiModel_OnSelectionChanged" />
             <TextBlock x:Name="TrayLocalModelHelpText"
                        TextWrapping="Wrap"
                        Foreground="{StaticResource MutedForegroundBrush}"
-                       Margin="0,0,0,12" />
+                       Margin="0,0,0,6" />
+            <Button x:Name="ApiKeySetupButton"
+                    Content="Enter API key in Advanced Settings"
+                    HorizontalAlignment="Left"
+                    Width="220"
+                    Margin="0,0,0,12"
+                    Visibility="Collapsed"
+                    Click="ApiKeySetup_OnClick" />
 
             <TextBlock x:Name="HotkeySummaryText"
                        TextWrapping="Wrap"
@@ -135,28 +141,6 @@
                       Margin="0,6,0,12"
                       SelectionChanged="Microphone_OnSelectionChanged" />
 
-            <Grid Margin="0,2,0,0">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                    <CheckBox Content="Floating button"
-                              IsChecked="{Binding Settings.FloatingButtonEnabled}"
-                              Margin="0,3"
-                              Click="FloatingButton_OnClick" />
-                    <CheckBox Content="Start with Windows"
-                              IsChecked="{Binding Settings.LaunchOnStartup}"
-                              Margin="0,3"
-                              Click="Settings_OnChanged" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                    <CheckBox Content="Trailing space"
-                              IsChecked="{Binding Settings.AddTrailingSpace}"
-                              Margin="0,3"
-                              Click="Settings_OnChanged" />
-                </StackPanel>
-            </Grid>
         </StackPanel>
         </ScrollViewer>
     </Border>
