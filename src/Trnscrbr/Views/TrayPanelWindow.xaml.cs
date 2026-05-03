@@ -1,9 +1,11 @@
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Trnscrbr.Models;
 using Trnscrbr.Services;
 using Trnscrbr.ViewModels;
@@ -26,6 +28,9 @@ public partial class TrayPanelWindow : Window
     private readonly Action _showAdvanced;
     private bool _loadingMicrophones;
     private bool _loadingLocalModels;
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
 
     public TrayPanelWindow(
         AppStateViewModel state,
@@ -64,9 +69,36 @@ public partial class TrayPanelWindow : Window
         RefreshHotkeySummary();
         Left = Math.Max(area.Left + 8, area.Right - Width - trayOverflowAvoidanceWidth);
         Top = Math.Max(area.Top + 8, area.Bottom - Height - bottomOffset);
+        BringToForeground();
+    }
+
+    private void BringToForeground()
+    {
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+
+        Topmost = true;
         Show();
         Activate();
+        Focus();
         AdvancedButton.Focus();
+
+        var handle = new WindowInteropHelper(this).Handle;
+        if (handle != IntPtr.Zero)
+        {
+            SetForegroundWindow(handle);
+        }
+
+        Dispatcher.BeginInvoke(
+            new Action(() =>
+            {
+                Topmost = false;
+                Activate();
+                AdvancedButton.Focus();
+            }),
+            DispatcherPriority.ApplicationIdle);
     }
 
     protected override void OnClosed(EventArgs e)

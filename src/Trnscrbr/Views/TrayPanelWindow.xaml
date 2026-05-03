@@ -8,6 +8,7 @@
         ResizeMode="NoResize"
         Background="Transparent"
         AllowsTransparency="True"
+        ShowActivated="True"
         KeyDown="Window_OnKeyDown">
     <Border Margin="12"
             Padding="20"
