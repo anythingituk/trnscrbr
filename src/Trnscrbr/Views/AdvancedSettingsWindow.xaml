@@ -557,11 +557,11 @@
                     <StackPanel Margin="18">
                         <TextBlock Text="Updates" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock x:Name="CurrentVersionText" Margin="0,8,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
-                        <TextBlock Text="Trnscrbr checks GitHub releases and opens the latest release page when an update is available." TextWrapping="Wrap" Margin="0,0,0,12" />
+                        <TextBlock Text="Trnscrbr checks GitHub releases and opens the installer download when an update is available." TextWrapping="Wrap" Margin="0,0,0,12" />
                         <WrapPanel Margin="0,0,0,12">
                             <Button Content="Check for Updates" Width="150" Margin="0,0,8,8" Click="CheckUpdates_OnClick" />
                             <Button x:Name="OpenLatestReleaseButton"
-                                    Content="Open Latest Release"
+                                    Content="Open Download"
                                     Width="160"
                                     Margin="0,0,8,8"
                                     Click="OpenLatestRelease_OnClick" />
