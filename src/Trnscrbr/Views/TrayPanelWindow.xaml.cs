@@ -67,6 +67,7 @@ public partial class TrayPanelWindow : Window
         RefreshMicrophones();
         RefreshLocalModels();
         RefreshHotkeySummary();
+        UpdateLayout();
         Left = Math.Max(area.Left + 8, area.Right - Width - trayOverflowAvoidanceWidth);
         Top = Math.Max(area.Top + 8, area.Bottom - Height - bottomOffset);
         BringToForeground();
@@ -220,7 +221,7 @@ public partial class TrayPanelWindow : Window
         {
             if (!IsLocalModeReady())
             {
-                TrayLocalModelHelpText.Text = "Run Free Quick Setup in main settings before using local chat cleanup.";
+                TrayLocalModelComboBox.ToolTip = "Run Free Quick Setup in main settings before using local chat cleanup.";
                 RefreshLocalModels();
                 return;
             }
@@ -242,7 +243,7 @@ public partial class TrayPanelWindow : Window
         var modelPath = Path.Combine(_localModelDownload.ModelsDirectory, preset.FileName);
         if (!File.Exists(modelPath))
         {
-            TrayLocalModelHelpText.Text = $"{preset.DisplayName} needs to be downloaded in main settings.";
+            TrayLocalModelComboBox.ToolTip = $"{preset.DisplayName} needs to be downloaded in main settings.";
             RefreshLocalModels();
             return;
         }
@@ -262,18 +263,18 @@ public partial class TrayPanelWindow : Window
 
         if (selected is null)
         {
-            TrayLocalModelHelpText.Text = "Choose an AI model in main settings.";
+            TrayLocalModelComboBox.ToolTip = "Choose an AI model in main settings.";
             return;
         }
 
         if (selected.Kind == AiModelKind.OpenAi && !_credentialStore.HasOpenAiApiKey())
         {
-            TrayLocalModelHelpText.Text = "OpenAI API key needed before this model can be used.";
+            TrayLocalModelComboBox.ToolTip = "OpenAI API key needed before this model can be used.";
             ApiKeySetupButton.Visibility = Visibility.Visible;
             return;
         }
 
-        TrayLocalModelHelpText.Text = selected.Help;
+        TrayLocalModelComboBox.ToolTip = selected.Help;
     }
 
     private void ApiKeySetup_OnClick(object sender, RoutedEventArgs e)
