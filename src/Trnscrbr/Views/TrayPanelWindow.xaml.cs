@@ -161,15 +161,13 @@ public partial class TrayPanelWindow : Window
         _loadingLocalModels = true;
         try
         {
-            TrayLocalModelComboBox.ItemsSource = LocalModelDownloadService.Presets;
-            var selected = _localModelDownload.FindPreset(
-                    _state.Settings.LocalWhisperModelPath,
-                    _state.Settings.LocalWhisperModelPresetId)
-                ?? LocalModelDownloadService.Presets.FirstOrDefault(candidate => candidate.Id == "small");
+            var options = BuildAiModelOptions();
+            TrayLocalModelComboBox.ItemsSource = options;
+            var selected = SelectCurrentAiModelOption(options);
             TrayLocalModelComboBox.SelectedItem = selected;
             TrayLocalModelHelpText.Text = selected is null
-                ? "Run Free Quick Setup in main settings to enable local AI."
-                : selected.Description;
+                ? "Choose an AI model in main settings."
+                : selected.Help;
         }
         finally
         {
@@ -177,9 +175,42 @@ public partial class TrayPanelWindow : Window
         }
     }
 
-    private void LocalModel_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    private void AiModel_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        if (_loadingLocalModels || TrayLocalModelComboBox.SelectedItem is not LocalModelPreset preset)
+        if (_loadingLocalModels || TrayLocalModelComboBox.SelectedItem is not TrayAiModelOption option)
+        {
+            return;
+        }
+
+        if (option.Kind == AiModelKind.OpenAi)
+        {
+            _state.Settings.ProviderMode = "Bring your own API key";
+            _state.Settings.ProviderName = "OpenAI";
+            _state.Settings.ActiveEngine = "OpenAI";
+            Persist();
+            TrayLocalModelHelpText.Text = option.Help;
+            return;
+        }
+
+        if (option.Kind == AiModelKind.LocalChatCleanup)
+        {
+            if (!IsLocalModeReady())
+            {
+                TrayLocalModelHelpText.Text = "Run Free Quick Setup in main settings before using local chat cleanup.";
+                RefreshLocalModels();
+                return;
+            }
+
+            _state.Settings.ProviderMode = "Local mode";
+            _state.Settings.ProviderName = "Local";
+            _state.Settings.ActiveEngine = "Local AI";
+            _state.Settings.CleanupMode = "Rewrite";
+            Persist();
+            TrayLocalModelHelpText.Text = option.Help;
+            return;
+        }
+
+        if (option.LocalPreset is not { } preset)
         {
             return;
         }
@@ -199,6 +230,67 @@ public partial class TrayPanelWindow : Window
         _state.Settings.ActiveEngine = "Local AI";
         Persist();
         TrayLocalModelHelpText.Text = $"{preset.DisplayName} selected.";
+    }
+
+    private IReadOnlyList<TrayAiModelOption> BuildAiModelOptions()
+    {
+        var options = new List<TrayAiModelOption>
+        {
+            new(
+                "openai",
+                "OpenAI API model",
+                "Uses your configured OpenAI API key.",
+                AiModelKind.OpenAi,
+                null)
+        };
+
+        options.AddRange(LocalModelDownloadService.Presets.Select(preset => new TrayAiModelOption(
+            $"local:{preset.Id}",
+            $"Local AI - {preset.DisplayName}",
+            preset.Description,
+            AiModelKind.LocalSpeech,
+            preset)));
+
+        if (!string.IsNullOrWhiteSpace(_state.Settings.LocalLlmModel))
+        {
+            options.Add(new TrayAiModelOption(
+                $"chat:{_state.Settings.LocalLlmModel}",
+                $"Local chat cleanup - {_state.Settings.LocalLlmModel}",
+                "Uses local AI for dictation, then rewrites with your configured local chat model.",
+                AiModelKind.LocalChatCleanup,
+                null));
+        }
+
+        return options;
+    }
+
+    private TrayAiModelOption? SelectCurrentAiModelOption(IReadOnlyList<TrayAiModelOption> options)
+    {
+        if (string.Equals(_state.Settings.ProviderMode, "Bring your own API key", StringComparison.OrdinalIgnoreCase))
+        {
+            return options.FirstOrDefault(option => option.Kind == AiModelKind.OpenAi);
+        }
+
+        if (string.Equals(_state.Settings.CleanupMode, "Rewrite", StringComparison.OrdinalIgnoreCase)
+            && !string.IsNullOrWhiteSpace(_state.Settings.LocalLlmModel))
+        {
+            var localChat = options.FirstOrDefault(option => option.Kind == AiModelKind.LocalChatCleanup);
+            if (localChat is not null)
+            {
+                return localChat;
+            }
+        }
+
+        var localPreset = _localModelDownload.FindPreset(
+                _state.Settings.LocalWhisperModelPath,
+                _state.Settings.LocalWhisperModelPresetId)
+            ?? LocalModelDownloadService.Presets.FirstOrDefault(candidate => candidate.Id == "small");
+
+        return localPreset is null
+            ? options.FirstOrDefault()
+            : options.FirstOrDefault(option =>
+                option.LocalPreset is not null
+                && string.Equals(option.LocalPreset.Id, localPreset.Id, StringComparison.OrdinalIgnoreCase));
     }
 
     private static string FormatHotkey(string hotkey)
@@ -232,6 +324,20 @@ public partial class TrayPanelWindow : Window
         StartupService.Apply(_state.Settings);
         _state.RaiseSettingsChanged();
     }
+
+    private enum AiModelKind
+    {
+        OpenAi,
+        LocalSpeech,
+        LocalChatCleanup
+    }
+
+    private sealed record TrayAiModelOption(
+        string Id,
+        string Label,
+        string Help,
+        AiModelKind Kind,
+        LocalModelPreset? LocalPreset);
 
     private Rect GetCurrentScreenWorkArea()
     {

@@ -324,7 +324,7 @@ public sealed class RecordingCoordinator
             {
                 var insertedMessage = threshold > 0 && currentMonth.EstimatedCostUsd >= threshold
                     ? $"Inserted transcript. Monthly estimate ${currentMonth.EstimatedCostUsd:0.00}."
-                    : $"Inserted transcript ({usage.Last.WordsPerMinute:0} wpm)";
+                    : "Inserted transcript";
 
                 _state.StatusMessage = useLocalMode && ShouldShowLocalSpeedTip(processingStopwatch.Elapsed, slowLocalNoticeShown)
                     ? $"{insertedMessage} Tip: Small is faster for local AI."
