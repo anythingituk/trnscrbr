@@ -297,7 +297,7 @@ public partial class TrayPanelWindow : Window
         options.AddRange(LocalModelDownloadService.Presets.Select(preset => new TrayAiModelOption(
             $"local:{preset.Id}",
             $"Local AI - {preset.DisplayName}",
-            preset.Description,
+            FormatModelPresetGuidance(preset),
             AiModelKind.LocalSpeech,
             preset)));
 
@@ -341,6 +341,17 @@ public partial class TrayPanelWindow : Window
             : options.FirstOrDefault(option =>
                 option.LocalPreset is not null
                 && string.Equals(option.LocalPreset.Id, localPreset.Id, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string FormatModelPresetGuidance(LocalModelPreset preset)
+    {
+        return preset.Id switch
+        {
+            "small" => $"Recommended for most users. {preset.Description}",
+            "medium" => $"Slower on many PCs. {preset.Description}",
+            "large" => $"Can be very slow on CPU-only local AI. {preset.Description}",
+            _ => preset.Description
+        };
     }
 
     private static string FormatHotkey(string hotkey)

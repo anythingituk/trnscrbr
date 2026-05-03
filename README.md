@@ -45,13 +45,14 @@ artifacts\installer\Trnscrbr-Setup-0.2.0-win-x64.exe
 
 1. Install Trnscrbr with the generated installer.
 2. Leave `Start Trnscrbr when Windows starts` checked unless testing startup behaviour.
-3. Choose **Set up free local mode** on onboarding, or open the tray panel and use the local setup card.
-4. Run **Free Quick Setup** and confirm it reports local mode ready.
-5. Click **Try Test Phrase**, speak for 5 seconds, and confirm the transcript appears.
-6. Focus a normal editable text field.
-7. Press `Ctrl + Alt + R`, speak, then press `Ctrl + Alt + R` again to transcribe.
-8. Confirm text is inserted for review and Enter is not pressed.
-9. Test `Paste Last Transcript` from the tray or glass button menu.
+3. After setup, confirm the mini settings panel opens in front of other windows.
+4. Choose an AI model and microphone in the mini settings panel. For free local use, choose **Small - recommended, fastest** unless testing slower models.
+5. Open Advanced Settings, go to **Local Models**, run **Free Quick Setup**, and confirm it reports local mode ready.
+6. Click **Try Test Phrase**, speak for 5 seconds, and confirm the transcript appears.
+7. Focus a normal editable text field.
+8. Press `Ctrl + Alt + R` or `F9`, speak, then press the same shortcut again to transcribe.
+9. Confirm text is inserted for review and Enter is not pressed.
+10. Test `Paste Last Transcript` from the tray or glass button menu.
 
 Useful settings while testing:
 
@@ -59,10 +60,10 @@ Useful settings while testing:
 - Transcription type: `Clean only` or `Rewrite`.
 - Rewrite style: `Plain English`, `Professional`, `Friendly`, `Concise`, or `Native-level English`.
 - English spelling: `Auto`, `British English`, `American English`, `Canadian English`, or `Australian English`.
-- Capture startup buffer: helps avoid clipped first words.
+- Capture startup buffer: `Off` or a short buffer to help avoid clipped first words.
 - Hotkeys: choose preset toggle and push-to-talk shortcuts if the defaults conflict with Windows or another app.
 - Diagnostics: refresh/copy logs or open the diagnostics folder.
-- Local Models: run Free Quick Setup, repair local mode, try a test phrase, install the official x64 whisper.cpp CLI, download/remove a verified Whisper model, browse for existing local files, detect common local candidates, and optionally use Ollama cleanup.
+- Local Models: run Free Quick Setup, try a test phrase, check PC guidance, download/remove verified local AI models, browse for existing local files, detect common local candidates, and optionally use Ollama cleanup from advanced local AI settings.
 
 ## Status
 
@@ -70,9 +71,9 @@ WPF MVP in progress. Current build includes:
 
 - Dynamic tray icon and floating glass button with mic-level waveform states.
 - `Ctrl + Alt + R` toggle recording, `Ctrl + Alt + Space` push-to-talk, and `Esc` cancel.
-- Lightweight first-run onboarding.
-- Compact tray panel with usage estimate, monitor-aware placement, and Windows light/dark theme support.
-- Managed free local Whisper setup with a tray readiness card and test phrase flow.
+- First launch opens the compact mini settings panel so users can choose AI model, microphone, and rewrite style.
+- Compact tray panel with monitor-aware placement, foreground launch after setup, and Windows light/dark theme support.
+- Managed free local AI setup with model download, PC performance guidance, and test phrase flow.
 - Optional OpenAI bring-your-own-key transcription processing.
 - Temporary clipboard insertion with clipboard restoration.
 - One-hour last transcript recovery from hotkey, tray menu, and floating-button menu.
@@ -84,8 +85,8 @@ WPF MVP in progress. Current build includes:
 
 ## Known MVP Limits
 
-- GPU-accelerated whisper.cpp builds are not auto-selected yet; the built-in installer uses the official x64 CPU CLI.
-- Hotkeys are fixed for now.
+- GPU-accelerated local AI builds are not auto-selected yet; the built-in installer uses the official x64 CPU engine.
+- Hotkeys use configurable presets rather than arbitrary custom key capture.
 - Elevated/admin target windows are detected but not supported yet.
 - Text insertion depends on the target app accepting clipboard paste.
 - No transcript history is stored beyond temporary last-transcript recovery.

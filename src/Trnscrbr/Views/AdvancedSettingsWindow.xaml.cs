@@ -327,7 +327,7 @@ public partial class AdvancedSettingsWindow : Window
             return;
         }
 
-        ModelPresetDescriptionText.Text = $"{preset.Description} Download: {preset.DiskSize}. Recommended memory: {preset.RamRecommendation}.";
+        ModelPresetDescriptionText.Text = FormatModelPresetGuidance(preset);
     }
 
     private void SelectCurrentModelPreset()
@@ -340,12 +340,25 @@ public partial class AdvancedSettingsWindow : Window
                     _state.Settings.LocalWhisperModelPresetId)
                 ?? LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
             ModelPresetComboBox.SelectedItem = selected;
-            ModelPresetDescriptionText.Text = $"{selected.Description} Download: {selected.DiskSize}. Recommended memory: {selected.RamRecommendation}.";
+            ModelPresetDescriptionText.Text = FormatModelPresetGuidance(selected);
         }
         finally
         {
             _loadingModelPreset = false;
         }
+    }
+
+    private static string FormatModelPresetGuidance(LocalModelPreset preset)
+    {
+        var recommendation = preset.Id switch
+        {
+            "small" => "Recommended for most users.",
+            "medium" => "May feel slow on many PCs. Use Small if you want faster dictation.",
+            "large" => "Can be very slow on CPU-only local AI. Use only when quality matters more than speed.",
+            _ => string.Empty
+        };
+
+        return $"{recommendation} {preset.Description} Download: {preset.DiskSize}. Recommended memory: {preset.RamRecommendation}.";
     }
 
     private async void QuickSetupLocal_OnClick(object sender, RoutedEventArgs e)
