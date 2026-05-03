@@ -71,9 +71,8 @@
             <TabItem Header="Setup">
                 <ScrollViewer>
                     <StackPanel Margin="18">
-                        <TextBlock Text="First Run" FontSize="20" FontWeight="SemiBold" />
-                        <TextBlock Margin="0,8,0,12" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}"
-                                   Text="Press Ctrl + Alt + R to start recording, then press it again to transcribe into the focused text field. Trnscrbr inserts text for review and never presses Enter. Cloud/API modes may use third-party services; local mode is free and private but needs model downloads." />
+                        <TextBlock x:Name="SetupTitleText" Text="Setup" FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock x:Name="SetupIntroText" Margin="0,8,0,12" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
                         <StackPanel Margin="0,0,0,12">
                             <TextBlock Text="- Right-click the tray icon or glass button for Settings." TextWrapping="Wrap" />
                             <TextBlock Text="- Press Ctrl + Alt + R to start recording; press it again to stop and transcribe." TextWrapping="Wrap" />
@@ -106,7 +105,7 @@
                                           Click="Settings_OnChanged" />
                             </StackPanel>
                         </Expander>
-                        <Button Content="Skip for now" Width="130" HorizontalAlignment="Left" Click="OnboardingComplete_OnClick" />
+                        <Button x:Name="SetupSkipButton" Content="Skip for now" Width="130" HorizontalAlignment="Left" Click="OnboardingComplete_OnClick" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -467,8 +466,11 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                        <TextBlock Text="Add names, product names, acronyms, or specialist words Trnscrbr should spell correctly. Put one word or phrase on each line." TextWrapping="Wrap" Margin="0,0,0,6" />
-                        <TextBlock Text="Example: Trnscrbr, HyperX QuadCast, Inno Setup" TextWrapping="Wrap" Margin="0,0,0,10" Foreground="{StaticResource MutedForegroundBrush}" />
+                    <StackPanel Margin="0,0,0,12">
+                        <TextBlock Text="Vocabulary" FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock Text="Add words Trnscrbr may not know, such as names, product names, acronyms, client names, or specialist terms. During cleanup, Trnscrbr uses this list as spelling hints so dictated text is less likely to be corrected to a similar common word." TextWrapping="Wrap" Margin="0,8,0,6" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <TextBlock Text="Put one word or phrase on each line so each item is treated as a separate hint. Example lines: Trnscrbr, HyperX QuadCast, Inno Setup." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
+                    </StackPanel>
                     <TextBox x:Name="VocabularyBox" Grid.Row="1" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
                 </Grid>
             </TabItem>

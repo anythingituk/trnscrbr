@@ -63,6 +63,7 @@ public partial class AdvancedSettingsWindow : Window
         RefreshLocalModeStatus();
         UpdateApiKeyStatus();
         UpdateProviderModeStatus();
+        UpdateSetupPageText();
         Closing += (_, args) =>
         {
             args.Cancel = true;
@@ -75,6 +76,7 @@ public partial class AdvancedSettingsWindow : Window
     {
         _state.Settings.OnboardingCompleted = true;
         Persist();
+        UpdateSetupPageText();
     }
 
     public void SelectLocalModelsTab()
@@ -241,6 +243,7 @@ public partial class AdvancedSettingsWindow : Window
 
         RefreshOverview();
         UpdateProviderModeStatus();
+        UpdateSetupPageText();
         RefreshLocalModeStatus();
     }
 
@@ -1161,6 +1164,7 @@ public partial class AdvancedSettingsWindow : Window
         OverviewUsageText.Text = threshold > 0 && cost >= (double)threshold
             ? $"{month.Recordings} dictations, ${cost:0.00} of ${threshold:0.00}"
             : $"{month.Recordings} dictations, est. ${cost:0.00}";
+        UpdateSetupPageText();
     }
 
     private void UpdateProviderModeStatus()
@@ -1176,6 +1180,21 @@ public partial class AdvancedSettingsWindow : Window
             "Cloud managed by app (planned)" => "Cloud managed by app is planned for a later paid/free-tier model and is not available yet.",
             _ => "Choose a provider now or skip and configure one later."
         };
+    }
+
+    private void UpdateSetupPageText()
+    {
+        if (_state.IsProviderConfigured)
+        {
+            SetupTitleText.Text = "Setup";
+            SetupIntroText.Text = "Trnscrbr is ready to use. Use this page to review provider choice and app behavior, or change how dictation is configured.";
+            SetupSkipButton.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        SetupTitleText.Text = "First Run";
+        SetupIntroText.Text = "Press Ctrl + Alt + R to start recording, then press it again to transcribe into the focused text field. Trnscrbr inserts text for review and never presses Enter. Cloud/API modes may use third-party services; local mode is free and private but needs model downloads.";
+        SetupSkipButton.Visibility = Visibility.Visible;
     }
 
     private void UpdateApiKeyStatus()
