@@ -29,7 +29,6 @@ public partial class App : System.Windows.Application
     private RecordingCoordinator? _recording;
     private DispatcherTimer? _lastTranscriptTimer;
     private FloatingButtonWindow? _floatingButton;
-    private OnboardingWindow? _onboarding;
     private TrayPanelWindow? _trayPanel;
     private AdvancedSettingsWindow? _advancedSettings;
     private bool? _globalHotkeysApplied;
@@ -417,24 +416,6 @@ public partial class App : System.Windows.Application
             SetFloatingButtonVisibility,
             ShowAdvancedSettings);
         _trayPanel.ShowFromSystemTray();
-    }
-
-    private void ShowOnboarding()
-    {
-        if (_floatingButton?.DataContext is not AppStateViewModel state
-            || _settingsStore is null)
-        {
-            return;
-        }
-
-        if (_onboarding is null)
-        {
-            _onboarding = new OnboardingWindow(state, _settingsStore, ShowLocalSetup);
-            _onboarding.Closed += (_, _) => _onboarding = null;
-        }
-
-        _onboarding.Show();
-        _onboarding.Activate();
     }
 
     private void ShowInitialTrayPanel(AppStateViewModel state)
