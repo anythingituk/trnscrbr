@@ -79,6 +79,17 @@ public partial class AdvancedSettingsWindow : Window
         UpdateSetupPageText();
     }
 
+    private void SetupProvider_OnClick(object sender, RoutedEventArgs e)
+    {
+        SettingsTabControl.SelectedItem = ProviderTab;
+        ApiKeyBox.Focus();
+    }
+
+    private void SetupLocalModels_OnClick(object sender, RoutedEventArgs e)
+    {
+        SelectLocalModelsTab();
+    }
+
     public void SelectLocalModelsTab()
     {
         SettingsTabControl.SelectedItem = LocalModelsTab;
@@ -1172,18 +1183,22 @@ public partial class AdvancedSettingsWindow : Window
         ProviderModeStatusText.Text = _state.Settings.ProviderMode switch
         {
             "Bring your own API key" => _credentialStore.HasOpenAiApiKey()
-                ? "OpenAI API key is stored. Trnscrbr can transcribe using your API account."
-                : "Add an OpenAI API key on the Provider tab before dictation will work.",
+                ? "OpenAI key is saved. Trnscrbr can use your API account."
+                : "OpenAI is selected, but no key is saved yet.",
             "Local mode" => IsLocalModeConfigured()
                 ? "Local mode is configured. Trnscrbr will use locally installed AI."
-                : "Local mode needs a local engine and model on the Local Models tab.",
+                : "Local AI is selected, but setup still needs to finish.",
             "Cloud managed by app (planned)" => "Cloud managed by app is planned for a later paid/free-tier model and is not available yet.",
-            _ => "Choose a provider now or skip and configure one later."
+            _ => "Choose local AI for free use, or add your own OpenAI key."
         };
     }
 
     private void UpdateSetupPageText()
     {
+        SetupActionPanel.Visibility = Visibility.Collapsed;
+        SetupProviderButton.Visibility = Visibility.Collapsed;
+        SetupLocalModelsButton.Visibility = Visibility.Collapsed;
+
         if (_state.IsProviderConfigured)
         {
             SetupTitleText.Text = "Setup";
@@ -1192,9 +1207,19 @@ public partial class AdvancedSettingsWindow : Window
             return;
         }
 
-        SetupTitleText.Text = "First Run";
-        SetupIntroText.Text = "Press Ctrl + Alt + R (or F9) to start recording, then press it again to transcribe into the focused text field. Trnscrbr inserts text for review and never presses Enter. Cloud/API modes may use third-party services; local mode is free and private but needs model downloads.";
+        SetupTitleText.Text = "Setup needed";
+        SetupIntroText.Text = "Choose how Trnscrbr should transcribe before using the recording shortcut. Local AI is free and private after setup. OpenAI uses your own API key.";
         SetupSkipButton.Visibility = Visibility.Visible;
+
+        var showProviderAction = string.Equals(_state.Settings.ProviderMode, "Bring your own API key", StringComparison.OrdinalIgnoreCase)
+            && !_credentialStore.HasOpenAiApiKey();
+        var showLocalAction = string.Equals(_state.Settings.ProviderMode, "Local mode", StringComparison.OrdinalIgnoreCase)
+            && !IsLocalModeConfigured();
+        var showBothActions = string.Equals(_state.Settings.ProviderMode, "Not configured", StringComparison.OrdinalIgnoreCase);
+
+        SetupActionPanel.Visibility = Visibility.Visible;
+        SetupProviderButton.Visibility = showProviderAction || showBothActions ? Visibility.Visible : Visibility.Collapsed;
+        SetupLocalModelsButton.Visibility = showLocalAction || showBothActions ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void UpdateApiKeyStatus()

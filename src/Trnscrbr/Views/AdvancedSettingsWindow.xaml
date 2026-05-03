@@ -88,7 +88,19 @@
                             <ComboBoxItem Content="Local mode" />
                             <ComboBoxItem Content="Cloud managed by app (planned)" IsEnabled="False" />
                         </ComboBox>
-                        <TextBlock x:Name="ProviderModeStatusText" TextWrapping="Wrap" Margin="0,0,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <TextBlock x:Name="ProviderModeStatusText" TextWrapping="Wrap" Margin="0,0,0,10" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <WrapPanel x:Name="SetupActionPanel" Margin="0,0,0,12">
+                            <Button x:Name="SetupProviderButton"
+                                    Content="Add OpenAI key"
+                                    Width="140"
+                                    Margin="0,0,8,8"
+                                    Click="SetupProvider_OnClick" />
+                            <Button x:Name="SetupLocalModelsButton"
+                                    Content="Set up local AI"
+                                    Width="140"
+                                    Margin="0,0,8,8"
+                                    Click="SetupLocalModels_OnClick" />
+                        </WrapPanel>
                         <Expander Header="Advanced app options" Margin="0,0,0,12">
                             <StackPanel Margin="0,10,0,0">
                                 <CheckBox Content="Floating button"
@@ -105,11 +117,11 @@
                                           Click="Settings_OnChanged" />
                             </StackPanel>
                         </Expander>
-                        <Button x:Name="SetupSkipButton" Content="Skip for now" Width="130" HorizontalAlignment="Left" Click="OnboardingComplete_OnClick" />
+                        <Button x:Name="SetupSkipButton" Content="Decide later" Width="130" HorizontalAlignment="Left" Click="OnboardingComplete_OnClick" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
-            <TabItem Header="Provider">
+            <TabItem x:Name="ProviderTab" Header="Provider">
                 <ScrollViewer>
                     <StackPanel Margin="18">
                         <TextBlock Text="OpenAI" FontSize="20" FontWeight="SemiBold" />
