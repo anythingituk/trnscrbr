@@ -68,9 +68,29 @@ public partial class TrayPanelWindow : Window
         RefreshLocalModels();
         RefreshHotkeySummary();
         UpdateLayout();
+        var panelHeight = GetPlacementHeight();
         Left = Math.Max(area.Left + 8, area.Right - Width - trayOverflowAvoidanceWidth);
-        Top = Math.Max(area.Top + 8, area.Bottom - Height - bottomOffset);
+        Top = Math.Max(area.Top + 8, area.Bottom - panelHeight - bottomOffset);
         BringToForeground();
+    }
+
+    private double GetPlacementHeight()
+    {
+        if (ActualHeight > 0)
+        {
+            return Math.Min(MaxHeight, ActualHeight);
+        }
+
+        if (Content is FrameworkElement content)
+        {
+            content.Measure(new System.Windows.Size(Width, MaxHeight));
+            if (content.DesiredSize.Height > 0)
+            {
+                return Math.Min(MaxHeight, content.DesiredSize.Height);
+            }
+        }
+
+        return MaxHeight;
     }
 
     private void BringToForeground()
