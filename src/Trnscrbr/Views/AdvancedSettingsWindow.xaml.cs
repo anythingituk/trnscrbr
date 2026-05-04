@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Navigation;
 using Microsoft.Win32;
 using Trnscrbr.Models;
@@ -83,6 +84,18 @@ public partial class AdvancedSettingsWindow : Window
         _state.Settings.OnboardingCompleted = true;
         Persist();
         UpdateSetupPageText();
+    }
+
+    private void Window_OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        if (e.Key != Key.Escape)
+        {
+            return;
+        }
+
+        Persist();
+        Hide();
+        e.Handled = true;
     }
 
     private void SetupProvider_OnClick(object sender, RoutedEventArgs e)

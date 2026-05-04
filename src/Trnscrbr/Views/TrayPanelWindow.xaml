@@ -12,6 +12,7 @@
         AllowsTransparency="True"
         ShowActivated="True"
         AutomationProperties.Name="Trnscrbr quick settings"
+        KeyboardNavigation.TabNavigation="Cycle"
         KeyDown="Window_OnKeyDown">
     <Border Margin="12"
             Padding="20"
@@ -34,6 +35,7 @@
                         BorderBrush="Transparent"
                         Click="Advanced_OnClick"
                         ToolTip="Advanced settings"
+                        TabIndex="5"
                         AutomationProperties.Name="Advanced settings">
                     <Button.Template>
                         <ControlTemplate TargetType="{x:Type Button}">
@@ -94,6 +96,7 @@
             <TextBlock Text="AI model" FontWeight="SemiBold" />
             <ComboBox x:Name="TrayLocalModelComboBox"
                       Margin="0,6,0,4"
+                      TabIndex="0"
                       AutomationProperties.Name="AI model"
                       SelectionChanged="AiModel_OnSelectionChanged" />
             <Button x:Name="ApiKeySetupButton"
@@ -102,11 +105,12 @@
                     Width="220"
                     Margin="0,4,0,12"
                     Visibility="Collapsed"
+                    TabIndex="1"
                     AutomationProperties.Name="Enter API key in Advanced Settings"
                     Click="ApiKeySetup_OnClick" />
 
             <TextBlock Text="Transcription Type" FontWeight="SemiBold" />
-            <ComboBox SelectedValue="{Binding Settings.CleanupMode}" SelectedValuePath="Content" Margin="0,6,0,12" SelectionChanged="Settings_OnChanged" AutomationProperties.Name="Transcription type">
+            <ComboBox SelectedValue="{Binding Settings.CleanupMode}" SelectedValuePath="Content" Margin="0,6,0,12" TabIndex="2" SelectionChanged="Settings_OnChanged" AutomationProperties.Name="Transcription type">
                 <ComboBoxItem Content="Clean only" />
                 <ComboBoxItem Content="Rewrite" />
             </ComboBox>
@@ -123,7 +127,7 @@
                     </Style>
                 </StackPanel.Style>
                 <TextBlock Text="Rewrite Style" FontWeight="SemiBold" />
-                <ComboBox SelectedValue="{Binding Settings.RewriteStyle}" SelectedValuePath="Content" Margin="0,6,0,0" SelectionChanged="Settings_OnChanged" AutomationProperties.Name="Rewrite style">
+                <ComboBox SelectedValue="{Binding Settings.RewriteStyle}" SelectedValuePath="Content" Margin="0,6,0,0" TabIndex="3" SelectionChanged="Settings_OnChanged" AutomationProperties.Name="Rewrite style">
                     <ComboBoxItem Content="Plain English" />
                     <ComboBoxItem Content="Professional" />
                     <ComboBoxItem Content="Friendly" />
@@ -137,6 +141,7 @@
                       DisplayMemberPath="Name"
                       SelectedValuePath="Name"
                       Margin="0,6,0,12"
+                      TabIndex="4"
                       AutomationProperties.Name="Microphone"
                       SelectionChanged="Microphone_OnSelectionChanged" />
 

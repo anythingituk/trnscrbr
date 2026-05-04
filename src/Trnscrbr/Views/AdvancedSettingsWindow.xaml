@@ -7,7 +7,8 @@
         Height="740"
         MinWidth="760"
         MinHeight="580"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        KeyDown="Window_OnKeyDown">
     <Grid Background="{StaticResource AppBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -82,7 +83,7 @@
                             <TextBlock Text="- Use the tray or glass button menu to recover the last transcript for up to one hour." FontSize="14" TextWrapping="Wrap" Margin="0,0,0,3" />
                             <TextBlock Text="- Trnscrbr uses the clipboard temporarily, restores it afterwards, and does not save transcript history." FontSize="14" TextWrapping="Wrap" />
                         </StackPanel>
-                        <ComboBox SelectedValue="{Binding Settings.ProviderMode}" SelectedValuePath="Content" Margin="0,0,0,12" SelectionChanged="Settings_OnChanged">
+                        <ComboBox SelectedValue="{Binding Settings.ProviderMode}" SelectedValuePath="Content" Margin="0,0,0,12" SelectionChanged="Settings_OnChanged" AutomationProperties.Name="Provider choice">
                             <ComboBoxItem Content="Not configured" />
                             <ComboBoxItem Content="Bring your own API key" />
                             <ComboBoxItem Content="Local mode" />
@@ -143,13 +144,13 @@
                         </Border>
                         <StackPanel x:Name="ApiKeyEntryPanel" Visibility="Collapsed">
                             <TextBlock Text="Paste a new OpenAI API key" FontWeight="SemiBold" Margin="0,0,0,6" />
-                            <PasswordBox x:Name="ApiKeyBox" Height="32" />
+                            <PasswordBox x:Name="ApiKeyBox" Height="32" AutomationProperties.Name="OpenAI API key" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                            <Button x:Name="ShowApiKeyEntryButton" Content="Add / Replace Key" Width="145" Click="ShowApiKeyEntry_OnClick" />
-                            <Button x:Name="TestConnectionButton" Content="Test Connection" Width="130" Margin="8,0,0,0" Click="TestConnection_OnClick" />
-                            <Button x:Name="SaveKeyButton" Content="Save Key" Width="100" Margin="8,0,0,0" Click="SaveProvider_OnClick" />
-                            <Button x:Name="DeleteKeyButton" Content="Delete Key" Width="100" Margin="8,0,0,0" Click="DeleteKey_OnClick" />
+                            <Button x:Name="ShowApiKeyEntryButton" Content="Add / Replace Key" Width="145" Click="ShowApiKeyEntry_OnClick" AutomationProperties.Name="Add or replace OpenAI key" />
+                            <Button x:Name="TestConnectionButton" Content="Test Connection" Width="130" Margin="8,0,0,0" Click="TestConnection_OnClick" AutomationProperties.Name="Test OpenAI connection" />
+                            <Button x:Name="SaveKeyButton" Content="Save Key" Width="100" Margin="8,0,0,0" Click="SaveProvider_OnClick" AutomationProperties.Name="Save OpenAI key" />
+                            <Button x:Name="DeleteKeyButton" Content="Delete Key" Width="100" Margin="8,0,0,0" Click="DeleteKey_OnClick" AutomationProperties.Name="Delete OpenAI key" />
                         </StackPanel>
                         <TextBlock x:Name="ApiKeyStatusText" Margin="0,12,0,0" Foreground="{StaticResource MutedForegroundBrush}" />
                         <TextBlock Margin="0,18,0,0">

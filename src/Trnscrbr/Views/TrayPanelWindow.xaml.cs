@@ -107,7 +107,7 @@ public partial class TrayPanelWindow : Window
         Show();
         Activate();
         Focus();
-        AdvancedButton.Focus();
+        TrayLocalModelComboBox.Focus();
 
         var handle = new WindowInteropHelper(this).Handle;
         if (handle != IntPtr.Zero)
@@ -120,7 +120,7 @@ public partial class TrayPanelWindow : Window
             {
                 Topmost = false;
                 Activate();
-                AdvancedButton.Focus();
+                TrayLocalModelComboBox.Focus();
             }),
             DispatcherPriority.ApplicationIdle);
     }
