@@ -128,6 +128,11 @@ public sealed class TextInsertionService
 
     private void EnsureFocusedInsertionTarget(InsertionTargetSnapshot? expectedTarget)
     {
+        if (expectedTarget is null)
+        {
+            return;
+        }
+
         var focusedTarget = CaptureFocusedInsertionTarget();
         if (focusedTarget is null)
         {
