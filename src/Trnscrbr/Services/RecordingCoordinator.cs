@@ -7,6 +7,8 @@ namespace Trnscrbr.Services;
 
 public sealed class RecordingCoordinator
 {
+    private static readonly TimeSpan PendingTranscriptLifetime = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan DeferredGuidanceDuration = TimeSpan.FromSeconds(5);
     private readonly AppStateViewModel _state;
     private readonly TextInsertionService _insertion;
     private readonly FloatingButtonWindow _floatingButton;
@@ -19,6 +21,7 @@ public sealed class RecordingCoordinator
     private readonly Action _showMicrophoneSettings;
     private readonly DispatcherTimer _timer;
     private readonly DispatcherTimer _pendingPasteOfferTimer;
+    private readonly DispatcherTimer _deferredGuidanceTimer;
     private readonly Dispatcher _dispatcher;
     private CancellationTokenSource? _processingCancellation;
     private DateTimeOffset? _recordingStartedAt;
@@ -58,6 +61,16 @@ public sealed class RecordingCoordinator
         _timer.Tick += (_, _) => UpdateElapsed();
         _pendingPasteOfferTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(750) };
         _pendingPasteOfferTimer.Tick += (_, _) => OfferPendingPasteIfOriginalTargetFocused();
+        _deferredGuidanceTimer = new DispatcherTimer { Interval = DeferredGuidanceDuration };
+        _deferredGuidanceTimer.Tick += (_, _) =>
+        {
+            _deferredGuidanceTimer.Stop();
+            if (_state.RecordingState == RecordingState.Idle
+                && IsDeferredPasteGuidance(_state.StatusMessage))
+            {
+                _state.StatusMessage = "Ready";
+            }
+        };
     }
 
     public void HandlePushToTalkPressed()
@@ -169,7 +182,7 @@ public sealed class RecordingCoordinator
     {
         ClearLastTranscript();
         ClearPendingPasteOffer();
-        _state.StatusMessage = "Forgot last transcript";
+        _state.StatusMessage = "Ready";
         _floatingButton.ShowTransient();
     }
 
@@ -194,7 +207,7 @@ public sealed class RecordingCoordinator
         }
         catch (DeferredTextInsertionException ex)
         {
-            _state.StatusMessage = ex.Message;
+            ShowDeferredPasteGuidance(ex.Message);
             _floatingButton.ShowTransient();
         }
         catch (Exception ex)
@@ -347,7 +360,7 @@ public sealed class RecordingCoordinator
                 {
                     insertionDeferred = true;
                     StartPendingPasteOffer(_recordingTarget);
-                    _state.StatusMessage = ex.Message;
+                    ShowDeferredPasteGuidance(ex.Message);
                 }
             }
 
@@ -404,6 +417,7 @@ public sealed class RecordingCoordinator
     {
         _pendingPasteTarget = target;
         _pendingPasteOfferShown = false;
+        _state.LastTranscriptExpiresAt = DateTimeOffset.Now.Add(PendingTranscriptLifetime);
 
         if (target is not null)
         {
@@ -414,8 +428,16 @@ public sealed class RecordingCoordinator
     private void ClearPendingPasteOffer()
     {
         _pendingPasteOfferTimer.Stop();
+        _deferredGuidanceTimer.Stop();
         _pendingPasteTarget = null;
         _pendingPasteOfferShown = false;
+    }
+
+    private void ShowDeferredPasteGuidance(string message)
+    {
+        _deferredGuidanceTimer.Stop();
+        _state.StatusMessage = message;
+        _deferredGuidanceTimer.Start();
     }
 
     private void OfferPendingPasteIfOriginalTargetFocused()
@@ -449,6 +471,12 @@ public sealed class RecordingCoordinator
     {
         _state.LastTranscript = null;
         _state.LastTranscriptExpiresAt = null;
+    }
+
+    private static bool IsDeferredPasteGuidance(string message)
+    {
+        return message.StartsWith("Transcript ready.", StringComparison.Ordinal)
+            || string.Equals(message, "Ready to paste transcript", StringComparison.Ordinal);
     }
 
     private DispatcherTimer CreateSlowLocalTranscriptionTimer(Stopwatch stopwatch, Action markNoticeShown)
