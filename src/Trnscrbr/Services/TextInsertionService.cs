@@ -1,5 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Automation.Text;
 using System.Windows.Forms;
 using Trnscrbr.ViewModels;
 
@@ -25,7 +27,35 @@ public sealed class TextInsertionService
         _diagnosticLog = diagnosticLog;
     }
 
-    public void InsertText(string text)
+    public InsertionTargetSnapshot? CaptureFocusedInsertionTarget()
+    {
+        try
+        {
+            var element = AutomationElement.FocusedElement;
+            if (element is null || !IsInsertableElement(element))
+            {
+                return null;
+            }
+
+            return InsertionTargetSnapshot.FromElement(element);
+        }
+        catch (ElementNotAvailableException)
+        {
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    public bool IsFocusedInsertionTarget(InsertionTargetSnapshot target)
+    {
+        var focusedTarget = CaptureFocusedInsertionTarget();
+        return focusedTarget is not null && focusedTarget.Matches(target);
+    }
+
+    public void InsertText(string text, InsertionTargetSnapshot? expectedTarget = null)
     {
         var output = _state.Settings.AddTrailingSpace ? text.TrimEnd() + " " : text;
         System.Windows.IDataObject? previousClipboard = null;
@@ -39,6 +69,8 @@ public sealed class TextInsertionService
                 throw new ElevatedTargetInsertionException(
                     "Target app is running as administrator. Paste into normal apps, or use Paste Last Transcript after switching targets.");
             }
+
+            EnsureFocusedInsertionTarget(expectedTarget);
 
             if (RetryClipboard(() => System.Windows.Clipboard.ContainsData(System.Windows.DataFormats.Text))
                 || RetryClipboard(() => System.Windows.Clipboard.ContainsData(System.Windows.DataFormats.UnicodeText))
@@ -55,6 +87,10 @@ public sealed class TextInsertionService
             _lastInsertedOutput = output;
         }
         catch (ElevatedTargetInsertionException)
+        {
+            throw;
+        }
+        catch (DeferredTextInsertionException)
         {
             throw;
         }
@@ -87,6 +123,22 @@ public sealed class TextInsertionService
                     // Clipboard restoration is best effort; complex clipboard formats can fail.
                 }
             }
+        }
+    }
+
+    private void EnsureFocusedInsertionTarget(InsertionTargetSnapshot? expectedTarget)
+    {
+        var focusedTarget = CaptureFocusedInsertionTarget();
+        if (focusedTarget is null)
+        {
+            throw new DeferredTextInsertionException(
+                "Transcript ready. Choose a text field, then use Paste Last Transcript.");
+        }
+
+        if (expectedTarget is not null && !focusedTarget.Matches(expectedTarget))
+        {
+            throw new DeferredTextInsertionException(
+                "Transcript ready. Return to the original text field, then use Paste Last Transcript.");
         }
     }
 
@@ -237,6 +289,33 @@ public sealed class TextInsertionService
         return (GetAsyncKeyState((int)key) & 0x8000) != 0;
     }
 
+    private static bool IsInsertableElement(AutomationElement element)
+    {
+        var current = element.Current;
+        if (!current.IsEnabled)
+        {
+            return false;
+        }
+
+        if (element.TryGetCurrentPattern(ValuePattern.Pattern, out var valuePatternObject)
+            && valuePatternObject is ValuePattern valuePattern
+            && !valuePattern.Current.IsReadOnly
+            && IsTextEntryControlType(current.ControlType))
+        {
+            return true;
+        }
+
+        return element.TryGetCurrentPattern(TextPattern.Pattern, out _)
+            && IsTextEntryControlType(current.ControlType);
+    }
+
+    private static bool IsTextEntryControlType(ControlType controlType)
+    {
+        return controlType == ControlType.Edit
+            || controlType == ControlType.Document
+            || controlType == ControlType.ComboBox;
+    }
+
     private static bool IsForegroundWindowElevated()
     {
         var foregroundWindow = GetForegroundWindow();
@@ -352,5 +431,54 @@ public sealed class TextInsertionFailedException : InvalidOperationException
     public TextInsertionFailedException(string message, Exception innerException)
         : base(message, innerException)
     {
+    }
+}
+
+public sealed class DeferredTextInsertionException : InvalidOperationException
+{
+    public DeferredTextInsertionException(string message)
+        : base(message)
+    {
+    }
+}
+
+public sealed class InsertionTargetSnapshot
+{
+    private InsertionTargetSnapshot(
+        int processId,
+        string controlTypeProgrammaticName,
+        string automationId,
+        int[] runtimeId)
+    {
+        ProcessId = processId;
+        ControlTypeProgrammaticName = controlTypeProgrammaticName;
+        AutomationId = automationId;
+        RuntimeId = runtimeId;
+    }
+
+    public int ProcessId { get; }
+
+    public string ControlTypeProgrammaticName { get; }
+
+    public string AutomationId { get; }
+
+    public int[] RuntimeId { get; }
+
+    public static InsertionTargetSnapshot FromElement(AutomationElement element)
+    {
+        var current = element.Current;
+        return new InsertionTargetSnapshot(
+            current.ProcessId,
+            current.ControlType.ProgrammaticName,
+            current.AutomationId ?? string.Empty,
+            element.GetRuntimeId());
+    }
+
+    public bool Matches(InsertionTargetSnapshot other)
+    {
+        return ProcessId == other.ProcessId
+            && string.Equals(ControlTypeProgrammaticName, other.ControlTypeProgrammaticName, StringComparison.Ordinal)
+            && string.Equals(AutomationId, other.AutomationId, StringComparison.Ordinal)
+            && RuntimeId.SequenceEqual(other.RuntimeId);
     }
 }

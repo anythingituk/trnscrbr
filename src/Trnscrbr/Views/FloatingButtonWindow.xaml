@@ -71,7 +71,7 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Visibility="Collapsed">
-            <TextBlock Text="{Binding StatusMessage}" Foreground="White" FontSize="12" TextWrapping="Wrap" />
+            <TextBlock x:Name="StatusText" Foreground="White" FontSize="12" TextWrapping="Wrap" />
         </Border>
     </Grid>
 </Window>

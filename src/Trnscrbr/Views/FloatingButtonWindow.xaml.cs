@@ -115,6 +115,7 @@ public partial class FloatingButtonWindow : Window
     {
         Root.ToolTip = GetTooltipText();
         var showMessage = ShouldShowStatusMessage();
+        StatusText.Text = GetStatusMessageText();
 
         TimerText.Visibility = _state.Elapsed >= TimeSpan.FromMinutes(1)
             ? Visibility.Visible
@@ -194,10 +195,20 @@ public partial class FloatingButtonWindow : Window
     {
         return _state.RecordingState switch
         {
-            RecordingState.Recording => "Recording",
-            RecordingState.Processing => "Transcribing",
+            RecordingState.Recording => "Recording (press ESC to cancel)",
+            RecordingState.Processing => "Transcribing (press ESC to cancel)",
             RecordingState.Error => _state.StatusMessage,
             _ => "Start recording"
+        };
+    }
+
+    private string GetStatusMessageText()
+    {
+        return _state.RecordingState switch
+        {
+            RecordingState.Recording => "Recording (press ESC to cancel)",
+            RecordingState.Processing => "Transcribing (press ESC to cancel)",
+            _ => _state.StatusMessage
         };
     }
 

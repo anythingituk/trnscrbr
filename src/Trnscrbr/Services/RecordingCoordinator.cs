@@ -18,10 +18,14 @@ public sealed class RecordingCoordinator
     private readonly UsageStatsService _usageStats;
     private readonly Action _showMicrophoneSettings;
     private readonly DispatcherTimer _timer;
+    private readonly DispatcherTimer _pendingPasteOfferTimer;
     private readonly Dispatcher _dispatcher;
     private CancellationTokenSource? _processingCancellation;
     private DateTimeOffset? _recordingStartedAt;
+    private InsertionTargetSnapshot? _recordingTarget;
+    private InsertionTargetSnapshot? _pendingPasteTarget;
     private bool _pushToTalkActive;
+    private bool _pendingPasteOfferShown;
 
     public RecordingCoordinator(
         AppStateViewModel state,
@@ -52,6 +56,8 @@ public sealed class RecordingCoordinator
         };
         _timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
         _timer.Tick += (_, _) => UpdateElapsed();
+        _pendingPasteOfferTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(750) };
+        _pendingPasteOfferTimer.Tick += (_, _) => OfferPendingPasteIfOriginalTargetFocused();
     }
 
     public void HandlePushToTalkPressed()
@@ -150,6 +156,7 @@ public sealed class RecordingCoordinator
         _state.InputLevel = 0;
         _state.RecordingState = RecordingState.Idle;
         _state.StatusMessage = "Cancelled";
+        ClearPendingPasteOffer();
         _floatingButton.ShowTransient();
     }
 
@@ -167,7 +174,13 @@ public sealed class RecordingCoordinator
         try
         {
             _insertion.InsertText(_state.LastTranscript);
+            ClearPendingPasteOffer();
             _state.StatusMessage = "Pasted last transcript";
+            _floatingButton.ShowTransient();
+        }
+        catch (DeferredTextInsertionException ex)
+        {
+            _state.StatusMessage = ex.Message;
             _floatingButton.ShowTransient();
         }
         catch (Exception ex)
@@ -182,6 +195,8 @@ public sealed class RecordingCoordinator
     private void StartRecording()
     {
         _recordingStartedAt = DateTimeOffset.Now;
+        _recordingTarget = _insertion.CaptureFocusedInsertionTarget();
+        ClearPendingPasteOffer();
         _state.Elapsed = TimeSpan.Zero;
         try
         {
@@ -288,10 +303,12 @@ public sealed class RecordingCoordinator
                 StringComparison.Ordinal);
             var isFillerOnlyTranscript = IsFillerOnlyTranscript(cleanedTranscript);
             var isVoiceAction = isDeleteAction || isDiscardAction || isFillerOnlyTranscript;
+            var insertionDeferred = false;
 
             if (isDeleteAction)
             {
                 var deleted = _insertion.DeleteLastInsertedText();
+                ClearPendingPasteOffer();
                 _state.StatusMessage = deleted
                     ? "Removed last insertion"
                     : "No Trnscrbr insertion to remove";
@@ -306,7 +323,17 @@ public sealed class RecordingCoordinator
             }
             else
             {
-                _insertion.InsertText(result.CleanedTranscript);
+                try
+                {
+                    _insertion.InsertText(result.CleanedTranscript, _recordingTarget);
+                    ClearPendingPasteOffer();
+                }
+                catch (DeferredTextInsertionException ex)
+                {
+                    insertionDeferred = true;
+                    StartPendingPasteOffer(_recordingTarget);
+                    _state.StatusMessage = ex.Message;
+                }
             }
 
             var usage = _usageStats.RecordDictation(
@@ -320,7 +347,7 @@ public sealed class RecordingCoordinator
             _state.RecordingState = RecordingState.Idle;
             var currentMonth = _usageStats.GetCurrentMonth();
             var threshold = (double)_state.Settings.MonthlyCostWarning;
-            if (!isVoiceAction)
+            if (!isVoiceAction && !insertionDeferred)
             {
                 var insertedMessage = threshold > 0 && currentMonth.EstimatedCostUsd >= threshold
                     ? $"Inserted transcript. Monthly estimate ${currentMonth.EstimatedCostUsd:0.00}."
@@ -354,7 +381,47 @@ public sealed class RecordingCoordinator
         {
             slowLocalTimer?.Stop();
             _audioCapture.DeleteRecording(recordedAudio);
+            _recordingTarget = null;
         }
+    }
+
+    private void StartPendingPasteOffer(InsertionTargetSnapshot? target)
+    {
+        _pendingPasteTarget = target;
+        _pendingPasteOfferShown = false;
+
+        if (target is not null)
+        {
+            _pendingPasteOfferTimer.Start();
+        }
+    }
+
+    private void ClearPendingPasteOffer()
+    {
+        _pendingPasteOfferTimer.Stop();
+        _pendingPasteTarget = null;
+        _pendingPasteOfferShown = false;
+    }
+
+    private void OfferPendingPasteIfOriginalTargetFocused()
+    {
+        if (_pendingPasteTarget is null
+            || string.IsNullOrWhiteSpace(_state.LastTranscript)
+            || _state.LastTranscriptExpiresAt is null
+            || _state.LastTranscriptExpiresAt <= DateTimeOffset.Now)
+        {
+            ClearPendingPasteOffer();
+            return;
+        }
+
+        if (_pendingPasteOfferShown || !_insertion.IsFocusedInsertionTarget(_pendingPasteTarget))
+        {
+            return;
+        }
+
+        _pendingPasteOfferShown = true;
+        _state.StatusMessage = "Ready to paste transcript";
+        _floatingButton.ShowTransient();
     }
 
     private DispatcherTimer CreateSlowLocalTranscriptionTimer(Stopwatch stopwatch, Action markNoticeShown)
