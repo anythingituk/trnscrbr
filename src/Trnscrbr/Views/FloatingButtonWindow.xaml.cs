@@ -53,6 +53,7 @@ public partial class FloatingButtonWindow : Window
 
     public event EventHandler? ToggleRecordingRequested;
     public event EventHandler? PasteLastTranscriptRequested;
+    public event EventHandler? ForgetLastTranscriptRequested;
     public event EventHandler? SettingsRequested;
     public event EventHandler? QuitRequested;
 
@@ -302,12 +303,19 @@ public partial class FloatingButtonWindow : Window
             IsEnabled = HasRecoverableTranscript()
         };
         pasteItem.Click += (_, _) => PasteLastTranscriptRequested?.Invoke(this, EventArgs.Empty);
+        var forgetItem = new System.Windows.Controls.MenuItem
+        {
+            Header = "Forget Last Transcript",
+            IsEnabled = HasRecoverableTranscript()
+        };
+        forgetItem.Click += (_, _) => ForgetLastTranscriptRequested?.Invoke(this, EventArgs.Empty);
         var settingsItem = new System.Windows.Controls.MenuItem { Header = "Settings" };
         settingsItem.Click += (_, _) => SettingsRequested?.Invoke(this, EventArgs.Empty);
         var quitItem = new System.Windows.Controls.MenuItem { Header = "Quit" };
         quitItem.Click += (_, _) => QuitRequested?.Invoke(this, EventArgs.Empty);
         menu.Items.Add(recordItem);
         menu.Items.Add(pasteItem);
+        menu.Items.Add(forgetItem);
         menu.Items.Add(new System.Windows.Controls.MenuItem { Header = "Show/Hide Floating Button", IsEnabled = false });
         menu.Items.Add(settingsItem);
         menu.Items.Add(new System.Windows.Controls.Separator());

@@ -146,6 +146,11 @@ public sealed class RecordingCoordinator
     {
         if (_state.RecordingState is not (RecordingState.Recording or RecordingState.Processing))
         {
+            if (HasRecoverableTranscript())
+            {
+                ForgetLastTranscript();
+            }
+
             return;
         }
 
@@ -160,12 +165,21 @@ public sealed class RecordingCoordinator
         _floatingButton.ShowTransient();
     }
 
+    public void ForgetLastTranscript()
+    {
+        ClearLastTranscript();
+        ClearPendingPasteOffer();
+        _state.StatusMessage = "Forgot last transcript";
+        _floatingButton.ShowTransient();
+    }
+
     public void PasteLastTranscript()
     {
         if (_state.LastTranscript is null || _state.LastTranscriptExpiresAt < DateTimeOffset.Now)
         {
             _state.LastTranscript = null;
             _state.LastTranscriptExpiresAt = null;
+            ClearPendingPasteOffer();
             _state.StatusMessage = "No recent transcript";
             _floatingButton.ShowTransient();
             return;
@@ -194,6 +208,7 @@ public sealed class RecordingCoordinator
 
     private void StartRecording()
     {
+        ClearLastTranscript();
         _recordingStartedAt = DateTimeOffset.Now;
         _recordingTarget = _insertion.CaptureFocusedInsertionTarget();
         ClearPendingPasteOffer();
@@ -422,6 +437,18 @@ public sealed class RecordingCoordinator
         _pendingPasteOfferShown = true;
         _state.StatusMessage = "Ready to paste transcript";
         _floatingButton.ShowTransient();
+    }
+
+    private bool HasRecoverableTranscript()
+    {
+        return !string.IsNullOrWhiteSpace(_state.LastTranscript)
+            && _state.LastTranscriptExpiresAt > DateTimeOffset.Now;
+    }
+
+    private void ClearLastTranscript()
+    {
+        _state.LastTranscript = null;
+        _state.LastTranscriptExpiresAt = null;
     }
 
     private DispatcherTimer CreateSlowLocalTranscriptionTimer(Stopwatch stopwatch, Action markNoticeShown)

@@ -71,6 +71,7 @@ public partial class App : System.Windows.Application
         _recording = new RecordingCoordinator(appState, insertion, _floatingButton, _audioCapture, _credentialStore, _openAiProvider, _localProvider, _diagnosticLog, _usageStats, ShowTrayPanel);
         _floatingButton.ToggleRecordingRequested += (_, _) => _recording.ToggleRecording();
         _floatingButton.PasteLastTranscriptRequested += (_, _) => _recording.PasteLastTranscript();
+        _floatingButton.ForgetLastTranscriptRequested += (_, _) => _recording.ForgetLastTranscript();
         _floatingButton.SettingsRequested += (_, _) => ShowTrayPanel();
         _floatingButton.QuitRequested += (_, _) => Shutdown();
 
@@ -81,6 +82,7 @@ public partial class App : System.Windows.Application
             onToggleRecording: () => _recording.ToggleRecording(),
             onToggleFloatingButton: ToggleFloatingButton,
             onPasteLastTranscript: () => _recording.PasteLastTranscript(),
+            onForgetLastTranscript: () => _recording.ForgetLastTranscript(),
             getMicrophones: () => _audioCapture.GetInputDevices(),
             settingsStore: _settingsStore,
             onSetGlobalHotkeysEnabled: SetGlobalHotkeysEnabled,

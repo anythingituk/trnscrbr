@@ -15,6 +15,7 @@ public sealed class TrayIconService : IDisposable
     private readonly Action _onToggleRecording;
     private readonly Action _onToggleFloatingButton;
     private readonly Action _onPasteLastTranscript;
+    private readonly Action _onForgetLastTranscript;
     private readonly Func<IReadOnlyList<AudioInputDevice>> _getMicrophones;
     private readonly AppSettingsStore _settingsStore;
     private readonly Action<bool> _onSetGlobalHotkeysEnabled;
@@ -30,6 +31,7 @@ public sealed class TrayIconService : IDisposable
         Action onToggleRecording,
         Action onToggleFloatingButton,
         Action onPasteLastTranscript,
+        Action onForgetLastTranscript,
         Func<IReadOnlyList<AudioInputDevice>> getMicrophones,
         AppSettingsStore settingsStore,
         Action<bool> onSetGlobalHotkeysEnabled,
@@ -41,6 +43,7 @@ public sealed class TrayIconService : IDisposable
         _onToggleRecording = onToggleRecording;
         _onToggleFloatingButton = onToggleFloatingButton;
         _onPasteLastTranscript = onPasteLastTranscript;
+        _onForgetLastTranscript = onForgetLastTranscript;
         _getMicrophones = getMicrophones;
         _settingsStore = settingsStore;
         _onSetGlobalHotkeysEnabled = onSetGlobalHotkeysEnabled;
@@ -118,6 +121,7 @@ public sealed class TrayIconService : IDisposable
         var recordItem = new ToolStripMenuItem("Start Recording", null, (_, _) => _onToggleRecording());
         var showItem = new ToolStripMenuItem("Show/Hide Floating Button", null, (_, _) => _onToggleFloatingButton());
         var pasteItem = new ToolStripMenuItem("Paste Last Transcript", null, (_, _) => _onPasteLastTranscript());
+        var forgetItem = new ToolStripMenuItem("Forget Last Transcript", null, (_, _) => _onForgetLastTranscript());
         var updateItem = new ToolStripMenuItem("Update Available", null, (_, _) => OpenAvailableUpdate()) { Visible = false };
         var hotkeysItem = new ToolStripMenuItem("Global Hotkeys", null, (_, _) => _onSetGlobalHotkeysEnabled(!_state.Settings.GlobalHotkeysEnabled));
         var micMenu = new ToolStripMenuItem("Microphone");
@@ -126,6 +130,7 @@ public sealed class TrayIconService : IDisposable
         {
             recordItem.Text = _state.RecordingState == RecordingState.Recording ? "Stop Recording" : "Start Recording";
             pasteItem.Enabled = HasRecoverableTranscript();
+            forgetItem.Enabled = HasRecoverableTranscript();
             hotkeysItem.Checked = _state.Settings.GlobalHotkeysEnabled;
             hotkeysItem.Text = _state.Settings.GlobalHotkeysEnabled
                 ? "Disable Global Hotkeys"
@@ -139,6 +144,7 @@ public sealed class TrayIconService : IDisposable
 
         menu.Items.Add(recordItem);
         menu.Items.Add(pasteItem);
+        menu.Items.Add(forgetItem);
         menu.Items.Add(updateItem);
         menu.Items.Add(hotkeysItem);
         menu.Items.Add(showItem);
