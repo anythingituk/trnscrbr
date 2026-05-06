@@ -360,7 +360,11 @@ public sealed class RecordingCoordinator
                 {
                     insertionDeferred = true;
                     StartPendingPasteOffer(_recordingTarget);
-                    ShowDeferredPasteGuidance(ex.Message);
+                    _diagnosticLog.Info("Automatic transcript insertion deferred", new Dictionary<string, string>
+                    {
+                        ["reason"] = ex.Message
+                    });
+                    _state.StatusMessage = "Ready";
                 }
             }
 
@@ -475,7 +479,7 @@ public sealed class RecordingCoordinator
 
     private static bool IsDeferredPasteGuidance(string message)
     {
-        return message.StartsWith("Transcript ready.", StringComparison.Ordinal)
+        return message.StartsWith("Paste skipped;", StringComparison.Ordinal)
             || string.Equals(message, "Ready to paste transcript", StringComparison.Ordinal);
     }
 

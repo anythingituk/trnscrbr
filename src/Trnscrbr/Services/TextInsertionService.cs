@@ -132,13 +132,13 @@ public sealed class TextInsertionService
         if (focusedTarget is null)
         {
             throw new DeferredTextInsertionException(
-                "Transcript ready. Choose a text field, then use Paste Last Transcript.");
+                "Paste skipped; no text field is active.");
         }
 
         if (expectedTarget is not null && !focusedTarget.Matches(expectedTarget))
         {
             throw new DeferredTextInsertionException(
-                "Transcript ready. Return to the original text field, then use Paste Last Transcript.");
+                "Paste skipped; active field changed.");
         }
     }
 
