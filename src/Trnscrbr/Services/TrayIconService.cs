@@ -119,7 +119,7 @@ public sealed class TrayIconService : IDisposable
     {
         var menu = new ContextMenuStrip();
         var recordItem = new ToolStripMenuItem("Start Recording", null, (_, _) => _onToggleRecording());
-        var showItem = new ToolStripMenuItem("Show/Hide Floating Button", null, (_, _) => _onToggleFloatingButton());
+        var showItem = new ToolStripMenuItem("Keep Floating Button Visible", null, (_, _) => _onToggleFloatingButton());
         var pasteItem = new ToolStripMenuItem("Paste Last Transcript", null, (_, _) => _onPasteLastTranscript());
         var forgetItem = new ToolStripMenuItem("Forget Last Transcript", null, (_, _) => _onForgetLastTranscript());
         var updateItem = new ToolStripMenuItem("Update Available", null, (_, _) => OpenAvailableUpdate()) { Visible = false };
@@ -135,6 +135,10 @@ public sealed class TrayIconService : IDisposable
             hotkeysItem.Text = _state.Settings.GlobalHotkeysEnabled
                 ? "Disable Global Hotkeys"
                 : "Enable Global Hotkeys";
+            showItem.Checked = _state.Settings.FloatingButtonEnabled;
+            showItem.Text = _state.Settings.FloatingButtonEnabled
+                ? "Hide Idle Floating Button"
+                : "Show Idle Floating Button";
             updateItem.Visible = _availableUpdate is { IsUpdateAvailable: true };
             updateItem.Text = _availableUpdate is { IsUpdateAvailable: true } update
                 ? $"Update Available: {update.LatestVersion}"

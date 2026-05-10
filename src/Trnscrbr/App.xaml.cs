@@ -32,6 +32,7 @@ public partial class App : System.Windows.Application
     private TrayPanelWindow? _trayPanel;
     private AdvancedSettingsWindow? _advancedSettings;
     private bool? _globalHotkeysApplied;
+    private bool? _idleFloatingButtonPreferenceApplied;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -66,7 +67,7 @@ public partial class App : System.Windows.Application
         _singleInstance.Start();
 
         _floatingButton = new FloatingButtonWindow(appState);
-        _audioCapture = new AudioCaptureService(appState);
+        _audioCapture = new AudioCaptureService(appState, _settingsStore, _diagnosticLog);
         var insertion = new TextInsertionService(appState, _diagnosticLog);
         _recording = new RecordingCoordinator(appState, insertion, _floatingButton, _audioCapture, _credentialStore, _openAiProvider, _localProvider, _diagnosticLog, _usageStats, ShowTrayPanel);
         _floatingButton.ToggleRecordingRequested += (_, _) => _recording.ToggleRecording();
@@ -93,10 +94,7 @@ public partial class App : System.Windows.Application
         StartUpdateNotificationCheck(appState);
         _audioCapture.ApplyPreBufferSetting();
         StartupService.Apply(settings);
-        if (settings.FloatingButtonEnabled)
-        {
-            _floatingButton.ShowNearTaskbar();
-        }
+        ApplyIdleFloatingButtonPreference(appState);
 
         if (ShouldShowMiniSettingsAfterStartup(e.Args, settings))
         {
@@ -233,13 +231,20 @@ public partial class App : System.Windows.Application
     private void AppStateOnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName != nameof(AppStateViewModel.Settings)
-            || sender is not AppStateViewModel state
-            || _globalHotkeysApplied == state.Settings.GlobalHotkeysEnabled)
+            || sender is not AppStateViewModel state)
         {
             return;
         }
 
-        ApplyGlobalHotkeyState(state);
+        if (_globalHotkeysApplied != state.Settings.GlobalHotkeysEnabled)
+        {
+            ApplyGlobalHotkeyState(state);
+        }
+
+        if (_idleFloatingButtonPreferenceApplied != state.Settings.FloatingButtonEnabled)
+        {
+            ApplyIdleFloatingButtonPreference(state);
+        }
     }
 
     private void ApplyGlobalHotkeyState(AppStateViewModel state)
@@ -347,30 +352,33 @@ public partial class App : System.Windows.Application
 
     private void ToggleFloatingButton()
     {
-        if (_floatingButton is null)
+        if (_floatingButton?.DataContext is not AppStateViewModel state)
         {
             return;
         }
 
-        if (_floatingButton.IsVisible)
+        state.Settings.FloatingButtonEnabled = !state.Settings.FloatingButtonEnabled;
+        _settingsStore?.Save(state.Settings);
+        state.RaiseSettingsChanged();
+        ApplyIdleFloatingButtonPreference(state);
+    }
+
+    private void ApplyIdleFloatingButtonPreference(AppStateViewModel state)
+    {
+        _idleFloatingButtonPreferenceApplied = state.Settings.FloatingButtonEnabled;
+        if (_floatingButton is null
+            || state.RecordingState is RecordingState.Recording or RecordingState.Processing)
         {
-            _floatingButton.Hide();
-            if (_floatingButton.DataContext is AppStateViewModel hiddenState)
-            {
-                hiddenState.Settings.FloatingButtonEnabled = false;
-                _settingsStore?.Save(hiddenState.Settings);
-                hiddenState.RaiseSettingsChanged();
-            }
+            return;
+        }
+
+        if (state.Settings.FloatingButtonEnabled)
+        {
+            _floatingButton.ShowNearTaskbar();
         }
         else
         {
-            _floatingButton.ShowNearTaskbar();
-            if (_floatingButton.DataContext is AppStateViewModel shownState)
-            {
-                shownState.Settings.FloatingButtonEnabled = true;
-                _settingsStore?.Save(shownState.Settings);
-                shownState.RaiseSettingsChanged();
-            }
+            _floatingButton.Hide();
         }
     }
 
@@ -385,14 +393,7 @@ public partial class App : System.Windows.Application
         _settingsStore?.Save(state.Settings);
         state.RaiseSettingsChanged();
 
-        if (visible)
-        {
-            _floatingButton.ShowNearTaskbar();
-        }
-        else
-        {
-            _floatingButton.Hide();
-        }
+        ApplyIdleFloatingButtonPreference(state);
     }
 
     private void ShowTrayPanel()

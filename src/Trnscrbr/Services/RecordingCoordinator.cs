@@ -230,7 +230,9 @@ public sealed class RecordingCoordinator
         {
             _audioCapture.Start();
             _state.RecordingState = RecordingState.Recording;
-            _state.StatusMessage = "Recording";
+            _state.StatusMessage = string.IsNullOrWhiteSpace(_audioCapture.LastMicrophoneFallbackMessage)
+                ? "Recording"
+                : "Configured microphone no longer available. Recording with Windows default.";
             _floatingButton.ShowNearTaskbar();
             _timer.Start();
         }
