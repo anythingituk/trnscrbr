@@ -8,6 +8,7 @@ public sealed class AppSettings
     public bool AddTrailingSpace { get; set; } = true;
     public bool ContextualCorrectionEnabled { get; set; } = true;
     public bool CursorContextEnabled { get; set; }
+    public bool IgnoreOtherSpeakersEnabled { get; set; }
     public bool VoiceActionCommandsEnabled { get; set; }
     public bool DiagnosticsEnabled { get; set; }
     public bool ForceCpuOnly { get; set; }

@@ -1008,6 +1008,7 @@ public partial class AdvancedSettingsWindow : Window
             Capture startup buffer: {_state.Settings.CaptureStartupBufferMilliseconds} ms
             Contextual correction: {FormatBool(_state.Settings.ContextualCorrectionEnabled)}
             Cursor context: {FormatBool(_state.Settings.CursorContextEnabled)}
+            Ignore other speakers: {FormatBool(_state.Settings.IgnoreOtherSpeakersEnabled)}
             Voice action commands: {FormatBool(_state.Settings.VoiceActionCommandsEnabled)}
             Launch on startup: {FormatBool(_state.Settings.LaunchOnStartup)}
             Floating button enabled: {FormatBool(_state.Settings.FloatingButtonEnabled)}
@@ -1331,6 +1332,7 @@ public partial class AdvancedSettingsWindow : Window
         _state.Settings.AddTrailingSpace = imported.AddTrailingSpace;
         _state.Settings.ContextualCorrectionEnabled = imported.ContextualCorrectionEnabled;
         _state.Settings.CursorContextEnabled = imported.CursorContextEnabled;
+        _state.Settings.IgnoreOtherSpeakersEnabled = imported.IgnoreOtherSpeakersEnabled;
         _state.Settings.VoiceActionCommandsEnabled = imported.VoiceActionCommandsEnabled;
         _state.Settings.DiagnosticsEnabled = imported.DiagnosticsEnabled;
         _state.Settings.ForceCpuOnly = imported.ForceCpuOnly;

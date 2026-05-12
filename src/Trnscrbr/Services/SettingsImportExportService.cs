@@ -51,6 +51,7 @@ public sealed class SettingsImportExportService
             AddTrailingSpace = settings.AddTrailingSpace,
             ContextualCorrectionEnabled = settings.ContextualCorrectionEnabled,
             CursorContextEnabled = settings.CursorContextEnabled,
+            IgnoreOtherSpeakersEnabled = settings.IgnoreOtherSpeakersEnabled,
             VoiceActionCommandsEnabled = settings.VoiceActionCommandsEnabled,
             DiagnosticsEnabled = settings.DiagnosticsEnabled,
             ForceCpuOnly = settings.ForceCpuOnly,

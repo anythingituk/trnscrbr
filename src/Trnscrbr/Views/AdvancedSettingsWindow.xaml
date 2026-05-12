@@ -374,6 +374,8 @@
                         <CheckBox Content="Contextual correction" IsChecked="{Binding Settings.ContextualCorrectionEnabled}" Margin="0,4" Click="Settings_OnChanged" />
                         <CheckBox Content="Use text around cursor as context" IsChecked="{Binding Settings.CursorContextEnabled}" Margin="0,4" Click="CursorContext_OnClick" />
                         <TextBlock Text="Reading text around the cursor may expose nearby content from another app and may be unreliable depending on the target application." TextWrapping="Wrap" Margin="24,4,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <CheckBox Content="Ignore other speakers" IsChecked="{Binding Settings.IgnoreOtherSpeakersEnabled}" Margin="0,4" Click="Settings_OnChanged" />
+                        <TextBlock Text="OpenAI mode only. Uses speaker-aware transcription and keeps the speaker with the most detected speech in the recording." TextWrapping="Wrap" Margin="24,4,0,14" Foreground="{StaticResource MutedForegroundBrush}" />
                         <TextBlock Text="Paste method" FontWeight="SemiBold" Margin="0,14,0,6" />
                         <ComboBox SelectedValue="{Binding Settings.PasteMethod}" SelectedValuePath="Content" SelectionChanged="Settings_OnChanged">
                             <ComboBoxItem Content="Ctrl+V" />

@@ -17,6 +17,7 @@ public sealed class OpenAiProviderService
     private static readonly Uri TranscriptionsUri = new("https://api.openai.com/v1/audio/transcriptions");
     private static readonly Uri ResponsesUri = new("https://api.openai.com/v1/responses");
     private const string TranscriptionModel = "gpt-4o-mini-transcribe";
+    private const string DiarizedTranscriptionModel = "gpt-4o-transcribe-diarize";
     private const string CleanupModel = "gpt-5.4-mini";
     private readonly HttpClient _httpClient = new();
     private readonly CursorContextService _cursorContext = new();
@@ -92,9 +93,18 @@ public sealed class OpenAiProviderService
         using var fileContent = new StreamContent(stream);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
         form.Add(fileContent, "file", Path.GetFileName(audio.FilePath));
-        form.Add(new StringContent(TranscriptionModel), "model");
-        form.Add(new StringContent("json"), "response_format");
-        form.Add(new StringContent("Transcribe the user's speech accurately. Do not invent missing words when the audio is too quiet, clipped, or unclear."), "prompt");
+        var useSpeakerFilter = state.Settings.IgnoreOtherSpeakersEnabled;
+        var model = useSpeakerFilter ? DiarizedTranscriptionModel : TranscriptionModel;
+        form.Add(new StringContent(model), "model");
+        form.Add(new StringContent(useSpeakerFilter ? "diarized_json" : "json"), "response_format");
+        if (useSpeakerFilter)
+        {
+            form.Add(new StringContent("auto"), "chunking_strategy");
+        }
+        else
+        {
+            form.Add(new StringContent("Transcribe the user's speech accurately. Do not invent missing words when the audio is too quiet, clipped, or unclear."), "prompt");
+        }
 
         if (!string.Equals(state.Settings.LanguageMode, "Auto", StringComparison.OrdinalIgnoreCase))
         {
@@ -107,14 +117,83 @@ public sealed class OpenAiProviderService
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
-            LogProviderFailure("OpenAI transcription failed", response, TranscriptionModel, json);
+            LogProviderFailure("OpenAI transcription failed", response, model, json);
             throw new InvalidOperationException($"OpenAI transcription failed: {(int)response.StatusCode} {response.ReasonPhrase}");
         }
 
         using var document = JsonDocument.Parse(json);
+        if (useSpeakerFilter)
+        {
+            return ExtractDominantSpeakerText(document.RootElement);
+        }
+
         return document.RootElement.TryGetProperty("text", out var text)
             ? text.GetString() ?? string.Empty
             : string.Empty;
+    }
+
+    private static string ExtractDominantSpeakerText(JsonElement root)
+    {
+        if (!root.TryGetProperty("segments", out var segments) || segments.ValueKind != JsonValueKind.Array)
+        {
+            return root.TryGetProperty("text", out var text)
+                ? text.GetString() ?? string.Empty
+                : string.Empty;
+        }
+
+        var speakerDurations = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        var speakerTextLengths = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var orderedSegments = new List<DiarizedSegment>();
+
+        foreach (var segment in segments.EnumerateArray())
+        {
+            if (!segment.TryGetProperty("speaker", out var speakerElement)
+                || !segment.TryGetProperty("text", out var textElement))
+            {
+                continue;
+            }
+
+            var speaker = speakerElement.GetString();
+            var text = textElement.GetString();
+            if (string.IsNullOrWhiteSpace(speaker) || string.IsNullOrWhiteSpace(text))
+            {
+                continue;
+            }
+
+            var start = TryGetDouble(segment, "start");
+            var end = TryGetDouble(segment, "end");
+            var duration = end > start ? end - start : 0;
+            speakerDurations[speaker] = speakerDurations.GetValueOrDefault(speaker) + duration;
+            speakerTextLengths[speaker] = speakerTextLengths.GetValueOrDefault(speaker) + text.Length;
+            orderedSegments.Add(new DiarizedSegment(speaker, text.Trim()));
+        }
+
+        if (orderedSegments.Count == 0)
+        {
+            return root.TryGetProperty("text", out var text)
+                ? text.GetString() ?? string.Empty
+                : string.Empty;
+        }
+
+        var dominantSpeaker = speakerDurations
+            .OrderByDescending(item => item.Value)
+            .ThenByDescending(item => speakerTextLengths.GetValueOrDefault(item.Key))
+            .First().Key;
+
+        return string.Join(
+            " ",
+            orderedSegments
+                .Where(segment => string.Equals(segment.Speaker, dominantSpeaker, StringComparison.OrdinalIgnoreCase))
+                .Select(segment => segment.Text));
+    }
+
+    private static double TryGetDouble(JsonElement element, string propertyName)
+    {
+        return element.TryGetProperty(propertyName, out var property)
+            && property.ValueKind == JsonValueKind.Number
+            && property.TryGetDouble(out var value)
+            ? value
+            : 0;
     }
 
     private async Task<CleanupResult> CleanTranscriptAsync(
@@ -350,6 +429,8 @@ public sealed class OpenAiProviderService
     }
 
     private sealed record CleanupResult(string CleanedTranscript, int InputTokens, int OutputTokens);
+
+    private sealed record DiarizedSegment(string Speaker, string Text);
 }
 
 public sealed record ProviderTestResult(bool IsSuccess, string Message)
