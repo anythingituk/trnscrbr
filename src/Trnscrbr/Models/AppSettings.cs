@@ -12,6 +12,7 @@ public sealed class AppSettings
     public bool DiagnosticsEnabled { get; set; }
     public bool ForceCpuOnly { get; set; }
     public bool GlobalHotkeysEnabled { get; set; } = true;
+    public bool KeepMiniSettingsVisible { get; set; }
     public int CaptureStartupBufferMilliseconds { get; set; }
     public string ProviderMode { get; set; } = "Not configured";
     public string ProviderName { get; set; } = "OpenAI";
@@ -20,7 +21,7 @@ public sealed class AppSettings
     public string LanguageMode { get; set; } = "Auto";
     public string EnglishDialect { get; set; } = "Auto";
     public string PasteMethod { get; set; } = "Ctrl+V";
-    public string ToggleRecordingHotkey { get; set; } = "Ctrl+Alt+R";
+    public string ToggleRecordingHotkey { get; set; } = "F9";
     public string PushToTalkHotkey { get; set; } = "Ctrl+Alt+Space";
     public string MicrophoneName { get; set; } = "Windows default";
     public string ActiveEngine { get; set; } = "None";

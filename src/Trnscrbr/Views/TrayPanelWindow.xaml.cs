@@ -2,9 +2,12 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 using System.Windows.Input;
+using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using System.Windows.Threading;
 using Trnscrbr.Models;
 using Trnscrbr.Services;
@@ -57,7 +60,8 @@ public partial class TrayPanelWindow : Window
         DataContext = state;
         _showAdvanced = showAdvanced;
         _state.PropertyChanged += State_OnPropertyChanged;
-        Deactivated += (_, _) => Hide();
+        Deactivated += Window_OnDeactivated;
+        UpdateRecordingChrome();
     }
 
     public void ShowFromSystemTray()
@@ -131,10 +135,28 @@ public partial class TrayPanelWindow : Window
         base.OnClosed(e);
     }
 
+    private void Window_OnDeactivated(object? sender, EventArgs e)
+    {
+        if (!_state.Settings.KeepMiniSettingsVisible && WindowState != WindowState.Minimized)
+        {
+            Hide();
+        }
+    }
+
     private void Advanced_OnClick(object sender, RoutedEventArgs e)
     {
         Persist();
         _showAdvanced();
+    }
+
+    private void Minimize_OnClick(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void Close_OnClick(object sender, RoutedEventArgs e)
+    {
+        Hide();
     }
 
     private void Window_OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -144,6 +166,17 @@ public partial class TrayPanelWindow : Window
             Hide();
             e.Handled = true;
         }
+    }
+
+    private void HeaderDragArea_OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ButtonState != MouseButtonState.Pressed || IsInteractiveElement(e.OriginalSource as DependencyObject))
+        {
+            return;
+        }
+
+        DragMove();
+        e.Handled = true;
     }
 
     private void Settings_OnChanged(object sender, RoutedEventArgs e)
@@ -189,6 +222,11 @@ public partial class TrayPanelWindow : Window
 
     private void State_OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName is nameof(AppStateViewModel.RecordingState))
+        {
+            Dispatcher.Invoke(UpdateRecordingChrome);
+        }
+
         if (e.PropertyName is nameof(AppStateViewModel.Settings) or nameof(AppStateViewModel.IsProviderConfigured))
         {
             Dispatcher.Invoke(() =>
@@ -202,9 +240,48 @@ public partial class TrayPanelWindow : Window
 
     private void RefreshHotkeySummary()
     {
-        HotkeySummaryText.Text = _state.Settings.GlobalHotkeysEnabled
-            ? $"Hotkeys: toggle {FormatHotkey(_state.Settings.ToggleRecordingHotkey)}; push-to-talk {FormatHotkey(_state.Settings.PushToTalkHotkey)}."
-            : "Global hotkeys disabled. Use tray controls.";
+        HotkeySummaryText.Inlines.Clear();
+        if (!_state.Settings.GlobalHotkeysEnabled)
+        {
+            HotkeySummaryText.Inlines.Add("Global hotkeys disabled. Use tray controls.");
+            return;
+        }
+
+        HotkeySummaryText.Inlines.Add("Hotkeys: toggle ");
+        HotkeySummaryText.Inlines.Add(new Bold(new Run(FormatHotkey(_state.Settings.ToggleRecordingHotkey))));
+        HotkeySummaryText.Inlines.Add("; push-to-talk ");
+        HotkeySummaryText.Inlines.Add(new Bold(new Run(FormatHotkey(_state.Settings.PushToTalkHotkey))));
+        HotkeySummaryText.Inlines.Add(".");
+    }
+
+    private void UpdateRecordingChrome()
+    {
+        if (PanelChrome.Effect is not DropShadowEffect shadow)
+        {
+            return;
+        }
+
+        switch (_state.RecordingState)
+        {
+            case RecordingState.Recording:
+                PanelChrome.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 34, 68));
+                shadow.Color = System.Windows.Media.Color.FromRgb(255, 34, 68);
+                shadow.BlurRadius = 36;
+                shadow.Opacity = 0.72;
+                break;
+            case RecordingState.Processing:
+                PanelChrome.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(36, 220, 108));
+                shadow.Color = System.Windows.Media.Color.FromRgb(36, 220, 108);
+                shadow.BlurRadius = 36;
+                shadow.Opacity = 0.72;
+                break;
+            default:
+                PanelChrome.ClearValue(System.Windows.Controls.Border.BorderBrushProperty);
+                shadow.Color = System.Windows.Media.Color.FromArgb(102, 0, 0, 0);
+                shadow.BlurRadius = 28;
+                shadow.Opacity = 0.25;
+                break;
+        }
     }
 
     private void RefreshCostWarning()
@@ -407,6 +484,24 @@ public partial class TrayPanelWindow : Window
     private static string FormatHotkey(string hotkey)
     {
         return hotkey.Replace("+", " + ", StringComparison.Ordinal);
+    }
+
+    private static bool IsInteractiveElement(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (source is System.Windows.Controls.Primitives.ButtonBase
+                or System.Windows.Controls.ComboBox
+                or System.Windows.Controls.TextBox
+                or System.Windows.Controls.Primitives.ScrollBar)
+            {
+                return true;
+            }
+
+            source = VisualTreeHelper.GetParent(source);
+        }
+
+        return false;
     }
 
     private bool IsLocalModeReady()

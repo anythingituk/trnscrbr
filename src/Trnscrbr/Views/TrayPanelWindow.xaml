@@ -14,7 +14,8 @@
         AutomationProperties.Name="Trnscrbr quick settings"
         KeyboardNavigation.TabNavigation="Cycle"
         KeyDown="Window_OnKeyDown">
-    <Border Margin="12"
+    <Border x:Name="PanelChrome"
+            Margin="12"
             Padding="20"
             CornerRadius="14"
             Background="{StaticResource SurfaceBrush}"
@@ -25,7 +26,40 @@
         </Border.Effect>
         <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="536">
         <StackPanel>
-            <DockPanel Margin="0,0,0,8" LastChildFill="True">
+            <DockPanel Margin="0,0,0,8"
+                       LastChildFill="True"
+                       Cursor="SizeAll"
+                       MouseLeftButtonDown="HeaderDragArea_OnMouseLeftButtonDown">
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Cursor="Arrow">
+                    <Button x:Name="MinimizeButton"
+                            Width="32"
+                            Height="32"
+                            Padding="0"
+                            Margin="0,0,4,0"
+                            Background="#329DCD"
+                            BorderBrush="#329DCD"
+                            Foreground="White"
+                            Content="-"
+                            FontSize="18"
+                            FontWeight="SemiBold"
+                            Click="Minimize_OnClick"
+                            ToolTip="Minimize"
+                            AutomationProperties.Name="Minimize mini settings" />
+                    <Button x:Name="CloseButton"
+                            Width="32"
+                            Height="32"
+                            Padding="0"
+                            Margin="0,0,4,0"
+                            Background="#329DCD"
+                            BorderBrush="#329DCD"
+                            Foreground="White"
+                            Content="x"
+                            FontSize="15"
+                            FontWeight="SemiBold"
+                            Click="Close_OnClick"
+                            ToolTip="Close"
+                            AutomationProperties.Name="Close mini settings" />
+                </StackPanel>
                 <Button x:Name="AdvancedButton"
                         DockPanel.Dock="Right"
                         Width="42"
@@ -33,6 +67,7 @@
                         Padding="0"
                         Background="Transparent"
                         BorderBrush="Transparent"
+                        Cursor="Arrow"
                         Click="Advanced_OnClick"
                         ToolTip="Advanced settings"
                         TabIndex="5"
@@ -90,7 +125,24 @@
                 </StackPanel>
             </DockPanel>
             <Border Background="{StaticResource StatusBackgroundBrush}" CornerRadius="8" Padding="10,7" Margin="0,0,0,12">
-                <TextBlock Text="{Binding StatusMessage}" Foreground="{StaticResource AccentBrush}" TextWrapping="Wrap" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="{Binding StatusMessage}"
+                               Foreground="{StaticResource AccentBrush}"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Center" />
+                    <TextBlock x:Name="RecordingHintText"
+                               Grid.Column="1"
+                               Text="F9 toggles recording; press again to transcribe."
+                               Foreground="{StaticResource MutedForegroundBrush}"
+                               TextAlignment="Right"
+                               TextWrapping="Wrap"
+                               VerticalAlignment="Center"
+                               Margin="12,0,0,0" />
+                </Grid>
             </Border>
 
             <TextBlock Text="AI model" FontWeight="SemiBold" />
@@ -160,8 +212,14 @@
 
             <TextBlock x:Name="HotkeySummaryText"
                        TextWrapping="Wrap"
+                       TextAlignment="Center"
                        Foreground="{StaticResource MutedForegroundBrush}"
                        Margin="0,2,0,0" />
+            <CheckBox Content="Keep mini settings visible when switching apps"
+                      IsChecked="{Binding Settings.KeepMiniSettingsVisible}"
+                      HorizontalAlignment="Center"
+                      Margin="0,10,0,0"
+                      Click="Settings_OnChanged" />
 
         </StackPanel>
         </ScrollViewer>

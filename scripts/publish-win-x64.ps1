@@ -85,7 +85,7 @@ Invoke-Checked $dotnetPath @(
 )
 
 Assert-PublishedExeContains @(
-    "Ctrl + Alt + R",
+    "Press F9",
     "Ctrl+Shift+R",
     "Try Test Phrase",
     "Complete Setup",

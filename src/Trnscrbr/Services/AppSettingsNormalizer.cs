@@ -26,10 +26,10 @@ public static class AppSettingsNormalizer
 
     private static readonly string[] ToggleRecordingHotkeys =
     [
+        "F9",
         "Ctrl+Alt+R",
         "Ctrl+Shift+R",
-        "Ctrl+Alt+D",
-        "F9"
+        "Ctrl+Alt+D"
     ];
 
     private static readonly string[] PushToTalkHotkeys =

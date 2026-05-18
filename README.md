@@ -10,7 +10,7 @@ See [PRODUCT_SPEC.md](PRODUCT_SPEC.md) for the current MVP specification.
 
 - Windows desktop app built with .NET/WPF.
 - System tray utility with floating glass recording button.
-- Default toggle recording hotkey: `Ctrl + Alt + R`.
+- Default toggle recording hotkey: `F9`.
 - Default push-to-talk hotkey: `Ctrl + Alt + Space`.
 - Default cancel: `Esc`.
 - Paste Last Transcript is available from the tray and glass button menus.
@@ -27,6 +27,12 @@ Build:
 
 ```powershell
 dotnet build .\Trnscrbr.sln
+```
+
+Repo setup:
+
+```powershell
+.\setup.ps1
 ```
 
 Build installer:
@@ -50,7 +56,7 @@ artifacts\installer\Trnscrbr-Setup-0.2.0-win-x64.exe
 5. Open Advanced Settings, go to **Local Models**, run **Free Quick Setup**, and confirm it reports local mode ready.
 6. Click **Try Test Phrase**, speak for 5 seconds, and confirm the transcript appears.
 7. Focus a normal editable text field.
-8. Press `Ctrl + Alt + R` or `F9`, speak, then press the same shortcut again to transcribe.
+8. Press `F9`, speak, then press it again to transcribe.
 9. Confirm text is inserted for review and Enter is not pressed.
 10. Test `Paste Last Transcript` from the tray or glass button menu.
 
@@ -70,7 +76,7 @@ Useful settings while testing:
 WPF MVP in progress. Current build includes:
 
 - Dynamic tray icon and floating glass button with mic-level waveform states.
-- `Ctrl + Alt + R` toggle recording, `Ctrl + Alt + Space` push-to-talk, and `Esc` cancel.
+- `F9` toggle recording, `Ctrl + Alt + Space` push-to-talk, and `Esc` cancel.
 - First launch opens the compact mini settings panel so users can choose AI model, microphone, and rewrite style.
 - Compact tray panel with monitor-aware placement, foreground launch after setup, and Windows light/dark theme support.
 - Managed free local AI setup with model download, PC performance guidance, and test phrase flow.

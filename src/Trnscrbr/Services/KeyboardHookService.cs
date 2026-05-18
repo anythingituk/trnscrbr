@@ -74,7 +74,7 @@ public sealed class KeyboardHookService : IDisposable
         var win = IsKeyDown(Keys.LWin) || IsKeyDown(Keys.RWin);
         var alt = IsKeyDown(Keys.LMenu) || IsKeyDown(Keys.RMenu) || IsKeyDown(Keys.Menu);
         var shift = IsKeyDown(Keys.LShiftKey) || IsKeyDown(Keys.RShiftKey) || IsKeyDown(Keys.ShiftKey);
-        var toggleHotkey = HotkeyGesture.Parse(_state.Settings.ToggleRecordingHotkey, "Ctrl+Alt+R");
+        var toggleHotkey = HotkeyGesture.Parse(_state.Settings.ToggleRecordingHotkey, "F9");
         var pushToTalkHotkey = HotkeyGesture.Parse(_state.Settings.PushToTalkHotkey, "Ctrl+Alt+Space");
         TrackChordKeyState(key, isDown, isUp, ctrl, win, alt, shift);
 
