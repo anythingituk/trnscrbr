@@ -9,8 +9,11 @@ public sealed class AudioCaptureService : IDisposable
 {
     private const int WavHeaderBytes = 44;
     private const int MinimumAudioDataBytes = 3200;
+    private const string DefaultMicrophoneName = "Windows default";
 
     private readonly AppStateViewModel _state;
+    private readonly AppSettingsStore _settingsStore;
+    private readonly DiagnosticLogService _diagnosticLog;
     private readonly object _syncRoot = new();
     private readonly Queue<byte[]> _preBuffer = new();
     private WaveInEvent? _waveIn;
@@ -21,25 +24,33 @@ public sealed class AudioCaptureService : IDisposable
     private bool _isRecording;
     private int _preBufferBytes;
     private int? _activeDeviceNumber;
+    private string _activeMicrophoneName = DefaultMicrophoneName;
     private WaveFormat _waveFormat = new(16000, 16, 1);
     private int _recordingCallbackCount;
     private long _recordingBytes;
     private double _recordingPeak;
 
-    public AudioCaptureService(AppStateViewModel state)
+    public AudioCaptureService(
+        AppStateViewModel state,
+        AppSettingsStore settingsStore,
+        DiagnosticLogService diagnosticLog)
     {
         _state = state;
+        _settingsStore = settingsStore;
+        _diagnosticLog = diagnosticLog;
     }
 
     public event EventHandler<double>? InputLevelChanged;
 
     public AudioCaptureSummary LastCaptureSummary { get; private set; } = AudioCaptureSummary.Empty;
 
+    public string? LastMicrophoneFallbackMessage { get; private set; }
+
     public IReadOnlyList<AudioInputDevice> GetInputDevices()
     {
         var devices = new List<AudioInputDevice>
         {
-            new(-1, "Windows default", _state.Settings.MicrophoneName == "Windows default")
+            new(-1, DefaultMicrophoneName, _state.Settings.MicrophoneName == DefaultMicrophoneName)
         };
 
         for (var i = 0; i < WaveIn.DeviceCount; i++)
@@ -59,8 +70,14 @@ public sealed class AudioCaptureService : IDisposable
         _recordingPath = Path.Combine(directory, $"recording-{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss-fff}.wav");
         _startedAt = DateTimeOffset.Now;
         _cancelled = false;
+        LastMicrophoneFallbackMessage = null;
         LastCaptureSummary = AudioCaptureSummary.Empty;
         EnsureCaptureStarted();
+        _diagnosticLog.Info("Microphone used for recording", new Dictionary<string, string>
+        {
+            ["microphone"] = _activeMicrophoneName,
+            ["configuredMicrophone"] = _state.Settings.MicrophoneName
+        });
 
         lock (_syncRoot)
         {
@@ -88,7 +105,7 @@ public sealed class AudioCaptureService : IDisposable
         var path = _recordingPath;
         var startedAt = _startedAt ?? DateTimeOffset.Now;
         var format = _waveFormat;
-        var microphone = _state.Settings.MicrophoneName;
+        var microphone = _activeMicrophoneName;
         var duration = DateTimeOffset.Now - startedAt;
         var callbackCount = 0;
         var recordedBytes = 0L;
@@ -204,10 +221,10 @@ public sealed class AudioCaptureService : IDisposable
 
     private void EnsureCaptureStarted()
     {
-        var deviceNumber = ResolveDeviceNumber();
+        var selection = ResolveMicrophoneSelection();
         if (_waveIn is not null)
         {
-            if (_activeDeviceNumber == deviceNumber || _isRecording)
+            if (_activeDeviceNumber == selection.DeviceNumber || _isRecording)
             {
                 return;
             }
@@ -217,12 +234,21 @@ public sealed class AudioCaptureService : IDisposable
 
         _waveIn = new WaveInEvent
         {
-            DeviceNumber = deviceNumber,
+            DeviceNumber = selection.DeviceNumber,
             WaveFormat = _waveFormat,
             BufferMilliseconds = 20,
             NumberOfBuffers = 3
         };
-        _activeDeviceNumber = deviceNumber;
+        _activeDeviceNumber = selection.DeviceNumber;
+        _activeMicrophoneName = selection.MicrophoneName;
+
+        _diagnosticLog.Info("Microphone selected for capture", new Dictionary<string, string>
+        {
+            ["configuredMicrophone"] = selection.ConfiguredMicrophoneName,
+            ["activeMicrophone"] = selection.MicrophoneName,
+            ["deviceNumber"] = selection.DeviceNumber.ToString(),
+            ["fallbackApplied"] = selection.FallbackApplied.ToString()
+        });
 
         _waveIn.DataAvailable += OnDataAvailable;
         _waveIn.StartRecording();
@@ -254,6 +280,7 @@ public sealed class AudioCaptureService : IDisposable
         _waveIn?.Dispose();
         _waveIn = null;
         _activeDeviceNumber = null;
+        _activeMicrophoneName = DefaultMicrophoneName;
 
         lock (_syncRoot)
         {
@@ -283,11 +310,15 @@ public sealed class AudioCaptureService : IDisposable
         }
     }
 
-    private int ResolveDeviceNumber()
+    private MicrophoneSelection ResolveMicrophoneSelection()
     {
-        if (_state.Settings.MicrophoneName == "Windows default")
+        var configuredMicrophoneName = string.IsNullOrWhiteSpace(_state.Settings.MicrophoneName)
+            ? DefaultMicrophoneName
+            : _state.Settings.MicrophoneName;
+
+        if (configuredMicrophoneName == DefaultMicrophoneName)
         {
-            return -1;
+            return new MicrophoneSelection(-1, DefaultMicrophoneName, configuredMicrophoneName, false);
         }
 
         var availableDevices = new List<string>();
@@ -295,17 +326,28 @@ public sealed class AudioCaptureService : IDisposable
         {
             var capabilities = WaveIn.GetCapabilities(i);
             availableDevices.Add(capabilities.ProductName);
-            if (capabilities.ProductName == _state.Settings.MicrophoneName)
+            if (capabilities.ProductName == configuredMicrophoneName)
             {
-                return i;
+                return new MicrophoneSelection(i, capabilities.ProductName, configuredMicrophoneName, false);
             }
         }
 
         var available = availableDevices.Count == 0
             ? "none"
             : string.Join(", ", availableDevices);
-        throw new InvalidOperationException(
-            $"Microphone '{_state.Settings.MicrophoneName}' is not available. Available microphones: {available}. Choose Windows default or reconnect the microphone.");
+        LastMicrophoneFallbackMessage = $"Configured microphone '{configuredMicrophoneName}' is no longer available. Using Windows default.";
+        _state.StatusMessage = LastMicrophoneFallbackMessage;
+        _diagnosticLog.Info("Configured microphone unavailable; falling back to Windows default", new Dictionary<string, string>
+        {
+            ["configuredMicrophone"] = configuredMicrophoneName,
+            ["availableMicrophones"] = available
+        });
+
+        _state.Settings.MicrophoneName = DefaultMicrophoneName;
+        _settingsStore.Save(_state.Settings);
+        _state.RaiseSettingsChanged();
+
+        return new MicrophoneSelection(-1, DefaultMicrophoneName, configuredMicrophoneName, true);
     }
 
     private static double CalculatePeak(byte[] buffer, int bytesRecorded)
@@ -338,6 +380,12 @@ public sealed class AudioCaptureService : IDisposable
         }
     }
 }
+
+internal sealed record MicrophoneSelection(
+    int DeviceNumber,
+    string MicrophoneName,
+    string ConfiguredMicrophoneName,
+    bool FallbackApplied);
 
 public sealed record AudioCaptureSummary(
     TimeSpan Duration,

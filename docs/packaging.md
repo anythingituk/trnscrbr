@@ -23,7 +23,7 @@ Install Inno Setup, then run:
 Output:
 
 ```text
-artifacts\installer\Trnscrbr-Setup-0.2.0-win-x64.exe
+artifacts\installer\Trnscrbr-Setup-0.2.2-win-x64.exe
 ```
 
 The installer shows the current-user startup task checked by default and writes the startup entry only if that task remains selected. API keys remain stored separately in Windows Credential Manager and are not packaged.
@@ -61,8 +61,8 @@ https://github.com/anythingituk/trnscrbr/releases/latest
 To make updates work for real users, publish releases with the Windows installer attached. The release workflow runs when a version tag is pushed:
 
 ```powershell
-git tag v0.2.0
-git push origin v0.2.0
+git tag v0.2.2
+git push origin v0.2.2
 ```
 
 The workflow builds and smoke-tests the installer, creates a GitHub Release, and uploads:
@@ -71,4 +71,4 @@ The workflow builds and smoke-tests the installer, creates a GitHub Release, and
 Trnscrbr-Setup-<version>-win-x64.exe
 ```
 
-Use a new SemVer tag for each public installer, for example `v0.2.1`, `v0.3.0`, or `v1.0.0`. The app compares the release tag with its own version and opens the installer asset when a newer release is available.
+Use a new SemVer tag for each public installer, for example `v0.2.2`, `v0.3.0`, or `v1.0.0`. The app compares the release tag with its own version and opens the installer asset when a newer release is available.

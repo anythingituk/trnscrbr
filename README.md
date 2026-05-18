@@ -44,7 +44,7 @@ Build installer:
 Installer output:
 
 ```text
-artifacts\installer\Trnscrbr-Setup-0.2.0-win-x64.exe
+artifacts\installer\Trnscrbr-Setup-0.2.2-win-x64.exe
 ```
 
 ## Tester Flow
@@ -67,6 +67,7 @@ Useful settings while testing:
 - Rewrite style: `Plain English`, `Professional`, `Friendly`, `Concise`, or `Native-level English`.
 - English spelling: `Auto`, `British English`, `American English`, `Canadian English`, or `Australian English`.
 - Capture startup buffer: `Off` or a short buffer to help avoid clipped first words.
+- Ignore other speakers: OpenAI-only speaker-aware filtering that keeps the dominant speaker in a recording.
 - Hotkeys: choose preset toggle and push-to-talk shortcuts if the defaults conflict with Windows or another app.
 - Diagnostics: refresh/copy logs or open the diagnostics folder.
 - Local Models: run Free Quick Setup, try a test phrase, check PC guidance, download/remove verified local AI models, browse for existing local files, detect common local candidates, and optionally use Ollama cleanup from advanced local AI settings.
@@ -85,6 +86,7 @@ WPF MVP in progress. Current build includes:
 - One-hour last transcript recovery from hotkey, tray menu, and floating-button menu.
 - Optional voice action commands for deleting the last Trnscrbr insertion or discarding the current dictation.
 - Optional cursor-context correction using Windows UI Automation.
+- Optional OpenAI speaker filtering to discard nearby voices when the app user is the dominant speaker.
 - Advanced settings for provider, local model discovery, privacy/context, language, vocabulary, diagnostics, usage, updates, and import/export.
 - Windows installer packaging script, GitHub Actions build artifact, and package smoke test.
 - Single-instance relaunch behaviour that shows the running instance.

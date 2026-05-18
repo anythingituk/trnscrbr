@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2
+
+- Added optional OpenAI speaker filtering with an Ignore other speakers privacy setting.
+- Speaker filtering uses diarized transcription and keeps the dominant speaker before cleanup/insertion.
+
 ## 0.2.0
 
 - Added managed Free Quick Setup for local Whisper dictation.

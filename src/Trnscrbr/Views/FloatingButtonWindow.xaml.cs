@@ -66,6 +66,7 @@ public partial class FloatingButtonWindow : Window
         Left = area.Left + (area.Width - Width) / 2;
         Top = area.Bottom - Height - 12;
         Show();
+        ScheduleIdleAutoHideIfNeeded();
     }
 
     public void ShowTransient()
@@ -76,7 +77,7 @@ public partial class FloatingButtonWindow : Window
         }
 
         _hideTimer.Stop();
-        _hideTimer.Start();
+        ScheduleIdleAutoHideIfNeeded();
     }
 
     private void FadeOutAndHide()
@@ -171,14 +172,33 @@ public partial class FloatingButtonWindow : Window
                 break;
         }
 
-        if (IsVisible
-            && (_state.RecordingState is RecordingState.Idle or RecordingState.Error)
-            && !_hideTimer.IsEnabled)
-        {
-            _hideTimer.Start();
-        }
+        ScheduleIdleAutoHideIfNeeded();
 
         AnimateWaveform();
+    }
+
+    private void ScheduleIdleAutoHideIfNeeded()
+    {
+        if (!IsVisible)
+        {
+            _hideTimer.Stop();
+            return;
+        }
+
+        var shouldAutoHide = _state.RecordingState == RecordingState.Error
+            || (_state.RecordingState == RecordingState.Idle && !_state.Settings.FloatingButtonEnabled);
+
+        if (shouldAutoHide)
+        {
+            if (!_hideTimer.IsEnabled)
+            {
+                _hideTimer.Start();
+            }
+
+            return;
+        }
+
+        _hideTimer.Stop();
     }
 
     private bool ShouldShowStatusMessage()
@@ -207,7 +227,9 @@ public partial class FloatingButtonWindow : Window
     {
         return _state.RecordingState switch
         {
-            RecordingState.Recording => "Recording (press ESC to cancel)",
+            RecordingState.Recording => string.Equals(_state.StatusMessage, "Recording", StringComparison.OrdinalIgnoreCase)
+                ? "Recording (press ESC to cancel)"
+                : _state.StatusMessage,
             RecordingState.Processing => "Transcribing (press ESC to cancel)",
             _ => _state.StatusMessage
         };
@@ -316,7 +338,7 @@ public partial class FloatingButtonWindow : Window
         menu.Items.Add(recordItem);
         menu.Items.Add(pasteItem);
         menu.Items.Add(forgetItem);
-        menu.Items.Add(new System.Windows.Controls.MenuItem { Header = "Show/Hide Floating Button", IsEnabled = false });
+        menu.Items.Add(new System.Windows.Controls.MenuItem { Header = "Idle Floating Button", IsEnabled = false });
         menu.Items.Add(settingsItem);
         menu.Items.Add(new System.Windows.Controls.Separator());
         menu.Items.Add(quitItem);
