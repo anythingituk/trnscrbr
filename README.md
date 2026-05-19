@@ -44,7 +44,7 @@ Build installer:
 Installer output:
 
 ```text
-artifacts\installer\Trnscrbr-Setup-0.2.2-win-x64.exe
+artifacts\installer\Trnscrbr-Setup-0.2.5-win-x64.exe
 ```
 
 ## Tester Flow

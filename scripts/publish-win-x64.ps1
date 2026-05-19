@@ -89,7 +89,9 @@ Assert-PublishedExeContains @(
     "Ctrl+Shift+R",
     "Try Test Phrase",
     "Complete Setup",
-    "Free Quick Setup"
+    "Free Quick Setup",
+    "Keep mini settings visible when switching apps",
+    "F9 toggles recording; press again to transcribe."
 )
 
 if ($BuildInstaller) {

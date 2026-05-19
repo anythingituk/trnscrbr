@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.5
+
+- Released the current mini settings panel with draggable header controls, minimize and close buttons, and an option to keep the panel visible when switching apps.
+- Added clearer mini settings recording feedback and hotkey display.
+- Reissued the installer from the current main branch because the v0.2.4 release tag was cut before these UI changes.
+
 ## 0.2.2
 
 - Added optional OpenAI speaker filtering with an Ignore other speakers privacy setting.
