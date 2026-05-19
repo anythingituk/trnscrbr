@@ -69,56 +69,40 @@
         </Border>
 
         <TabControl x:Name="SettingsTabControl" Grid.Row="1" Margin="18">
-            <TabItem Header="Setup">
+            <TabItem Header="Home">
                 <ScrollViewer>
-                    <StackPanel Margin="18">
+                    <StackPanel Margin="18" MaxWidth="560" HorizontalAlignment="Left">
                         <TextBlock x:Name="SetupTitleText" Text="Setup" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock x:Name="SetupIntroText" FontSize="14" Margin="0,8,0,14" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
-                        <StackPanel Margin="0,0,0,14">
-                            <TextBlock Text="- Right-click the tray icon or glass button for Settings." FontSize="14" TextWrapping="Wrap" Margin="0,0,0,3" />
-                            <TextBlock Text="- Press F9 to start recording; press it again to stop and transcribe." FontSize="14" TextWrapping="Wrap" Margin="0,0,0,3" />
-                            <TextBlock Text="- Hold Ctrl + Alt + Space for push-to-talk, then release to transcribe." FontSize="14" TextWrapping="Wrap" Margin="0,0,0,3" />
-                            <TextBlock Text="- Click the glass button for manual recording controls." FontSize="14" TextWrapping="Wrap" Margin="0,0,0,3" />
-                            <TextBlock Text="- Press Esc to cancel recording or processing." FontSize="14" TextWrapping="Wrap" Margin="0,0,0,3" />
-                            <TextBlock Text="- Use the tray or glass button menu to recover the last transcript for up to one hour." FontSize="14" TextWrapping="Wrap" Margin="0,0,0,3" />
-                            <TextBlock Text="- Trnscrbr uses the clipboard temporarily, restores it afterwards, and does not save transcript history." FontSize="14" TextWrapping="Wrap" />
-                        </StackPanel>
-                        <ComboBox SelectedValue="{Binding Settings.ProviderMode}" SelectedValuePath="Content" Margin="0,0,0,12" SelectionChanged="Settings_OnChanged" AutomationProperties.Name="Provider choice">
-                            <ComboBoxItem Content="Not configured" />
-                            <ComboBoxItem Content="Bring your own API key" />
-                            <ComboBoxItem Content="Local mode" />
-                            <ComboBoxItem Content="Cloud managed by app (planned)" IsEnabled="False" />
+                        <TextBlock Text="Dictation engine" FontWeight="SemiBold" />
+                        <ComboBox x:Name="SetupAiChoiceComboBox"
+                                  Margin="0,6,0,10"
+                                  SelectionChanged="SetupAiChoice_OnSelectionChanged"
+                                  AutomationProperties.Name="Dictation engine" />
+                        <Button x:Name="SetupPrimaryButton"
+                                Content="Download Small Local AI"
+                                Width="190"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,10"
+                                Click="SetupPrimary_OnClick" />
+                        <TextBlock x:Name="ProviderModeStatusText"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,18"
+                                   Foreground="{StaticResource MutedForegroundBrush}" />
+
+                        <TextBlock Text="Recording hotkey" FontWeight="SemiBold" />
+                        <ComboBox x:Name="SetupToggleHotkeyComboBox"
+                                  SelectedValue="{Binding Settings.ToggleRecordingHotkey}"
+                                  SelectedValuePath="Content"
+                                  Margin="0,6,0,10"
+                                  SelectionChanged="Settings_OnChanged"
+                                  AutomationProperties.Name="Recording hotkey">
+                            <ComboBoxItem Content="F9" />
+                            <ComboBoxItem Content="Ctrl+Alt+R" />
+                            <ComboBoxItem Content="Ctrl+Shift+R" />
+                            <ComboBoxItem Content="Ctrl+Alt+D" />
                         </ComboBox>
-                        <TextBlock x:Name="ProviderModeStatusText" TextWrapping="Wrap" Margin="0,0,0,10" Foreground="{StaticResource MutedForegroundBrush}" />
-                        <WrapPanel x:Name="SetupActionPanel" Margin="0,0,0,12">
-                            <Button x:Name="SetupProviderButton"
-                                    Content="Add OpenAI key"
-                                    Width="140"
-                                    Margin="0,0,8,8"
-                                    Click="SetupProvider_OnClick" />
-                            <Button x:Name="SetupLocalModelsButton"
-                                    Content="Set up local AI"
-                                    Width="140"
-                                    Margin="0,0,8,8"
-                                    Click="SetupLocalModels_OnClick" />
-                        </WrapPanel>
-                        <Expander Header="Advanced app options" Margin="0,0,0,12">
-                            <StackPanel Margin="0,10,0,0">
-                                <CheckBox Content="Keep floating button visible while idle"
-                                          IsChecked="{Binding Settings.FloatingButtonEnabled}"
-                                          Margin="0,4"
-                                          Click="Settings_OnChanged" />
-                                <CheckBox Content="Start with Windows"
-                                          IsChecked="{Binding Settings.LaunchOnStartup}"
-                                          Margin="0,4"
-                                          Click="Settings_OnChanged" />
-                                <CheckBox Content="Add trailing space after inserted text"
-                                          IsChecked="{Binding Settings.AddTrailingSpace}"
-                                          Margin="0,4"
-                                          Click="Settings_OnChanged" />
-                            </StackPanel>
-                        </Expander>
-                        <Button x:Name="SetupSkipButton" Content="Decide later" Width="130" HorizontalAlignment="Left" Click="OnboardingComplete_OnClick" />
+                        <Button x:Name="SetupSkipButton" Content="Done" Width="110" HorizontalAlignment="Left" Click="OnboardingComplete_OnClick" />
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -147,20 +131,13 @@
                             <PasswordBox x:Name="ApiKeyBox" Height="32" AutomationProperties.Name="OpenAI API key" />
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
-                            <Button x:Name="ShowApiKeyEntryButton" Content="Add / Replace Key" Width="145" Click="ShowApiKeyEntry_OnClick" AutomationProperties.Name="Add or replace OpenAI key" />
-                            <Button x:Name="TestConnectionButton" Content="Test Connection" Width="130" Margin="8,0,0,0" Click="TestConnection_OnClick" AutomationProperties.Name="Test OpenAI connection" />
+                            <Button x:Name="ShowApiKeyEntryButton" Content="Replace Key" Width="120" Click="ShowApiKeyEntry_OnClick" AutomationProperties.Name="Add or replace OpenAI key" />
                             <Button x:Name="SaveKeyButton" Content="Save Key" Width="100" Margin="8,0,0,0" Click="SaveProvider_OnClick" AutomationProperties.Name="Save OpenAI key" />
                             <Button x:Name="DeleteKeyButton" Content="Delete Key" Width="100" Margin="8,0,0,0" Click="DeleteKey_OnClick" AutomationProperties.Name="Delete OpenAI key" />
                         </StackPanel>
                         <TextBlock x:Name="ApiKeyStatusText" Margin="0,12,0,0" Foreground="{StaticResource MutedForegroundBrush}" />
                         <TextBlock Margin="0,18,0,0">
                             <Hyperlink NavigateUri="https://platform.openai.com/api-keys" RequestNavigate="Hyperlink_OnRequestNavigate">OpenAI API keys page</Hyperlink>
-                        </TextBlock>
-                        <TextBlock Margin="0,6,0,0">
-                            <Hyperlink NavigateUri="https://platform.openai.com/docs/quickstart/overview" RequestNavigate="Hyperlink_OnRequestNavigate">OpenAI quickstart</Hyperlink>
-                        </TextBlock>
-                        <TextBlock Margin="0,6,0,0">
-                            <Hyperlink NavigateUri="https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key" RequestNavigate="Hyperlink_OnRequestNavigate">Where to find your OpenAI API key</Hyperlink>
                         </TextBlock>
                     </StackPanel>
                 </ScrollViewer>

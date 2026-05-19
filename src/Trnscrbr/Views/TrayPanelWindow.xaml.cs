@@ -149,11 +149,6 @@ public partial class TrayPanelWindow : Window
         _showAdvanced();
     }
 
-    private void Minimize_OnClick(object sender, RoutedEventArgs e)
-    {
-        WindowState = WindowState.Minimized;
-    }
-
     private void Close_OnClick(object sender, RoutedEventArgs e)
     {
         Hide();

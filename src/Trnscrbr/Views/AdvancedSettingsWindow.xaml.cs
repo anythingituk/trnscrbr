@@ -33,6 +33,7 @@ public partial class AdvancedSettingsWindow : Window
     private UpdateCheckResult? _latestUpdateResult;
     private bool _localOperationActive;
     private bool _loadingModelPreset;
+    private bool _loadingSetupAiChoice;
 
     public AdvancedSettingsWindow(
         AppStateViewModel state,
@@ -58,6 +59,7 @@ public partial class AdvancedSettingsWindow : Window
         DataContext = state;
         ModelPresetComboBox.ItemsSource = LocalModelDownloadService.Presets;
         SelectCurrentModelPreset();
+        InitializeSetupAiChoices();
         VocabularyBox.Text = string.Join(Environment.NewLine, state.Settings.CustomVocabulary);
         DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
         UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
@@ -107,6 +109,64 @@ public partial class AdvancedSettingsWindow : Window
     private void SetupLocalModels_OnClick(object sender, RoutedEventArgs e)
     {
         SelectLocalModelsTab();
+    }
+
+    private void SetupPrimary_OnClick(object sender, RoutedEventArgs e)
+    {
+        if (SetupAiChoiceComboBox.SelectedItem is not SetupAiChoiceOption option)
+        {
+            return;
+        }
+
+        if (option.Kind == SetupAiChoiceKind.OpenAi)
+        {
+            SettingsTabControl.SelectedItem = ProviderTab;
+            ShowApiKeyEntry();
+            return;
+        }
+
+        SelectLocalPreset(option.LocalPresetId);
+        SelectLocalModelsTab();
+        QuickSetupLocal_OnClick(sender, e);
+    }
+
+    private void SetupAiChoice_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (_loadingSetupAiChoice || SetupAiChoiceComboBox.SelectedItem is not SetupAiChoiceOption option)
+        {
+            return;
+        }
+
+        if (option.Kind == SetupAiChoiceKind.OpenAi)
+        {
+            _state.Settings.ProviderMode = "Bring your own API key";
+            _state.Settings.ProviderName = "OpenAI";
+            _state.Settings.ActiveEngine = "OpenAI";
+        }
+        else
+        {
+            _state.Settings.ProviderMode = "Local mode";
+            _state.Settings.ProviderName = "Local";
+            _state.Settings.ActiveEngine = "Local AI";
+            _state.Settings.LocalWhisperModelPresetId = option.LocalPresetId;
+            var preset = LocalModelDownloadService.Presets.FirstOrDefault(candidate => candidate.Id == option.LocalPresetId);
+            if (preset is not null)
+            {
+                var modelPath = Path.Combine(_localModelDownload.ModelsDirectory, preset.FileName);
+                if (File.Exists(modelPath))
+                {
+                    _state.Settings.LocalWhisperModelPath = modelPath;
+                }
+            }
+
+            SelectLocalPreset(option.LocalPresetId);
+        }
+
+        Persist();
+        RefreshOverview();
+        RefreshLocalModeStatus();
+        UpdateProviderModeStatus();
+        UpdateSetupPageText();
     }
 
     public void SelectLocalModelsTab()
@@ -163,22 +223,6 @@ public partial class AdvancedSettingsWindow : Window
         DetectLocalModelsButton.IsEnabled = enabled;
         DetectOllamaModelsButton.IsEnabled = enabled;
         ModelPresetComboBox.IsEnabled = enabled;
-    }
-
-    private async void TestConnection_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (ApiKeyBox.Password.Trim().Length == 0)
-        {
-            ApiKeyStatusText.Text = "Paste a new OpenAI key before testing.";
-            ShowApiKeyEntry();
-            return;
-        }
-
-        ApiKeyStatusText.Text = "Testing OpenAI connection...";
-        var result = await _openAiProvider.TestApiKeyAsync(ApiKeyBox.Password);
-        ApiKeyStatusText.Text = result.IsSuccess
-            ? $"{result.Message} Click Save Key to store this key."
-            : result.Message;
     }
 
     private async void SaveProvider_OnClick(object sender, RoutedEventArgs e)
@@ -244,7 +288,6 @@ public partial class AdvancedSettingsWindow : Window
     private void ShowApiKeyEntry()
     {
         ApiKeyEntryPanel.Visibility = Visibility.Visible;
-        TestConnectionButton.Visibility = Visibility.Visible;
         SaveKeyButton.Visibility = Visibility.Visible;
         ApiKeyBox.Focus();
     }
@@ -270,7 +313,9 @@ public partial class AdvancedSettingsWindow : Window
 
     private void Settings_OnChanged(object sender, RoutedEventArgs e)
     {
-        var hotkeyChanged = sender == ToggleHotkeyComboBox || sender == PushToTalkHotkeyComboBox;
+        var hotkeyChanged = sender == ToggleHotkeyComboBox
+            || sender == PushToTalkHotkeyComboBox
+            || sender == SetupToggleHotkeyComboBox;
         if (_state.Settings.ProviderMode == "Local mode")
         {
             _state.Settings.ProviderName = "Local";
@@ -318,6 +363,65 @@ public partial class AdvancedSettingsWindow : Window
     private static string FormatHotkey(string hotkey)
     {
         return hotkey.Replace("+", " + ", StringComparison.Ordinal);
+    }
+
+    private void InitializeSetupAiChoices()
+    {
+        _loadingSetupAiChoice = true;
+        try
+        {
+            var options = LocalModelDownloadService.Presets
+                .Select(preset => new SetupAiChoiceOption(
+                    SetupAiChoiceKind.Local,
+                    preset.Id,
+                    $"Local AI - {preset.DisplayName}"))
+                .Append(new SetupAiChoiceOption(
+                    SetupAiChoiceKind.OpenAi,
+                    string.Empty,
+                    "OpenAI API"))
+                .ToList();
+
+            SetupAiChoiceComboBox.ItemsSource = options;
+            SelectSetupAiChoice();
+        }
+        finally
+        {
+            _loadingSetupAiChoice = false;
+        }
+    }
+
+    private void SelectSetupAiChoice()
+    {
+        if (SetupAiChoiceComboBox.ItemsSource is not IEnumerable<SetupAiChoiceOption> options)
+        {
+            return;
+        }
+
+        var wasLoading = _loadingSetupAiChoice;
+        _loadingSetupAiChoice = true;
+        try
+        {
+            SetupAiChoiceOption? selected;
+            if (string.Equals(_state.Settings.ProviderMode, "Bring your own API key", StringComparison.OrdinalIgnoreCase))
+            {
+                selected = options.FirstOrDefault(option => option.Kind == SetupAiChoiceKind.OpenAi);
+            }
+            else
+            {
+                var presetId = string.IsNullOrWhiteSpace(_state.Settings.LocalWhisperModelPresetId)
+                    ? "small"
+                    : _state.Settings.LocalWhisperModelPresetId;
+                selected = options.FirstOrDefault(option =>
+                    option.Kind == SetupAiChoiceKind.Local
+                    && string.Equals(option.LocalPresetId, presetId, StringComparison.OrdinalIgnoreCase));
+            }
+
+            SetupAiChoiceComboBox.SelectedItem = selected ?? options.FirstOrDefault();
+        }
+        finally
+        {
+            _loadingSetupAiChoice = wasLoading;
+        }
     }
 
     private void CursorContext_OnClick(object sender, RoutedEventArgs e)
@@ -384,6 +488,22 @@ public partial class AdvancedSettingsWindow : Window
         }
     }
 
+    private void SelectLocalPreset(string presetId)
+    {
+        _loadingModelPreset = true;
+        try
+        {
+            var selected = LocalModelDownloadService.Presets.FirstOrDefault(candidate => candidate.Id == presetId)
+                ?? LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
+            ModelPresetComboBox.SelectedItem = selected;
+            ModelPresetDescriptionText.Text = FormatModelPresetGuidance(selected);
+        }
+        finally
+        {
+            _loadingModelPreset = false;
+        }
+    }
+
     private static string FormatModelPresetGuidance(LocalModelPreset preset)
     {
         var recommendation = preset.Id switch
@@ -404,7 +524,8 @@ public partial class AdvancedSettingsWindow : Window
             return;
         }
 
-        var preset = LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
+        var preset = ModelPresetComboBox.SelectedItem as LocalModelPreset
+            ?? LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
         var choice = System.Windows.MessageBox.Show(
             $"Free quick setup will download the files needed for local dictation ({preset.DisplayName}, {preset.DiskSize}).\n\nContinue?",
             "Trnscrbr",
@@ -470,6 +591,7 @@ public partial class AdvancedSettingsWindow : Window
             RefreshLocalModels();
             RefreshLocalModeStatus();
             UpdateProviderModeStatus();
+            UpdateSetupPageText();
             var readyMessage = $"Setup completed: {string.Join(", ", setupSummary)}. Next, click Try Test Phrase to confirm your microphone and local transcription.";
             LocalModeStatusText.Text = readyMessage;
             LocalTestStatusText.Text = readyMessage;
@@ -1262,46 +1384,55 @@ public partial class AdvancedSettingsWindow : Window
 
     private void UpdateProviderModeStatus()
     {
+        var selectedPreset = ModelPresetComboBox.SelectedItem as LocalModelPreset
+            ?? LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
+
         ProviderModeStatusText.Text = _state.Settings.ProviderMode switch
         {
             "Bring your own API key" => _credentialStore.HasOpenAiApiKey()
-                ? "OpenAI key is saved. Trnscrbr can use your API account."
-                : "OpenAI is selected, but no key is saved yet.",
+                ? "OpenAI is ready."
+                : "OpenAI needs your API key.",
             "Local mode" => IsLocalModeConfigured()
-                ? "Local mode is configured. Trnscrbr will use locally installed AI."
-                : "Local AI is selected, but setup still needs to finish.",
+                ? $"Local AI is ready with {selectedPreset.DisplayName}."
+                : $"{selectedPreset.DisplayName} needs to be downloaded before local dictation is ready.",
             "Cloud managed by app (planned)" => "Cloud managed by app is planned for a later paid/free-tier model and is not available yet.",
-            _ => "Choose local AI for free use, or add your own OpenAI key."
+            _ => "Choose local AI for free use, or OpenAI with your own API key."
         };
     }
 
     private void UpdateSetupPageText()
     {
-        SetupActionPanel.Visibility = Visibility.Collapsed;
-        SetupProviderButton.Visibility = Visibility.Collapsed;
-        SetupLocalModelsButton.Visibility = Visibility.Collapsed;
+        SelectSetupAiChoice();
+        var openAiNeedsKey = string.Equals(_state.Settings.ProviderMode, "Bring your own API key", StringComparison.OrdinalIgnoreCase)
+            && !_credentialStore.HasOpenAiApiKey();
 
-        if (_state.IsProviderConfigured)
+        if (_state.IsProviderConfigured && !openAiNeedsKey)
         {
             SetupTitleText.Text = "Setup";
-            SetupIntroText.Text = "Trnscrbr is ready to use. Use this page to review provider choice and app behavior, or change how dictation is configured.";
-            SetupSkipButton.Visibility = Visibility.Collapsed;
+            SetupIntroText.Text = "Choose the dictation engine and the shortcut you want to use.";
+            SetupPrimaryButton.Visibility = Visibility.Collapsed;
+            SetupSkipButton.Content = "Done";
             return;
         }
 
-        SetupTitleText.Text = "Setup needed";
-        SetupIntroText.Text = "Choose how Trnscrbr should transcribe before using the recording shortcut. Local AI is free and private after setup. OpenAI uses your own API key.";
+        SetupTitleText.Text = "First setup";
+        SetupIntroText.Text = "Small local AI is selected by default. Download it now, or choose OpenAI, Medium, or Large.";
         SetupSkipButton.Visibility = Visibility.Visible;
+        SetupSkipButton.Content = "Decide later";
 
-        var showProviderAction = string.Equals(_state.Settings.ProviderMode, "Bring your own API key", StringComparison.OrdinalIgnoreCase)
-            && !_credentialStore.HasOpenAiApiKey();
-        var showLocalAction = string.Equals(_state.Settings.ProviderMode, "Local mode", StringComparison.OrdinalIgnoreCase)
-            && !IsLocalModeConfigured();
-        var showBothActions = string.Equals(_state.Settings.ProviderMode, "Not configured", StringComparison.OrdinalIgnoreCase);
+        if (string.Equals(_state.Settings.ProviderMode, "Bring your own API key", StringComparison.OrdinalIgnoreCase))
+        {
+            SetupPrimaryButton.Content = _credentialStore.HasOpenAiApiKey() ? "OpenAI Ready" : "Add OpenAI API Key";
+            SetupPrimaryButton.Visibility = _credentialStore.HasOpenAiApiKey() ? Visibility.Collapsed : Visibility.Visible;
+            return;
+        }
 
-        SetupActionPanel.Visibility = Visibility.Visible;
-        SetupProviderButton.Visibility = showProviderAction || showBothActions ? Visibility.Visible : Visibility.Collapsed;
-        SetupLocalModelsButton.Visibility = showLocalAction || showBothActions ? Visibility.Visible : Visibility.Collapsed;
+        var preset = ModelPresetComboBox.SelectedItem as LocalModelPreset
+            ?? LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
+        SetupPrimaryButton.Content = IsLocalModeConfigured()
+            ? "Local AI Ready"
+            : $"Download {preset.DisplayName.Split(" - ")[0]} Local AI";
+        SetupPrimaryButton.Visibility = IsLocalModeConfigured() ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private void UpdateApiKeyStatus()
@@ -1319,8 +1450,8 @@ public partial class AdvancedSettingsWindow : Window
         ApiKeySavedPanel.Visibility = hasKey ? Visibility.Visible : Visibility.Collapsed;
         DeleteKeyButton.Visibility = hasKey ? Visibility.Visible : Visibility.Collapsed;
         ApiKeyEntryPanel.Visibility = hasKey ? Visibility.Collapsed : Visibility.Visible;
-        TestConnectionButton.Visibility = hasKey ? Visibility.Collapsed : Visibility.Visible;
         SaveKeyButton.Visibility = hasKey ? Visibility.Collapsed : Visibility.Visible;
+        ShowApiKeyEntryButton.Visibility = hasKey ? Visibility.Visible : Visibility.Collapsed;
         ShowApiKeyEntryButton.Content = hasKey ? "Replace Key" : "Add Key";
     }
 
@@ -1368,5 +1499,22 @@ public partial class AdvancedSettingsWindow : Window
     private static string RedactPath(string path)
     {
         return string.IsNullOrWhiteSpace(path) ? "not set" : System.IO.Path.GetFileName(path);
+    }
+
+    private enum SetupAiChoiceKind
+    {
+        Local,
+        OpenAi
+    }
+
+    private sealed record SetupAiChoiceOption(
+        SetupAiChoiceKind Kind,
+        string LocalPresetId,
+        string Label)
+    {
+        public override string ToString()
+        {
+            return Label;
+        }
     }
 }

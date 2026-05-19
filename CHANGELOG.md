@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.6
+
+- Simplified first setup into a Home tab with only dictation engine choice, setup action, and recording hotkey.
+- Defaulted new installs to local Small AI setup while still offering Medium, Large, and OpenAI API choices.
+- Removed the mini settings minimize button so the compact panel only closes back to the system tray.
+- Reduced visible OpenAI provider controls by removing the separate test button and extra help links.
+
 ## 0.2.5
 
 - Released the current mini settings panel with draggable header controls, minimize and close buttons, and an option to keep the panel visible when switching apps.

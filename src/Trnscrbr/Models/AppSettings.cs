@@ -15,8 +15,8 @@ public sealed class AppSettings
     public bool GlobalHotkeysEnabled { get; set; } = true;
     public bool KeepMiniSettingsVisible { get; set; }
     public int CaptureStartupBufferMilliseconds { get; set; }
-    public string ProviderMode { get; set; } = "Not configured";
-    public string ProviderName { get; set; } = "OpenAI";
+    public string ProviderMode { get; set; } = "Local mode";
+    public string ProviderName { get; set; } = "Local";
     public string CleanupMode { get; set; } = "Clean only";
     public string RewriteStyle { get; set; } = "Plain English";
     public string LanguageMode { get; set; } = "Auto";
@@ -25,13 +25,13 @@ public sealed class AppSettings
     public string ToggleRecordingHotkey { get; set; } = "F9";
     public string PushToTalkHotkey { get; set; } = "Ctrl+Alt+Space";
     public string MicrophoneName { get; set; } = "Windows default";
-    public string ActiveEngine { get; set; } = "None";
+    public string ActiveEngine { get; set; } = "Local AI";
     public string LocalWhisperExecutablePath { get; set; } = string.Empty;
     public string LocalWhisperModelPath { get; set; } = string.Empty;
     public string LocalLlmEndpoint { get; set; } = "http://localhost:11434/api/chat";
     public string LocalLlmModel { get; set; } = string.Empty;
     public string LocalWhisperCliVersion { get; set; } = string.Empty;
-    public string LocalWhisperModelPresetId { get; set; } = string.Empty;
+    public string LocalWhisperModelPresetId { get; set; } = "small";
     public string LocalSetupSource { get; set; } = string.Empty;
     public DateTimeOffset? LocalSetupCompletedAt { get; set; }
     public string LastNotifiedUpdateVersion { get; set; } = string.Empty;
