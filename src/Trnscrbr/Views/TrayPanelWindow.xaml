@@ -116,7 +116,7 @@
                     Margin="0,0,0,12"
                     Height="34"
                     ClipToBounds="True"
-                    ToolTip="{Binding StatusMessage}">
+                    ToolTip="{Binding Text, ElementName=RecordingHintText}">
                 <Grid VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" MinWidth="90" />

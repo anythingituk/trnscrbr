@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.8
+
+- Fixed the mini settings status strip tooltip so it shows the full hotkey hint when the hint is truncated.
+
 ## 0.2.7
 
 - Combined Provider and Local Models into one AI Models tab.
