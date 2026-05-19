@@ -106,9 +106,22 @@
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
-            <TabItem x:Name="ProviderTab" Header="Provider">
+            <TabItem x:Name="AiModelsTab" Header="AI Models">
                 <ScrollViewer>
                     <StackPanel Margin="18">
+                        <TextBlock Text="Dictation engine" FontSize="20" FontWeight="SemiBold" />
+                        <TextBlock Text="Choose OpenAI or a local model. Local Small is the recommended default." TextWrapping="Wrap" Margin="0,8,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
+                        <ComboBox x:Name="AiModelsChoiceComboBox"
+                                  Margin="0,0,0,10"
+                                  SelectionChanged="AiModelsChoice_OnSelectionChanged"
+                                  AutomationProperties.Name="Dictation engine" />
+                        <TextBlock x:Name="AiModelsChoiceStatusText"
+                                   TextWrapping="Wrap"
+                                   Foreground="{StaticResource MutedForegroundBrush}"
+                                   Margin="0,0,0,18" />
+
+                        <Border Height="1" Background="{StaticResource SubtleBorderBrush}" Margin="0,0,0,18" />
+
                         <TextBlock Text="OpenAI" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock Text="API keys are stored locally in Windows Credential Manager and are never exported with settings." TextWrapping="Wrap" Margin="0,8,0,12" />
                         <Border x:Name="ApiKeySavedPanel"
@@ -139,46 +152,13 @@
                         <TextBlock Margin="0,18,0,0">
                             <Hyperlink NavigateUri="https://platform.openai.com/api-keys" RequestNavigate="Hyperlink_OnRequestNavigate">OpenAI API keys page</Hyperlink>
                         </TextBlock>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-            <TabItem x:Name="LocalModelsTab" Header="Local Models">
-                <ScrollViewer>
-                    <StackPanel Margin="18">
-                        <TextBlock Text="Local Mode" FontSize="20" FontWeight="SemiBold" />
-                        <TextBlock Margin="0,8,0,16" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}"
-                                   Text="Local mode is free to use and sends no audio or transcript text to cloud services. Optional cleanup/rewrite can use a local Ollama chat model." />
-                        <Border x:Name="LocalReadinessBadge"
-                                Background="{StaticResource StatusBackgroundBrush}"
-                                BorderBrush="{StaticResource SubtleBorderBrush}"
-                                BorderThickness="1"
-                                CornerRadius="8"
-                                Padding="10,6"
-                                HorizontalAlignment="Left"
-                                Margin="0,0,0,16">
-                            <TextBlock x:Name="LocalReadinessBadgeText" FontWeight="SemiBold" />
-                        </Border>
 
-                        <Border BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,16">
-                            <StackPanel>
-                                <TextBlock Text="Free Quick Setup" FontSize="16" FontWeight="SemiBold" />
-                                <TextBlock Text="Downloads the files needed for free local dictation and enables Local mode." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
-                                <WrapPanel>
-                                    <Button x:Name="QuickSetupButton" Content="Free Quick Setup" Width="150" Margin="0,0,8,8" Click="QuickSetupLocal_OnClick" />
-                                    <Button x:Name="QuickSetupTestPhraseButton" Content="Try Test Phrase" Width="140" Margin="0,0,8,8" Click="RecordLocalTestPhrase_OnClick" />
-                                </WrapPanel>
-                                <TextBlock x:Name="QuickSetupNextStepText"
-                                           Text="After setup, click Try Test Phrase to confirm your microphone and local transcription."
-                                           TextWrapping="Wrap"
-                                           Foreground="{StaticResource MutedForegroundBrush}"
-                                           Margin="0,2,0,0" />
-                            </StackPanel>
-                        </Border>
+                        <Border Height="1" Background="{StaticResource SubtleBorderBrush}" Margin="0,18,0,18" />
 
-                        <Border BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,16">
+                        <Border BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,18" Margin="0,0,0,18">
                             <StackPanel>
                                 <TextBlock Text="Local AI model" FontSize="16" FontWeight="SemiBold" />
-                                <TextBlock Text="Small is recommended for most PCs. Medium and Large can be much slower." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
+                                <TextBlock Text="Local AI is free and private. Small is recommended for most PCs; Medium and Large can be much slower." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
                                 <Border Background="{StaticResource StatusBackgroundBrush}"
                                         BorderBrush="{StaticResource SubtleBorderBrush}"
                                         BorderThickness="1"
@@ -204,19 +184,12 @@
                                            TextWrapping="Wrap"
                                            Foreground="{StaticResource MutedForegroundBrush}"
                                            Margin="0,4,0,8" />
-                                <WrapPanel Margin="0,0,0,8">
-                                    <Button x:Name="DownloadModelButton" Content="Download Model" Width="140" Margin="0,0,8,8" Click="DownloadModel_OnClick" />
-                                    <Button x:Name="CancelModelDownloadButton" Content="Cancel Download" Width="140" Margin="0,0,8,8" Click="CancelModelDownload_OnClick" />
-                                    <Button x:Name="RemoveModelButton" Content="Remove Model" Width="130" Margin="0,0,8,8" Click="RemoveModel_OnClick" />
-                                    <Button Content="Open Folder" Width="120" Margin="0,0,8,8" Click="OpenModelsFolder_OnClick" />
-                                </WrapPanel>
-                            </StackPanel>
-                        </Border>
-
-                        <Expander Header="Advanced local AI settings" Margin="0,0,0,16">
-                            <StackPanel Margin="0,12,0,0">
-                                <Border BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,16">
-                                    <StackPanel>
+                                <Button x:Name="DownloadModelButton" Content="Download" Width="120" HorizontalAlignment="Left" Margin="0,0,0,8" Click="DownloadModel_OnClick" />
+                                <Button x:Name="CancelModelDownloadButton" Content="Cancel Download" Width="140" HorizontalAlignment="Left" Margin="0,0,0,8" Click="CancelModelDownload_OnClick" Visibility="Collapsed" />
+                                <TextBlock x:Name="SelectedModelStatusText"
+                                           TextWrapping="Wrap"
+                                           Foreground="{StaticResource AccentBrush}"
+                                           Margin="0,0,0,14" />
                                 <TextBlock Text="Installed Components" FontSize="16" FontWeight="SemiBold" />
                                 <Grid Margin="0,8,0,10">
                                     <Grid.ColumnDefinitions>
@@ -238,22 +211,27 @@
                                     <TextBlock Grid.Row="3" Text="Status" FontWeight="SemiBold" Margin="0,0,12,0" />
                                     <TextBlock x:Name="LocalModeStatusText" Grid.Row="3" Grid.Column="1" TextWrapping="Wrap" Foreground="{StaticResource AccentBrush}" />
                                 </Grid>
-                                <WrapPanel>
-                                    <Button x:Name="CheckWhisperCliUpdateButton" Content="Check Update" Width="150" Margin="0,0,8,8" Click="CheckWhisperCliUpdate_OnClick" />
-                                    <Button x:Name="VerifyModelButton" Content="Verify Model" Width="130" Margin="0,0,8,8" Click="VerifyModel_OnClick" />
-                                    <Button x:Name="UseLocalModeButton" Content="Use Local Mode" Width="140" Margin="0,0,8,8" Click="SaveLocalMode_OnClick" />
-                                    <Button x:Name="RepairLocalModeButton" Content="Complete Setup" Width="150" Margin="0,0,8,8" Click="RepairLocalMode_OnClick" />
-                                    <Button x:Name="CancelLocalRepairButton" Content="Cancel Setup" Width="130" Margin="0,0,8,8" Click="CancelModelDownload_OnClick" />
-                                </WrapPanel>
-                                    </StackPanel>
-                                </Border>
+                            </StackPanel>
+                        </Border>
 
-                                <Border BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,16">
-                                    <StackPanel>
-                                <TextBlock Text="Manual Setup" FontSize="16" FontWeight="SemiBold" />
+                        <StackPanel>
+                            <TextBlock Text="Local LLM models" FontSize="16" FontWeight="SemiBold" />
+                            <TextBlock Text="Advanced users only. Optional local LLM cleanup requires a separate Ollama setup and is not needed for normal dictation." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
+                            <TextBlock Text="Ollama cleanup endpoint" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <TextBox Text="{Binding Settings.LocalLlmEndpoint, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="Default: http://localhost:11434/api/chat" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
+                            <TextBlock Text="Ollama cleanup model" FontWeight="SemiBold" Margin="0,6,0,6" />
+                            <TextBox Text="{Binding Settings.LocalLlmModel, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="Leave blank to insert the raw local AI transcript without cleanup." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
+                            <Button x:Name="DetectOllamaModelsButton" Content="Detect Ollama Models" Width="160" HorizontalAlignment="Left" Margin="0,4,0,14" Click="DetectOllamaModels_OnClick" />
+
+                            <Expander Header="Advanced manual paths and diagnostics" Margin="0,0,0,16">
+                                <StackPanel Margin="0,12,0,0">
+                                    <TextBlock Text="Manual Setup" FontSize="16" FontWeight="SemiBold" />
                                 <TextBlock Text="Local engine executable" FontWeight="SemiBold" Margin="0,10,0,6" />
                                 <WrapPanel Margin="0,0,0,8">
                                     <Button x:Name="InstallWhisperCliButton" Content="Install Local Engine" Width="150" Margin="0,0,8,8" Click="InstallWhisperCli_OnClick" />
+                                    <Button x:Name="CheckWhisperCliUpdateButton" Content="Check Update" Width="130" Margin="0,0,8,8" Click="CheckWhisperCliUpdate_OnClick" />
                                     <Button Content="Open Tools Folder" Width="150" Margin="0,0,8,8" Click="OpenWhisperToolsFolder_OnClick" />
                                 </WrapPanel>
                                 <Grid>
@@ -277,11 +255,11 @@
                                 </Grid>
                                 <TextBlock Text="Example: C:\Models\ggml-small.en.bin" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
                                 <CheckBox Content="Force CPU-only mode" IsChecked="{Binding Settings.ForceCpuOnly}" Margin="0,6,0,0" Click="Settings_OnChanged" />
-                                    </StackPanel>
-                                </Border>
-
-                                <Border BorderBrush="{StaticResource SubtleBorderBrush}" BorderThickness="0,0,0,1" Padding="0,0,0,14" Margin="0,0,0,16">
-                                    <StackPanel>
+                                <WrapPanel Margin="0,14,0,8">
+                                    <Button x:Name="VerifyModelButton" Content="Verify Model" Width="130" Margin="0,0,8,8" Click="VerifyModel_OnClick" />
+                                    <Button x:Name="RemoveModelButton" Content="Remove Model" Width="130" Margin="0,0,8,8" Click="RemoveModel_OnClick" />
+                                    <Button Content="Open Models Folder" Width="150" Margin="0,0,8,8" Click="OpenModelsFolder_OnClick" />
+                                </WrapPanel>
                                 <TextBlock Text="Tests" FontSize="16" FontWeight="SemiBold" />
                                 <WrapPanel Margin="0,10,0,8">
                                     <Button x:Name="TestLocalSetupButton" Content="Test Local Setup" Width="140" Margin="0,0,8,8" Click="TestLocalSetup_OnClick" />
@@ -301,21 +279,9 @@
                                          VerticalScrollBarVisibility="Auto" />
                                 <TextBlock Text="Detected models are suggestions. Paste the executable and model path above to enable local dictation." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,10,0,8" />
                                 <TextBox x:Name="LocalModelsBox" IsReadOnly="True" MinHeight="120" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" />
-                                    </StackPanel>
-                                </Border>
-
-                                <StackPanel>
-                            <TextBlock Text="Optional Ollama Cleanup" FontSize="16" FontWeight="SemiBold" />
-                            <TextBlock Text="Ollama cleanup endpoint" FontWeight="SemiBold" Margin="0,10,0,6" />
-                            <TextBox Text="{Binding Settings.LocalLlmEndpoint, UpdateSourceTrigger=PropertyChanged}" />
-                            <TextBlock Text="Default: http://localhost:11434/api/chat" TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
-                            <TextBlock Text="Ollama cleanup model" FontWeight="SemiBold" Margin="0,6,0,6" />
-                            <TextBox Text="{Binding Settings.LocalLlmModel, UpdateSourceTrigger=PropertyChanged}" />
-                            <TextBlock Text="Leave blank to insert the raw local AI transcript without cleanup." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" Margin="0,4,0,10" />
-                            <Button x:Name="DetectOllamaModelsButton" Content="Detect Ollama Models" Width="160" HorizontalAlignment="Left" Margin="0,4,0,0" Click="DetectOllamaModels_OnClick" />
                                 </StackPanel>
-                            </StackPanel>
-                        </Expander>
+                            </Expander>
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -537,7 +503,7 @@
                     <StackPanel Margin="18">
                         <TextBlock Text="Updates" FontSize="20" FontWeight="SemiBold" />
                         <TextBlock x:Name="CurrentVersionText" Margin="0,8,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
-                        <TextBlock Text="Trnscrbr checks GitHub releases and opens the installer download when an update is available." TextWrapping="Wrap" Margin="0,0,0,12" />
+                        <TextBlock Text="Check for Updates reads the latest public GitHub release, compares its version tag with this app version, and opens the Windows installer download when a newer release is available." TextWrapping="Wrap" Margin="0,0,0,12" />
                         <WrapPanel Margin="0,0,0,12">
                             <Button Content="Check for Updates" Width="150" Margin="0,0,8,8" Click="CheckUpdates_OnClick" />
                             <Button x:Name="OpenLatestReleaseButton"
@@ -549,6 +515,9 @@
                         <TextBlock x:Name="UpdateStatusText" TextWrapping="Wrap" Margin="0,0,0,12" Foreground="{StaticResource MutedForegroundBrush}" />
                         <TextBlock Margin="0,0,0,12">
                             <Hyperlink NavigateUri="https://github.com/anythingituk/trnscrbr/releases" RequestNavigate="Hyperlink_OnRequestNavigate">Open Trnscrbr releases</Hyperlink>
+                        </TextBlock>
+                        <TextBlock Margin="0,0,0,12">
+                            <Hyperlink NavigateUri="https://github.com/anythingituk/trnscrbr/releases/latest" RequestNavigate="Hyperlink_OnRequestNavigate">Open latest GitHub release</Hyperlink>
                         </TextBlock>
                         <TextBlock Text="Automatic installation is planned for a later version. For now, download and run the installer from the release page." TextWrapping="Wrap" Foreground="{StaticResource MutedForegroundBrush}" />
                     </StackPanel>

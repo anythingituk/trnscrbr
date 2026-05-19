@@ -87,14 +87,14 @@ Invoke-Checked $dotnetPath @(
 Assert-PublishedExeContains @(
     "Recording hotkey",
     "Ctrl+Shift+R",
-    "Try Test Phrase",
-    "Complete Setup",
-    "Free Quick Setup",
     "Keep mini settings visible when switching apps",
     "F9 toggles recording; press again to transcribe.",
     "Dictation engine",
     "Download Small Local AI",
-    "OpenAI API"
+    "OpenAI API",
+    "AI Models",
+    "Local LLM models",
+    "Open latest GitHub release"
 )
 
 if ($BuildInstaller) {

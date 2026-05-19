@@ -26,7 +26,6 @@ public partial class AdvancedSettingsWindow : Window
     private readonly LocalModelDownloadService _localModelDownload = new();
     private readonly LocalWhisperToolDownloadService _localWhisperToolDownload = new();
     private readonly LocalHardwareProfileService _localHardwareProfile = new();
-    private readonly LocalModeRepairService _localModeRepair;
     private readonly LocalTestPhraseService _localTestPhrase;
     private readonly UpdateCheckService _updateCheck = new();
     private CancellationTokenSource? _modelDownloadCancellation;
@@ -46,7 +45,6 @@ public partial class AdvancedSettingsWindow : Window
         SettingsImportExportService settingsImportExport)
     {
         InitializeComponent();
-        _localModeRepair = new LocalModeRepairService(_localWhisperToolDownload, _localModelDownload);
         _localTestPhrase = new LocalTestPhraseService(audioCapture, _localProvider);
         _state = state;
         _settingsStore = settingsStore;
@@ -63,7 +61,7 @@ public partial class AdvancedSettingsWindow : Window
         VocabularyBox.Text = string.Join(Environment.NewLine, state.Settings.CustomVocabulary);
         DiagnosticsBox.Text = _diagnosticLog.ReadRecent();
         UsageBox.Text = _usageStats.FormatSummary(_state.Settings.MonthlyCostWarning);
-        CurrentVersionText.Text = $"Current version: {AppInfo.Version}";
+        CurrentVersionText.Text = $"Current version: {AppInfo.DisplayVersion}";
         OpenLatestReleaseButton.IsEnabled = false;
         RefreshOverview();
         RefreshLocalModels();
@@ -102,13 +100,13 @@ public partial class AdvancedSettingsWindow : Window
 
     private void SetupProvider_OnClick(object sender, RoutedEventArgs e)
     {
-        SettingsTabControl.SelectedItem = ProviderTab;
+        SettingsTabControl.SelectedItem = AiModelsTab;
         ApiKeyBox.Focus();
     }
 
     private void SetupLocalModels_OnClick(object sender, RoutedEventArgs e)
     {
-        SelectLocalModelsTab();
+        SelectAiModelsTab();
     }
 
     private void SetupPrimary_OnClick(object sender, RoutedEventArgs e)
@@ -120,14 +118,14 @@ public partial class AdvancedSettingsWindow : Window
 
         if (option.Kind == SetupAiChoiceKind.OpenAi)
         {
-            SettingsTabControl.SelectedItem = ProviderTab;
+            SettingsTabControl.SelectedItem = AiModelsTab;
             ShowApiKeyEntry();
             return;
         }
 
         SelectLocalPreset(option.LocalPresetId);
-        SelectLocalModelsTab();
-        QuickSetupLocal_OnClick(sender, e);
+        SelectAiModelsTab();
+        DownloadModel_OnClick(sender, e);
     }
 
     private void SetupAiChoice_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -137,44 +135,25 @@ public partial class AdvancedSettingsWindow : Window
             return;
         }
 
-        if (option.Kind == SetupAiChoiceKind.OpenAi)
-        {
-            _state.Settings.ProviderMode = "Bring your own API key";
-            _state.Settings.ProviderName = "OpenAI";
-            _state.Settings.ActiveEngine = "OpenAI";
-        }
-        else
-        {
-            _state.Settings.ProviderMode = "Local mode";
-            _state.Settings.ProviderName = "Local";
-            _state.Settings.ActiveEngine = "Local AI";
-            _state.Settings.LocalWhisperModelPresetId = option.LocalPresetId;
-            var preset = LocalModelDownloadService.Presets.FirstOrDefault(candidate => candidate.Id == option.LocalPresetId);
-            if (preset is not null)
-            {
-                var modelPath = Path.Combine(_localModelDownload.ModelsDirectory, preset.FileName);
-                if (File.Exists(modelPath))
-                {
-                    _state.Settings.LocalWhisperModelPath = modelPath;
-                }
-            }
-
-            SelectLocalPreset(option.LocalPresetId);
-        }
-
-        Persist();
-        RefreshOverview();
-        RefreshLocalModeStatus();
-        UpdateProviderModeStatus();
-        UpdateSetupPageText();
+        ApplyAiChoice(option);
     }
 
-    public void SelectLocalModelsTab()
+    private void AiModelsChoice_OnSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
-        SettingsTabControl.SelectedItem = LocalModelsTab;
+        if (_loadingSetupAiChoice || AiModelsChoiceComboBox.SelectedItem is not SetupAiChoiceOption option)
+        {
+            return;
+        }
+
+        ApplyAiChoice(option);
+    }
+
+    public void SelectAiModelsTab()
+    {
+        SettingsTabControl.SelectedItem = AiModelsTab;
         LocalModeStatusText.Text = IsLocalModeConfigured()
-            ? "Local AI is configured. Click Use Local Mode to make it active."
-            : "Click Free Quick Setup to download the files needed for free local dictation.";
+            ? "Local AI is configured."
+            : "Download the selected local model to enable local dictation.";
     }
 
     private bool BeginLocalOperation(string operationName)
@@ -205,18 +184,14 @@ public partial class AdvancedSettingsWindow : Window
 
     private void SetLocalOperationControlsEnabled(bool enabled)
     {
-        QuickSetupButton.IsEnabled = enabled;
-        QuickSetupTestPhraseButton.IsEnabled = enabled;
         DownloadModelButton.IsEnabled = enabled;
         VerifyModelButton.IsEnabled = enabled;
         RemoveModelButton.IsEnabled = enabled;
         InstallWhisperCliButton.IsEnabled = enabled;
         CheckWhisperCliUpdateButton.IsEnabled = enabled;
-        RepairLocalModeButton.IsEnabled = enabled;
-        CancelLocalRepairButton.IsEnabled = false;
+        CancelModelDownloadButton.Visibility = enabled ? Visibility.Collapsed : Visibility.Visible;
         BrowseWhisperExecutableButton.IsEnabled = enabled;
         BrowseWhisperModelButton.IsEnabled = enabled;
-        UseLocalModeButton.IsEnabled = enabled;
         TestLocalSetupButton.IsEnabled = enabled;
         RunSmokeTestButton.IsEnabled = enabled;
         RecordTestPhraseButton.IsEnabled = enabled;
@@ -382,6 +357,7 @@ public partial class AdvancedSettingsWindow : Window
                 .ToList();
 
             SetupAiChoiceComboBox.ItemsSource = options;
+            AiModelsChoiceComboBox.ItemsSource = options;
             SelectSetupAiChoice();
         }
         finally
@@ -416,12 +392,45 @@ public partial class AdvancedSettingsWindow : Window
                     && string.Equals(option.LocalPresetId, presetId, StringComparison.OrdinalIgnoreCase));
             }
 
-            SetupAiChoiceComboBox.SelectedItem = selected ?? options.FirstOrDefault();
+            var choice = selected ?? options.FirstOrDefault();
+            SetupAiChoiceComboBox.SelectedItem = choice;
+            AiModelsChoiceComboBox.SelectedItem = choice;
         }
         finally
         {
             _loadingSetupAiChoice = wasLoading;
         }
+    }
+
+    private void ApplyAiChoice(SetupAiChoiceOption option)
+    {
+        if (option.Kind == SetupAiChoiceKind.OpenAi)
+        {
+            _state.Settings.ProviderMode = "Bring your own API key";
+            _state.Settings.ProviderName = "OpenAI";
+            _state.Settings.ActiveEngine = "OpenAI";
+        }
+        else
+        {
+            _state.Settings.ProviderMode = "Local mode";
+            _state.Settings.ProviderName = "Local";
+            _state.Settings.ActiveEngine = "Local AI";
+            _state.Settings.LocalWhisperModelPresetId = option.LocalPresetId;
+            var preset = LocalModelDownloadService.Presets.FirstOrDefault(candidate => candidate.Id == option.LocalPresetId);
+            if (preset is not null)
+            {
+                var modelPath = GetManagedModelPath(preset);
+                _state.Settings.LocalWhisperModelPath = File.Exists(modelPath) ? modelPath : string.Empty;
+            }
+
+            SelectLocalPreset(option.LocalPresetId);
+        }
+
+        Persist();
+        RefreshOverview();
+        RefreshLocalModeStatus();
+        UpdateProviderModeStatus();
+        UpdateSetupPageText();
     }
 
     private void CursorContext_OnClick(object sender, RoutedEventArgs e)
@@ -468,6 +477,17 @@ public partial class AdvancedSettingsWindow : Window
         }
 
         ModelPresetDescriptionText.Text = FormatModelPresetGuidance(preset);
+        _state.Settings.LocalWhisperModelPresetId = preset.Id;
+        var modelPath = GetManagedModelPath(preset);
+        _state.Settings.LocalWhisperModelPath = File.Exists(modelPath) ? modelPath : string.Empty;
+        _state.Settings.ProviderMode = "Local mode";
+        _state.Settings.ProviderName = "Local";
+        _state.Settings.ActiveEngine = "Local AI";
+        Persist();
+        RefreshOverview();
+        RefreshLocalModeStatus();
+        UpdateProviderModeStatus();
+        UpdateSetupPageText();
     }
 
     private void SelectCurrentModelPreset()
@@ -497,6 +517,7 @@ public partial class AdvancedSettingsWindow : Window
                 ?? LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
             ModelPresetComboBox.SelectedItem = selected;
             ModelPresetDescriptionText.Text = FormatModelPresetGuidance(selected);
+            _state.Settings.LocalWhisperModelPresetId = selected.Id;
         }
         finally
         {
@@ -517,161 +538,9 @@ public partial class AdvancedSettingsWindow : Window
         return $"{recommendation} {preset.Description} Download: {preset.DiskSize}. Recommended memory: {preset.RamRecommendation}.";
     }
 
-    private async void QuickSetupLocal_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (!BeginLocalOperation("Preparing free local setup..."))
-        {
-            return;
-        }
-
-        var preset = ModelPresetComboBox.SelectedItem as LocalModelPreset
-            ?? LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
-        var choice = System.Windows.MessageBox.Show(
-            $"Free quick setup will download the files needed for local dictation ({preset.DisplayName}, {preset.DiskSize}).\n\nContinue?",
-            "Trnscrbr",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Information);
-
-        if (choice != MessageBoxResult.Yes)
-        {
-            EndLocalOperation();
-            return;
-        }
-
-        _modelDownloadCancellation?.Cancel();
-        _modelDownloadCancellation?.Dispose();
-        _modelDownloadCancellation = new CancellationTokenSource();
-
-        try
-        {
-            var setupSummary = new List<string>();
-
-            LocalModeStatusText.Text = "Checking local dictation files...";
-            var cli = await _localWhisperToolDownload.TryUseExistingLatestX64Async(_modelDownloadCancellation.Token);
-            if (cli is null)
-            {
-                LocalModeStatusText.Text = "Downloading local dictation files...";
-                cli = await _localWhisperToolDownload.DownloadLatestX64Async(
-                    new Progress<double>(value => LocalModeStatusText.Text = $"Downloading setup files: {value:P0}"),
-                    _modelDownloadCancellation.Token);
-                setupSummary.Add("downloaded required files");
-            }
-            else
-            {
-                setupSummary.Add("required files already downloaded");
-            }
-
-            LocalModeStatusText.Text = "Checking local dictation model...";
-            var model = await _localModelDownload.TryUseExistingAsync(preset, _modelDownloadCancellation.Token);
-            if (model is null)
-            {
-                LocalModeStatusText.Text = "Downloading local dictation model...";
-                model = await _localModelDownload.DownloadAsync(
-                    preset,
-                    new Progress<double>(value => LocalModeStatusText.Text = $"Downloading model: {value:P0}"),
-                    _modelDownloadCancellation.Token);
-                setupSummary.Add("downloaded model");
-            }
-            else
-            {
-                setupSummary.Add("model already verified");
-            }
-
-            _state.Settings.LocalWhisperExecutablePath = cli.ExecutablePath;
-            _state.Settings.LocalWhisperModelPath = model.ModelPath;
-            _state.Settings.LocalWhisperCliVersion = cli.Version;
-            _state.Settings.LocalWhisperModelPresetId = model.PresetId;
-            _state.Settings.LocalSetupSource = "Free Quick Setup";
-            _state.Settings.LocalSetupCompletedAt = DateTimeOffset.Now;
-            _state.Settings.ProviderMode = "Local mode";
-            _state.Settings.ProviderName = "Local";
-            _state.Settings.ActiveEngine = "Local AI";
-            Persist();
-            RefreshOverview();
-            RefreshLocalModels();
-            RefreshLocalModeStatus();
-            UpdateProviderModeStatus();
-            UpdateSetupPageText();
-            var readyMessage = $"Setup completed: {string.Join(", ", setupSummary)}. Next, click Try Test Phrase to confirm your microphone and local transcription.";
-            LocalModeStatusText.Text = readyMessage;
-            LocalTestStatusText.Text = readyMessage;
-            QuickSetupNextStepText.Text = "Ready. Click Try Test Phrase, speak for 5 seconds, then check the transcript below.";
-            RecordTestPhraseButton.Focus();
-        }
-        catch (OperationCanceledException)
-        {
-            LocalModeStatusText.Text = "Free quick setup cancelled. Partial model download was kept so it can resume later.";
-        }
-        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or System.IO.IOException or InvalidOperationException or System.Text.Json.JsonException)
-        {
-            LocalModeStatusText.Text = LocalSetupErrorFormatter.Format("Free quick setup failed", ex);
-            _diagnosticLog.Error("Free local quick setup failed", ex);
-        }
-        finally
-        {
-            EndLocalOperation();
-        }
-    }
-
-    private async void RepairLocalMode_OnClick(object sender, RoutedEventArgs e)
-    {
-        if (!BeginLocalOperation("Completing local setup..."))
-        {
-            return;
-        }
-
-        _modelDownloadCancellation?.Cancel();
-        _modelDownloadCancellation?.Dispose();
-        _modelDownloadCancellation = new CancellationTokenSource();
-
-        try
-        {
-            CancelLocalRepairButton.IsEnabled = true;
-            var progress = new Progress<string>(message =>
-            {
-                LocalModeStatusText.Text = message;
-                LocalTestStatusText.Text = message;
-            });
-            var downloadProgress = new Progress<double>(value =>
-            {
-                LocalModeStatusText.Text = $"Downloading setup files: {value:P0}";
-            });
-
-            var result = await _localModeRepair.RepairAsync(
-                _state.Settings,
-                progress,
-                downloadProgress,
-                _modelDownloadCancellation.Token);
-
-            Persist();
-            RefreshOverview();
-            RefreshLocalModels();
-            RefreshLocalModeStatus();
-            UpdateProviderModeStatus();
-            LocalModeStatusText.Text = $"{result.Message} Next, click Try Test Phrase to confirm it works.";
-            LocalTestStatusText.Text = LocalModeStatusText.Text;
-            QuickSetupNextStepText.Text = "Setup completed. Click Try Test Phrase, speak for 5 seconds, then check the transcript below.";
-        }
-        catch (OperationCanceledException)
-        {
-            LocalModeStatusText.Text = "Setup cancelled. Partial downloads were kept so they can resume later.";
-            LocalTestStatusText.Text = LocalModeStatusText.Text;
-        }
-        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or IOException or InvalidOperationException or System.Text.Json.JsonException)
-        {
-            LocalModeStatusText.Text = LocalSetupErrorFormatter.Format("Setup could not finish", ex);
-            _diagnosticLog.Error("Local mode repair failed", ex);
-        }
-        finally
-        {
-            CancelLocalRepairButton.IsEnabled = false;
-            EndLocalOperation();
-        }
-    }
-
     private async void DownloadModel_OnClick(object sender, RoutedEventArgs e)
     {
-        if (!BeginLocalOperation("Preparing model download..."))
+        if (!BeginLocalOperation("Preparing local AI download..."))
         {
             return;
         }
@@ -687,38 +556,54 @@ public partial class AdvancedSettingsWindow : Window
         _modelDownloadCancellation?.Dispose();
         _modelDownloadCancellation = new CancellationTokenSource();
 
-        LocalModeStatusText.Text = $"Downloading {preset.DisplayName}...";
-        var progress = new Progress<double>(value =>
-        {
-            LocalModeStatusText.Text = $"Downloading {preset.DisplayName}: {value:P0}";
-        });
-
         try
         {
-            var model = await _localModelDownload.DownloadAsync(
-                preset,
-                progress,
-                _modelDownloadCancellation.Token);
+            LocalModeStatusText.Text = "Checking local engine...";
+            var cli = await _localWhisperToolDownload.TryUseExistingLatestX64Async(_modelDownloadCancellation.Token);
+            if (cli is null)
+            {
+                LocalModeStatusText.Text = "Downloading local engine...";
+                cli = await _localWhisperToolDownload.DownloadLatestX64Async(
+                    new Progress<double>(value => LocalModeStatusText.Text = $"Downloading local engine: {value:P0}"),
+                    _modelDownloadCancellation.Token);
+            }
 
+            LocalModeStatusText.Text = $"Checking {preset.DisplayName}...";
+            var model = await _localModelDownload.TryUseExistingAsync(preset, _modelDownloadCancellation.Token);
+            if (model is null)
+            {
+                LocalModeStatusText.Text = $"Downloading {preset.DisplayName}...";
+                model = await _localModelDownload.DownloadAsync(
+                    preset,
+                    new Progress<double>(value => LocalModeStatusText.Text = $"Downloading {preset.DisplayName}: {value:P0}"),
+                    _modelDownloadCancellation.Token);
+            }
+
+            _state.Settings.LocalWhisperExecutablePath = cli.ExecutablePath;
+            _state.Settings.LocalWhisperCliVersion = cli.Version;
             _state.Settings.LocalWhisperModelPath = model.ModelPath;
             _state.Settings.LocalWhisperModelPresetId = model.PresetId;
-            _state.Settings.LocalSetupSource = "Manual model download";
+            _state.Settings.LocalSetupSource = "AI Models download";
             _state.Settings.LocalSetupCompletedAt = DateTimeOffset.Now;
+            _state.Settings.ProviderMode = "Local mode";
+            _state.Settings.ProviderName = "Local";
+            _state.Settings.ActiveEngine = "Local AI";
             Persist();
             RefreshOverview();
             RefreshLocalModels();
             RefreshLocalModeStatus();
             UpdateProviderModeStatus();
-            LocalModeStatusText.Text = $"Downloaded and verified {preset.DisplayName}.";
+            UpdateSetupPageText();
+            LocalModeStatusText.Text = $"{preset.DisplayName} already downloaded and ready.";
         }
         catch (OperationCanceledException)
         {
-            LocalModeStatusText.Text = "Model download cancelled. Partial download was kept so it can resume later.";
+            LocalModeStatusText.Text = "Download cancelled. Partial downloads were kept so they can resume later.";
         }
-        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or System.IO.IOException or InvalidOperationException)
+        catch (Exception ex) when (ex is System.Net.Http.HttpRequestException or System.IO.IOException or InvalidOperationException or System.Text.Json.JsonException)
         {
-            LocalModeStatusText.Text = LocalSetupErrorFormatter.Format("Model download failed", ex);
-            _diagnosticLog.Error("Local model download failed", ex, new Dictionary<string, string>
+            LocalModeStatusText.Text = LocalSetupErrorFormatter.Format("Local AI download failed", ex);
+            _diagnosticLog.Error("Local AI download failed", ex, new Dictionary<string, string>
             {
                 ["preset"] = preset.Id,
                 ["fileName"] = preset.FileName
@@ -1079,27 +964,6 @@ public partial class AdvancedSettingsWindow : Window
         }
     }
 
-    private async void SaveLocalMode_OnClick(object sender, RoutedEventArgs e)
-    {
-        var result = await _localProvider.TestLocalConfigurationAsync(_state);
-        if (!result.IsSuccess)
-        {
-            LocalModeStatusText.Text = result.Message;
-            return;
-        }
-
-        _state.Settings.ProviderMode = "Local mode";
-        _state.Settings.ProviderName = "Local";
-        _state.Settings.ActiveEngine = "Local AI";
-        Persist();
-        RefreshOverview();
-        RefreshLocalModeStatus();
-        UpdateProviderModeStatus();
-        LocalModeStatusText.Text = string.IsNullOrWhiteSpace(_state.Settings.LocalLlmModel)
-            ? "Local mode saved. Dictation will use locally installed AI."
-            : "Local mode saved. Dictation will use locally installed AI with optional cleanup.";
-    }
-
     private void CopyDiagnostics_OnClick(object sender, RoutedEventArgs e)
     {
         var diagnostics = $"""
@@ -1224,13 +1088,11 @@ public partial class AdvancedSettingsWindow : Window
 
         if (IsLocalModeConfigured())
         {
-            LocalModeStatusText.Text = _state.Settings.ProviderMode == "Local mode"
-                ? "Local mode is active."
-                : "Local AI is configured. Click Use Local Mode to make it active.";
+            LocalModeStatusText.Text = "Local AI is ready.";
             return;
         }
 
-        LocalModeStatusText.Text = "Choose a local engine and local AI model to enable free local dictation.";
+        LocalModeStatusText.Text = "Download the selected local model to enable local dictation.";
     }
 
     private void RefreshLocalInstallSummary()
@@ -1251,25 +1113,38 @@ public partial class AdvancedSettingsWindow : Window
             ? $"{FormatOptional(_state.Settings.LocalSetupSource)} - {completedAt:g}"
             : "Not completed";
 
-        var isReady = hasCli && hasModel && _state.Settings.ProviderMode == "Local mode";
-        var badgeText = (hasCli, hasModel, _state.Settings.ProviderMode) switch
-        {
-            (false, _, _) => "Download needed",
-            (_, false, _) => "Download needed",
-            (true, true, "Local mode") => "Ready",
-            _ => "Configured, not active"
-        };
+        RefreshSelectedLocalModelState();
+    }
 
-        LocalReadinessBadgeText.Text = badgeText;
-        LocalReadinessBadge.Background = isReady
-            ? (System.Windows.Media.Brush)FindResource("AccentSoftBrush")
-            : (System.Windows.Media.Brush)FindResource("StatusBackgroundBrush");
-        LocalReadinessBadge.BorderBrush = isReady
-            ? (System.Windows.Media.Brush)FindResource("AccentBrush")
-            : (System.Windows.Media.Brush)FindResource("SubtleBorderBrush");
-        LocalReadinessBadgeText.Foreground = isReady
-            ? (System.Windows.Media.Brush)FindResource("AccentBrush")
-            : (System.Windows.Media.Brush)FindResource("MutedForegroundBrush");
+    private void RefreshSelectedLocalModelState()
+    {
+        if (ModelPresetComboBox.SelectedItem is not LocalModelPreset preset)
+        {
+            SelectedModelStatusText.Text = "Choose a local model.";
+            DownloadModelButton.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var modelPath = GetManagedModelPath(preset);
+        var modelDownloaded = File.Exists(modelPath);
+        var cliDownloaded = File.Exists(_state.Settings.LocalWhisperExecutablePath);
+        if (modelDownloaded && cliDownloaded)
+        {
+            SelectedModelStatusText.Text = $"{preset.DisplayName} already downloaded.";
+            DownloadModelButton.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        SelectedModelStatusText.Text = modelDownloaded
+            ? $"{preset.DisplayName} already downloaded. Local engine still needs to be installed."
+            : $"{preset.DisplayName} needs to be downloaded.";
+        DownloadModelButton.Content = modelDownloaded ? "Install Engine" : "Download";
+        DownloadModelButton.Visibility = Visibility.Visible;
+    }
+
+    private string GetManagedModelPath(LocalModelPreset preset)
+    {
+        return Path.Combine(_localModelDownload.ModelsDirectory, preset.FileName);
     }
 
     private void MonthlyWarning_OnLostFocus(object sender, RoutedEventArgs e)
@@ -1387,7 +1262,7 @@ public partial class AdvancedSettingsWindow : Window
         var selectedPreset = ModelPresetComboBox.SelectedItem as LocalModelPreset
             ?? LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
 
-        ProviderModeStatusText.Text = _state.Settings.ProviderMode switch
+        var status = _state.Settings.ProviderMode switch
         {
             "Bring your own API key" => _credentialStore.HasOpenAiApiKey()
                 ? "OpenAI is ready."
@@ -1398,6 +1273,9 @@ public partial class AdvancedSettingsWindow : Window
             "Cloud managed by app (planned)" => "Cloud managed by app is planned for a later paid/free-tier model and is not available yet.",
             _ => "Choose local AI for free use, or OpenAI with your own API key."
         };
+
+        ProviderModeStatusText.Text = status;
+        AiModelsChoiceStatusText.Text = status;
     }
 
     private void UpdateSetupPageText()
@@ -1429,10 +1307,11 @@ public partial class AdvancedSettingsWindow : Window
 
         var preset = ModelPresetComboBox.SelectedItem as LocalModelPreset
             ?? LocalModelDownloadService.Presets.First(candidate => candidate.Id == "small");
-        SetupPrimaryButton.Content = IsLocalModeConfigured()
+        var selectedReady = IsSelectedLocalModelReady();
+        SetupPrimaryButton.Content = selectedReady
             ? "Local AI Ready"
             : $"Download {preset.DisplayName.Split(" - ")[0]} Local AI";
-        SetupPrimaryButton.Visibility = IsLocalModeConfigured() ? Visibility.Collapsed : Visibility.Visible;
+        SetupPrimaryButton.Visibility = selectedReady ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private void UpdateApiKeyStatus()
@@ -1494,6 +1373,17 @@ public partial class AdvancedSettingsWindow : Window
     {
         return System.IO.File.Exists(_state.Settings.LocalWhisperExecutablePath)
             && System.IO.File.Exists(_state.Settings.LocalWhisperModelPath);
+    }
+
+    private bool IsSelectedLocalModelReady()
+    {
+        if (ModelPresetComboBox.SelectedItem is not LocalModelPreset preset)
+        {
+            return IsLocalModeConfigured();
+        }
+
+        return File.Exists(_state.Settings.LocalWhisperExecutablePath)
+            && File.Exists(GetManagedModelPath(preset));
     }
 
     private static string RedactPath(string path)

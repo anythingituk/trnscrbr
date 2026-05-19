@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.7
+
+- Combined Provider and Local Models into one AI Models tab.
+- Simplified local model setup so selected models show Download only when needed and report when already downloaded.
+- Moved local LLM/Ollama controls under an advanced-user section.
+- Kept the Updates version display simple and added a latest GitHub release link.
+- Fixed the mini settings status strip so long messages no longer break the compact layout.
+
 ## 0.2.6
 
 - Simplified first setup into a Home tab with only dictation engine choice, setup action, and recording hotkey.

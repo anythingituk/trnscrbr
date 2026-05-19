@@ -468,6 +468,6 @@ public partial class App : System.Windows.Application
     private void ShowLocalSetup()
     {
         ShowAdvancedSettings();
-        _advancedSettings?.SelectLocalModelsTab();
+        _advancedSettings?.SelectAiModelsTab();
     }
 }
