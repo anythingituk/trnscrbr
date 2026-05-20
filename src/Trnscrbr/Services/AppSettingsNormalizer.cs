@@ -91,6 +91,7 @@ public static class AppSettingsNormalizer
         settings.LocalSetupSource = settings.LocalSetupSource?.Trim() ?? string.Empty;
         settings.LastNotifiedUpdateVersion = settings.LastNotifiedUpdateVersion?.Trim() ?? string.Empty;
         settings.MonthlyCostWarning = settings.MonthlyCostWarning < 0 ? defaults.MonthlyCostWarning : settings.MonthlyCostWarning;
+        settings.AutoEnglishDictationCount = Math.Clamp(settings.AutoEnglishDictationCount, 0, 5);
         settings.CaptureStartupBufferMilliseconds = settings.CaptureStartupBufferMilliseconds switch
         {
             0 or 250 or 500 or 750 => settings.CaptureStartupBufferMilliseconds,

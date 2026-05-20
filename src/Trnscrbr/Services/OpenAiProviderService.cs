@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.IO;
 using System.Globalization;
+using System.Diagnostics;
 using Trnscrbr.Models;
 using Trnscrbr.ViewModels;
 
@@ -62,15 +63,30 @@ public sealed class OpenAiProviderService
         AppStateViewModel state,
         CancellationToken cancellationToken = default)
     {
+        var stopwatch = Stopwatch.StartNew();
         var rawTranscript = await TranscribeAsync(apiKey, audio, state, cancellationToken);
+        var transcriptionElapsed = stopwatch.Elapsed;
         if (string.IsNullOrWhiteSpace(rawTranscript))
         {
             throw new InvalidOperationException("OpenAI returned an empty transcript.");
         }
 
         var cleanup = await CleanTranscriptAsync(apiKey, rawTranscript, state, cancellationToken);
+        var cleanupElapsed = stopwatch.Elapsed - transcriptionElapsed;
         var transcriptionCost = OpenAiPricingCatalog.EstimateTranscriptionCost(audio.Duration);
         var cleanupCost = OpenAiPricingCatalog.EstimateCleanupCost(cleanup.InputTokens, cleanup.OutputTokens);
+        _diagnosticLog?.Info("OpenAI processing completed", new Dictionary<string, string>
+        {
+            ["audioSeconds"] = audio.Duration.TotalSeconds.ToString("0.00"),
+            ["transcriptionMs"] = transcriptionElapsed.TotalMilliseconds.ToString("0"),
+            ["cleanupMs"] = cleanupElapsed.TotalMilliseconds.ToString("0"),
+            ["totalMs"] = stopwatch.Elapsed.TotalMilliseconds.ToString("0"),
+            ["language"] = state.Settings.LanguageMode,
+            ["cleanupMode"] = state.Settings.CleanupMode,
+            ["speakerFilter"] = state.Settings.IgnoreOtherSpeakersEnabled ? "enabled" : "disabled",
+            ["cursorContext"] = state.Settings.CursorContextEnabled ? "enabled" : "disabled"
+        });
+        LogSlowOpenAiProcessingIfNeeded(audio, state, transcriptionElapsed, cleanupElapsed, stopwatch.Elapsed);
 
         return new TranscriptionResult(
             cleanup.CleanedTranscript,
@@ -214,6 +230,15 @@ public sealed class OpenAiProviderService
             model = CleanupModel,
             instructions,
             input = rawTranscript,
+            reasoning = new
+            {
+                effort = "minimal"
+            },
+            text = new
+            {
+                verbosity = "low"
+            },
+            max_output_tokens = GetCleanupOutputTokenLimit(rawTranscript),
             store = false
         });
 
@@ -351,6 +376,38 @@ public sealed class OpenAiProviderService
     private static int EstimateTokens(string text)
     {
         return Math.Max(1, (int)Math.Ceiling(text.Length / 4d));
+    }
+
+    private static int GetCleanupOutputTokenLimit(string rawTranscript)
+    {
+        return Math.Clamp(EstimateTokens(rawTranscript) * 3 + 64, 128, 2048);
+    }
+
+    private void LogSlowOpenAiProcessingIfNeeded(
+        RecordedAudio audio,
+        AppStateViewModel state,
+        TimeSpan transcriptionElapsed,
+        TimeSpan cleanupElapsed,
+        TimeSpan totalElapsed)
+    {
+        if (totalElapsed < TimeSpan.FromSeconds(5))
+        {
+            return;
+        }
+
+        var slowestStage = transcriptionElapsed >= cleanupElapsed ? "transcription" : "cleanup";
+        _diagnosticLog?.Info("OpenAI processing latency notice", new Dictionary<string, string>
+        {
+            ["audioSeconds"] = audio.Duration.TotalSeconds.ToString("0.00"),
+            ["transcriptionMs"] = transcriptionElapsed.TotalMilliseconds.ToString("0"),
+            ["cleanupMs"] = cleanupElapsed.TotalMilliseconds.ToString("0"),
+            ["totalMs"] = totalElapsed.TotalMilliseconds.ToString("0"),
+            ["slowestStage"] = slowestStage,
+            ["language"] = state.Settings.LanguageMode,
+            ["cleanupMode"] = state.Settings.CleanupMode,
+            ["speakerFilter"] = state.Settings.IgnoreOtherSpeakersEnabled ? "enabled" : "disabled",
+            ["cursorContext"] = state.Settings.CursorContextEnabled ? "enabled" : "disabled"
+        });
     }
 
     private static string GetRewriteStyleInstruction(string rewriteStyle)

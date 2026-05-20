@@ -18,6 +18,7 @@ public sealed class RecordingCoordinator
     private readonly LocalProviderService _localProvider;
     private readonly DiagnosticLogService _diagnosticLog;
     private readonly UsageStatsService _usageStats;
+    private readonly AppSettingsStore _settingsStore;
     private readonly Action _showMicrophoneSettings;
     private readonly DispatcherTimer _timer;
     private readonly DispatcherTimer _pendingPasteOfferTimer;
@@ -40,6 +41,7 @@ public sealed class RecordingCoordinator
         LocalProviderService localProvider,
         DiagnosticLogService diagnosticLog,
         UsageStatsService usageStats,
+        AppSettingsStore settingsStore,
         Action showMicrophoneSettings)
     {
         _state = state;
@@ -51,6 +53,7 @@ public sealed class RecordingCoordinator
         _localProvider = localProvider;
         _diagnosticLog = diagnosticLog;
         _usageStats = usageStats;
+        _settingsStore = settingsStore;
         _showMicrophoneSettings = showMicrophoneSettings;
         _dispatcher = Dispatcher.CurrentDispatcher;
         _audioCapture.InputLevelChanged += (_, level) =>
@@ -323,6 +326,7 @@ public sealed class RecordingCoordinator
             }
 
             var cleanedTranscript = result.CleanedTranscript.Trim();
+            ApplyAutomaticEnglishLanguageHint(cleanedTranscript);
             var isDeleteAction = string.Equals(
                 cleanedTranscript,
                 OpenAiProviderService.DeleteLastInsertionAction,
@@ -564,5 +568,101 @@ public sealed class RecordingCoordinator
         };
 
         return words.All(fillerWords.Contains);
+    }
+
+    private void ApplyAutomaticEnglishLanguageHint(string transcript)
+    {
+        if (_state.Settings.AutoLanguageHintApplied
+            || !string.Equals(_state.Settings.LanguageMode, "Auto", StringComparison.OrdinalIgnoreCase)
+            || !LooksLikeEnglishDictation(transcript))
+        {
+            return;
+        }
+
+        _state.Settings.AutoEnglishDictationCount = Math.Min(5, _state.Settings.AutoEnglishDictationCount + 1);
+        if (_state.Settings.AutoEnglishDictationCount < 5)
+        {
+            _settingsStore.Save(_state.Settings);
+            return;
+        }
+
+        _state.Settings.LanguageMode = "en";
+        _state.Settings.AutoLanguageHintApplied = true;
+        _settingsStore.Save(_state.Settings);
+        _state.RaiseSettingsChanged();
+        _diagnosticLog.Info("Automatic language hint applied", new Dictionary<string, string>
+        {
+            ["language"] = "en",
+            ["reason"] = "five-english-dictations"
+        });
+    }
+
+    private static bool LooksLikeEnglishDictation(string transcript)
+    {
+        var words = transcript
+            .Split([' ', '\t', '\r', '\n', ',', '.', '!', '?', ';', ':', '-', '"', '\'', '(', ')'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(word => word.Trim().ToLowerInvariant())
+            .Where(word => word.Any(char.IsLetter))
+            .ToArray();
+
+        if (words.Length < 4)
+        {
+            return false;
+        }
+
+        var commonEnglishWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "a",
+            "about",
+            "after",
+            "again",
+            "all",
+            "also",
+            "am",
+            "an",
+            "and",
+            "are",
+            "as",
+            "at",
+            "be",
+            "because",
+            "but",
+            "by",
+            "can",
+            "do",
+            "for",
+            "from",
+            "have",
+            "how",
+            "i",
+            "if",
+            "in",
+            "is",
+            "it",
+            "just",
+            "me",
+            "my",
+            "not",
+            "of",
+            "on",
+            "or",
+            "so",
+            "that",
+            "the",
+            "then",
+            "there",
+            "this",
+            "to",
+            "was",
+            "we",
+            "what",
+            "when",
+            "with",
+            "would",
+            "you"
+        };
+
+        var commonWordCount = words.Count(commonEnglishWords.Contains);
+        return commonWordCount >= 2 || words.Length >= 6 && commonWordCount >= 1;
     }
 }

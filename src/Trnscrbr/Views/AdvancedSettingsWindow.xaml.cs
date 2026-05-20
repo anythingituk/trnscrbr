@@ -1346,7 +1346,9 @@ public partial class AdvancedSettingsWindow : Window
         _state.Settings.VoiceActionCommandsEnabled = imported.VoiceActionCommandsEnabled;
         _state.Settings.DiagnosticsEnabled = imported.DiagnosticsEnabled;
         _state.Settings.ForceCpuOnly = imported.ForceCpuOnly;
+        _state.Settings.AutoLanguageHintApplied = imported.AutoLanguageHintApplied;
         _state.Settings.CaptureStartupBufferMilliseconds = imported.CaptureStartupBufferMilliseconds;
+        _state.Settings.AutoEnglishDictationCount = imported.AutoEnglishDictationCount;
         _state.Settings.ProviderMode = imported.ProviderMode;
         _state.Settings.ProviderName = imported.ProviderName;
         _state.Settings.CleanupMode = imported.CleanupMode;

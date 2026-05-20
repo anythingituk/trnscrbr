@@ -37,7 +37,7 @@ public sealed class DiagnosticLogService
             return "No diagnostics yet.";
         }
 
-        var lines = File.ReadLines(_logPath).TakeLast(maxLines);
+        var lines = File.ReadLines(_logPath).TakeLast(maxLines).Reverse();
         return string.Join(Environment.NewLine, lines);
     }
 
