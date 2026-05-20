@@ -14,7 +14,9 @@ public sealed class AppSettings
     public bool ForceCpuOnly { get; set; }
     public bool GlobalHotkeysEnabled { get; set; } = true;
     public bool KeepMiniSettingsVisible { get; set; }
+    public bool AutoLanguageHintApplied { get; set; }
     public int CaptureStartupBufferMilliseconds { get; set; }
+    public int AutoEnglishDictationCount { get; set; }
     public string ProviderMode { get; set; } = "Local mode";
     public string ProviderName { get; set; } = "Local";
     public string CleanupMode { get; set; } = "Clean only";

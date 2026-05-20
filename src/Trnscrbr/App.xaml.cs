@@ -69,7 +69,7 @@ public partial class App : System.Windows.Application
         _floatingButton = new FloatingButtonWindow(appState);
         _audioCapture = new AudioCaptureService(appState, _settingsStore, _diagnosticLog);
         var insertion = new TextInsertionService(appState, _diagnosticLog);
-        _recording = new RecordingCoordinator(appState, insertion, _floatingButton, _audioCapture, _credentialStore, _openAiProvider, _localProvider, _diagnosticLog, _usageStats, ShowTrayPanel);
+        _recording = new RecordingCoordinator(appState, insertion, _floatingButton, _audioCapture, _credentialStore, _openAiProvider, _localProvider, _diagnosticLog, _usageStats, _settingsStore, ShowTrayPanel);
         _floatingButton.ToggleRecordingRequested += (_, _) => _recording.ToggleRecording();
         _floatingButton.PasteLastTranscriptRequested += (_, _) => _recording.PasteLastTranscript();
         _floatingButton.ForgetLastTranscriptRequested += (_, _) => _recording.ForgetLastTranscript();

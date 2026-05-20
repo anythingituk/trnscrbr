@@ -289,6 +289,7 @@
                 <ScrollViewer>
                     <StackPanel Margin="18">
                         <TextBlock Text="Transcription type" FontWeight="SemiBold" />
+                        <TextBlock Text="Clean only removes filler and hesitation while keeping your wording close. Rewrite rephrases for clarity and flow while preserving meaning." TextWrapping="Wrap" Margin="0,6,0,8" Foreground="{StaticResource MutedForegroundBrush}" />
                         <ComboBox SelectedValue="{Binding Settings.CleanupMode}" SelectedValuePath="Content" Margin="0,6,0,14" SelectionChanged="Settings_OnChanged">
                             <ComboBoxItem Content="Clean only" />
                             <ComboBoxItem Content="Rewrite" />

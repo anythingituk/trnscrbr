@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.9
+
+- Added OpenAI transcription latency diagnostics with stage timings and slow-processing notices.
+- Reduced cleanup latency by requesting minimal reasoning, low verbosity, and bounded cleanup output.
+- Added automatic English language hinting after repeated English dictations while Language is set to Auto.
+- Show newest diagnostics first and added helper text explaining Clean only versus Rewrite.
+
 ## 0.2.8
 
 - Fixed the mini settings status strip tooltip so it shows the full hotkey hint when the hint is truncated.
