@@ -232,7 +232,7 @@ public sealed class OpenAiProviderService
             input = rawTranscript,
             reasoning = new
             {
-                effort = "minimal"
+                effort = "none"
             },
             text = new
             {

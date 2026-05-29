@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.10
+
+- Fixed OpenAI cleanup requests for `gpt-5.4-mini` by using no reasoning effort.
+
 ## 0.2.9
 
 - Added OpenAI transcription latency diagnostics with stage timings and slow-processing notices.
